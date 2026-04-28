@@ -20,7 +20,14 @@ public class HrService {
         this.repo = repo;
     }
 
+    // ------------------ SEND VERIFICATION MAIL ------------------
     public void sendVerificationMail(Hr hr) {
+        // Set registration timestamp for 3-month free trial tracking
+        if (hr.getRegisteredAt() == null) {
+            hr.setRegisteredAt(LocalDateTime.now());
+        }
+
+        // Generate 6-digit OTP
         String code = String.valueOf(new java.util.Random().nextInt(900000) + 100000);
         hr.setVerificationCode(code);
         repo.save(hr);
@@ -31,11 +38,12 @@ public class HrService {
         message.setText("Hello " + hr.getFullName() + ",\n\n"
                 + "Please use the following code to verify your HR account:\n\n"
                 + "Verification Code: " + code + "\n\n"
-                + "After email verification, our admin will review your ID proof for final approval.\n\n"
+                + "Once verified, you'll have full access to the VirtueHire HR portal for 3 months, free of charge!\n\n"
                 + "Thank you,\nVirtueHire Team");
         mailSender.send(message);
     }
 
+    // ------------------ VERIFY EMAIL ------------------
     public boolean verifyEmail(String email, String code) {
         Hr hr = repo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("HR not found"));
@@ -49,6 +57,7 @@ public class HrService {
         return false;
     }
 
+    // ------------------ SEND APPROVAL MAIL ------------------
     public void sendApprovalMail(Hr hr) {
         org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
         message.setTo(hr.getEmail());
@@ -60,6 +69,25 @@ public class HrService {
         mailSender.send(message);
     }
 
+    // ------------------ ACCESS CONTROL ------------------
+    /**
+     * Free trial: full access for 3 months from registration date.
+     * After that, must have an active paid plan.
+     */
+    public boolean isAccessAllowed(Hr hr) {
+        // Active paid plan → always allowed
+        if (canViewCandidateDetails(hr)) return true;
+
+        // Free trial → within 3 months of registration
+        if (hr.getRegisteredAt() != null &&
+                hr.getRegisteredAt().plusMonths(3).isAfter(LocalDateTime.now())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // ------------------ CRUD ------------------
     public Hr save(Hr hr) {
         return repo.save(hr);
     }
@@ -87,12 +115,8 @@ public class HrService {
         repo.deleteById(id);
     }
 
-    // ---------------------------
-    // PLAN SYSTEM METHODS
-    // ---------------------------
-
+    // ------------------ PLAN SYSTEM ------------------
     public boolean canViewCandidateDetails(Hr hr) {
-
         if (hr.getPlanType() == null)
             return false;
 

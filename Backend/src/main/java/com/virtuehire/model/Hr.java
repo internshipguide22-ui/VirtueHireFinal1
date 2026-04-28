@@ -54,6 +54,12 @@ public class Hr {
     private Boolean emailVerified = false;
 
     private String verificationCode;
+    // Add this field
+private LocalDateTime registeredAt;
+
+// Add getter & setter
+public LocalDateTime getRegisteredAt() { return registeredAt; }
+public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
 
     // Constructors
     public Hr() {

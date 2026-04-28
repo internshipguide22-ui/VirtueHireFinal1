@@ -395,10 +395,17 @@ const AssessmentLevel = () => {
         }
       });
 
+      // ✅ FIX 4: Final submission payload
       const formattedCodingAnswers = {};
       Object.entries(codingAnswers).forEach(([questionId, value]) => {
+        const safeCode = value.sourceCode?.trim() || "";
+
+        if (!safeCode) {
+          console.warn("Empty code detected for question:", questionId); // ✅ debug
+        }
+
         formattedCodingAnswers[questionId] = {
-          sourceCode: value.sourceCode || "",
+          sourceCode: safeCode,   // ✅ FIXED
           languageId: value.languageId,
           submitted: value.submitted
         };
@@ -536,8 +543,25 @@ const AssessmentLevel = () => {
     });
   };
 
+  // ✅ FIX 2: handleRunCode
   const handleRunCode = async () => {
     if (!currentQuestion?.hasCompiler || !currentCodingAnswer) return;
+
+    const safeCode = currentCodingAnswer.sourceCode?.trim();
+
+    // ✅ Prevent empty code
+    if (!safeCode) {
+      setCodingExecution((prev) => ({
+        ...prev,
+        [currentQuestion.id]: {
+          ...(prev[currentQuestion.id] || {}),
+          error: "Code cannot be empty"
+        }
+      }));
+      return;
+    }
+
+    console.log("SENDING CODE:", safeCode); // ✅ Debug
 
     setCodingExecution((prev) => ({
       ...prev,
@@ -549,12 +573,16 @@ const AssessmentLevel = () => {
     }));
 
     try {
-      const res = await api.post("/questions/code/run", {
-        questionId: currentQuestion.id,
-        sourceCode: currentCodingAnswer.sourceCode,
-        languageId: currentCodingAnswer.languageId,
-        stdin: currentCodingAnswer.stdin || ""
-      }, { withCredentials: true });
+      const res = await api.post(
+        "/assessment/run",
+        {
+          questionId: currentQuestion.id,
+          sourceCode: safeCode,
+          languageId: currentCodingAnswer.languageId,
+          stdin: currentCodingAnswer.stdin || ""
+        },
+        { withCredentials: true }
+      );
 
       setCodingExecution((prev) => ({
         ...prev,
@@ -578,8 +606,23 @@ const AssessmentLevel = () => {
     }
   };
 
+  // ✅ FIX 3: handleSubmitCode
   const handleSubmitCode = async () => {
     if (!currentQuestion?.hasCompiler || !currentCodingAnswer) return;
+
+    const safeCode = currentCodingAnswer.sourceCode?.trim();
+
+    // ✅ Prevent empty code
+    if (!safeCode) {
+      setCodingExecution((prev) => ({
+        ...prev,
+        [currentQuestion.id]: {
+          ...(prev[currentQuestion.id] || {}),
+          error: "Please write code before submitting"
+        }
+      }));
+      return;
+    }
 
     setCodingExecution((prev) => ({
       ...prev,
@@ -591,13 +634,18 @@ const AssessmentLevel = () => {
     }));
 
     try {
-      const res = await api.post("/questions/code/submit", {
-        questionId: currentQuestion.id,
-        sourceCode: currentCodingAnswer.sourceCode,
-        languageId: currentCodingAnswer.languageId
-      }, { withCredentials: true });
+      const res = await api.post(
+        "/questions/code/submit",
+        {
+          questionId: currentQuestion.id,
+          sourceCode: safeCode,
+          languageId: currentCodingAnswer.languageId
+        },
+        { withCredentials: true }
+      );
 
       updateCodingAnswer(currentQuestion.id, { submitted: true });
+
       setCodingExecution((prev) => ({
         ...prev,
         [currentQuestion.id]: {
@@ -632,10 +680,17 @@ const AssessmentLevel = () => {
         }
       });
 
+      // ✅ FIX 4: Final submission payload
       const formattedCodingAnswers = {};
       Object.entries(codingAnswers).forEach(([questionId, value]) => {
+        const safeCode = value.sourceCode?.trim() || "";
+
+        if (!safeCode) {
+          console.warn("Empty code detected for question:", questionId); // ✅ debug
+        }
+
         formattedCodingAnswers[questionId] = {
-          sourceCode: value.sourceCode || "",
+          sourceCode: safeCode,   // ✅ FIXED
           languageId: value.languageId,
           submitted: value.submitted
         };
@@ -814,10 +869,15 @@ const AssessmentLevel = () => {
             </div>
           </div>
 
+          {/* ✅ FIX 1: textarea binding */}
           <textarea
             className="exam-code-editor"
-            value={currentCodingAnswer.sourceCode}
-            onChange={(e) => updateCodingAnswer(currentQuestion.id, { sourceCode: e.target.value })}
+            value={currentCodingAnswer.sourceCode || ""}   // ✅ FIXED
+            onChange={(e) =>
+              updateCodingAnswer(currentQuestion.id, {
+                sourceCode: e.target.value
+              })
+            }
             spellCheck={false}
             disabled={submitted || isLocked}
           />

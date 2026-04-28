@@ -120,7 +120,48 @@ public class AssessmentService {
     }
 
     public Optional<Assessment> getAssessmentByName(String name) {
-        return assessmentRepo.findByAssessmentName(name);
+        if (name == null || name.isBlank()) {
+            return Optional.empty();
+        }
+        
+        // 1. Try exact match first
+        Optional<Assessment> exactMatch = assessmentRepo.findByAssessmentName(name);
+        if (exactMatch.isPresent()) {
+            return exactMatch;
+        }
+        
+        // 2. Try case-insensitive match
+        Optional<Assessment> caseInsensitiveMatch = assessmentRepo.findAll().stream()
+            .filter(assessment -> assessment.getAssessmentName().equalsIgnoreCase(name))
+            .findFirst();
+        
+        if (caseInsensitiveMatch.isPresent()) {
+            System.out.println("Found case-insensitive match: '" + name + "' -> '" + caseInsensitiveMatch.get().getAssessmentName() + "'");
+            return caseInsensitiveMatch;
+        }
+        
+        // 3. Try partial match (for backward compatibility with "Python Assessment" vs "Python")
+        String normalizedName = name.toLowerCase().trim();
+        Optional<Assessment> partialMatch = assessmentRepo.findAll().stream()
+            .filter(assessment -> {
+                String assessmentName = assessment.getAssessmentName().toLowerCase();
+                return assessmentName.contains(normalizedName) || normalizedName.contains(assessmentName);
+            })
+            .findFirst();
+        
+        if (partialMatch.isPresent()) {
+            System.out.println("Found partial match: '" + name + "' -> '" + partialMatch.get().getAssessmentName() + "'");
+            return partialMatch;
+        }
+        
+        // Debug: Log all available assessments when not found
+        System.out.println("No assessment found for: '" + name + "'");
+        System.out.println("Available assessments:");
+        assessmentRepo.findAll().forEach(a -> 
+            System.out.println("  - '" + a.getAssessmentName() + "' (ID: " + a.getId() + ")")
+        );
+        
+        return Optional.empty();
     }
 
     public List<String> getAllAssessmentNames() {
@@ -145,40 +186,24 @@ public class AssessmentService {
 
     @Transactional
     public Optional<Assessment> findOrCreateSingleSkillAssessment(String skill) {
+        // AUTO-CREATION DISABLED - Only find existing assessments
+        // No new assessments will be created automatically
         if (skill == null || skill.isBlank()) {
             return Optional.empty();
         }
 
+        // Try to find existing assessment by skill set
         Optional<Assessment> existingAssessment = findAssessmentBySkillSet(List.of(skill));
+        
         if (existingAssessment.isPresent()) {
             return existingAssessment;
         }
-
-        String normalizedSkill = normalizeSkill(skill);
-        List<Question> questions = questionRepo.findBySubject(normalizedSkill);
-        if (questions.isEmpty()) {
-            return Optional.empty();
-        }
-
-        int questionCount = Math.min(questions.size(), 10);
-        int timeLimit = Math.max(10, questionCount);
-
-        // ✅ FIX: Use the skill name directly as the assessment name.
-        // Previously this called buildAutoAssessmentName() which appended
-        // " Assessment" — turning "Python" into "Python Assessment" and
-        // creating a duplicate alongside any manually created "Python" assessment.
-        String assessmentName = normalizedSkill;
-
-        Assessment assessment = createAssessment(
-                assessmentName,
-                "Auto-generated single-skill assessment for " + normalizedSkill,
-                List.of(Map.<String, Object>of(
-                        "subject", normalizedSkill,
-                        "questionCount", questionCount,
-                        "timeLimit", timeLimit,
-                        "passPercentage", 60)));
-
-        return Optional.of(assessment);
+        
+        // Log that no assessment exists instead of creating one
+        System.out.println("No assessment found for skill: '" + skill + 
+                         "'. Please create one manually in the admin panel.");
+        
+        return Optional.empty();
     }
 
     public List<AssessmentSection> getAssessmentSections(Long assessmentId) {
@@ -257,10 +282,6 @@ public class AssessmentService {
                 .trim()
                 .replaceAll("\\s+", " ");
     }
-
-    // ✅ REMOVED: buildAutoAssessmentName() — was the root cause of duplicates.
-    // It appended " Assessment" to every skill name, creating "Python Assessment"
-    // alongside manually created "Python" assessments.
 
     private List<Question> getQuestionsForMode(String subject, String sectionMode) {
         if ("COMPILER".equals(sectionMode)) {

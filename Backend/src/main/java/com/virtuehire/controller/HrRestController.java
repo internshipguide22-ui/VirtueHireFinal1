@@ -1,8 +1,6 @@
 package com.virtuehire.controller;
 
 import com.virtuehire.model.Candidate;
-import com.virtuehire.model.CandidateAccessRequest;
-import com.virtuehire.model.CandidateAccessRequestStatus;
 import com.virtuehire.model.Hr;
 import com.virtuehire.model.Question;
 import com.virtuehire.service.CandidateService;
@@ -92,7 +90,8 @@ public class HrRestController {
         String message = "Registration successful!";
         try {
             hrService.sendVerificationMail(hr);
-            message += " Please verify your email first using the code sent to your email, then wait for admin approval.";
+            // CHANGED: removed "wait for admin approval" — free 3-month trial messaging
+            message += " Please verify your email using the code sent to your inbox. After that you'll have full access for 3 months, free!";
         } catch (Exception ex) {
             logger.error("HR registered but verification email failed for {}", hr.getEmail(), ex);
             message += " We could not send the verification email right now. Please try again later.";
@@ -107,8 +106,8 @@ public class HrRestController {
         String code = request.get("code");
         boolean verified = hrService.verifyEmail(email, code);
         if (verified) {
-            return ResponseEntity
-                    .ok(Map.of("message", "Email verified successfully! Admin will now review your application."));
+            // CHANGED: removed "Admin will now review your application"
+            return ResponseEntity.ok(Map.of("message", "Email verified successfully! You now have full access for 3 months, free of charge."));
         } else {
             return ResponseEntity.status(400).body(Map.of("error", "Invalid verification code"));
         }
@@ -124,11 +123,11 @@ public class HrRestController {
         if (hr == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid email or password"));
 
-        if (!hr.getVerified())
+        // CHANGED: replaced admin-verified gate with email-verified gate only
+        if (!Boolean.TRUE.equals(hr.getEmailVerified()))
             return ResponseEntity.status(403)
-                    .body(Map.of("error", "Your account is not verified yet. Please wait for admin approval."));
+                    .body(Map.of("error", "Please verify your email before logging in. Check your inbox for the OTP."));
 
-        // Store HR in session
         session.setAttribute("hr", hr);
 
         return ResponseEntity.ok(Map.of(
@@ -153,7 +152,10 @@ public class HrRestController {
 
         return ResponseEntity.ok(Map.of(
                 "hr", hr,
-                "planDisplay", hrService.getPlanDisplayName(hr)));
+                "planDisplay", hrService.getPlanDisplayName(hr),
+                // ADDED: expose trial/access status to frontend
+                "accessAllowed", hrService.isAccessAllowed(hr),
+                "trialExpired", !hrService.isAccessAllowed(hr)));
     }
 
     // ------------------ GET ALL CANDIDATES ------------------
@@ -164,13 +166,17 @@ public class HrRestController {
             return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
 
         hr = refreshHr(hr, session);
+        boolean hasAccess = hrService.isAccessAllowed(hr);
         List<Candidate> candidates = candidateService.findAll();
-        Map<Long, CandidateAccessRequestStatus> statuses = candidateAccessRequestService.findStatusesForHr(hr.getId());
+
         return ResponseEntity.ok(Map.of(
                 "hr", hr,
+                // CHANGED: hasAccess now driven by trial/plan, not access-request status
                 "candidates", candidates.stream()
-                        .map(candidate -> toHrCandidateSummary(candidate, statuses.get(candidate.getId())))
-                        .toList()));
+                        .map(candidate -> toHrCandidateSummary(candidate, hasAccess))
+                        .toList(),
+                "accessAllowed", hasAccess,
+                "trialExpired", !hasAccess));
     }
 
     // ------------------ VIEW SINGLE CANDIDATE ------------------
@@ -186,24 +192,18 @@ public class HrRestController {
         if (candidate == null)
             return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
 
-        CandidateAccessRequestStatus requestStatus = candidateAccessRequestService.findStatus(hr.getId(), candidateId);
-        if (requestStatus != CandidateAccessRequestStatus.APPROVED) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("error", "Contact Admin to view full details");
-            response.put("requestStatus", requestStatus == null ? "NONE" : requestStatus.name());
-            response.put("hasAccess", false);
-            candidateAccessRequestService.findRequest(hr.getId(), candidateId)
-                    .ifPresent(request -> response.put("requestId", request.getId()));
-            return ResponseEntity.status(403).body(response);
+        // CHANGED: replaced admin access-request check with trial/plan check
+        if (!hrService.isAccessAllowed(hr)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Your free trial has expired. Please purchase a plan to continue accessing candidates.",
+                    "hasAccess", false,
+                    "trialExpired", true));
         }
 
         // Build enriched result list with real section name from AssessmentSection
         var rawResults = assessmentResultService.getCandidateResults(candidateId);
         List<Map<String, Object>> enrichedResults = new ArrayList<>();
         for (var r : rawResults) {
-            // AssessmentResult.subject = assessmentName, .level = sectionNumber
-            // AssessmentSection.subject = real section subject (e.g. "Aptitude",
-            // "Vocabulary")
             String sectionName = assessmentSectionRepository
                     .findByAssessmentNameAndSectionNumber(r.getSubject(), r.getLevel())
                     .map(AssessmentSection::getSubject)
@@ -222,9 +222,10 @@ public class HrRestController {
                 "candidate", candidate,
                 "detailedResults", enrichedResults,
                 "canView", true,
-                "requestStatus", CandidateAccessRequestStatus.APPROVED.name()));
+                "hasAccess", true));
     }
 
+    // ------------------ CANDIDATE SUMMARY ------------------
     @GetMapping("/candidates/{candidateId}/summary")
     public ResponseEntity<?> getCandidateSummary(@PathVariable Long candidateId, HttpSession session) {
         Hr hr = (Hr) session.getAttribute("hr");
@@ -238,13 +239,16 @@ public class HrRestController {
             return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
         }
 
-        CandidateAccessRequestStatus requestStatus = candidateAccessRequestService.findStatus(hr.getId(), candidateId);
+        // CHANGED: hasAccess now based on trial/plan, not access-request
+        boolean hasAccess = hrService.isAccessAllowed(hr);
         return ResponseEntity.ok(Map.of(
-                "candidate", toHrCandidateSummary(candidate, requestStatus),
-                "requestStatus", requestStatus == null ? "NONE" : requestStatus.name(),
-                "hasAccess", requestStatus == CandidateAccessRequestStatus.APPROVED));
+                "candidate", toHrCandidateSummary(candidate, hasAccess),
+                "hasAccess", hasAccess,
+                "trialExpired", !hasAccess));
     }
 
+    // NOTE: access-request endpoint kept for backward compatibility but is no
+    // longer the gate for free users. Can be removed later if not used by frontend.
     @PostMapping("/candidates/{candidateId}/access-request")
     public ResponseEntity<?> requestCandidateAccess(@PathVariable Long candidateId, HttpSession session) {
         Hr hr = (Hr) session.getAttribute("hr");
@@ -258,11 +262,9 @@ public class HrRestController {
             return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
         }
 
-        CandidateAccessRequest request = candidateAccessRequestService.createOrRefreshRequest(hr, candidate);
+        var request = candidateAccessRequestService.createOrRefreshRequest(hr, candidate);
         return ResponseEntity.ok(Map.of(
-                "message", request.getStatus() == CandidateAccessRequestStatus.APPROVED
-                        ? "Access is already approved for this candidate."
-                        : "Access request submitted successfully.",
+                "message", "Access request submitted successfully.",
                 "requestStatus", request.getStatus().name(),
                 "requestId", request.getId()));
     }
@@ -279,7 +281,9 @@ public class HrRestController {
         }
 
         hr = refreshHr(hr, session);
-        if (!candidateAccessRequestService.hasApprovedAccess(hr.getId(), candidateId)) {
+
+        // CHANGED: replaced access-request check with trial/plan check
+        if (!hrService.isAccessAllowed(hr)) {
             return ResponseEntity.status(403).build();
         }
 
@@ -324,8 +328,8 @@ public class HrRestController {
         }
 
         hr = refreshHr(hr, session);
+        boolean hasAccess = hrService.isAccessAllowed(hr);
         List<Candidate> candidates = candidateService.searchCandidates(skills, experienceLevel, minScore);
-        Map<Long, CandidateAccessRequestStatus> statuses = candidateAccessRequestService.findStatusesForHr(hr.getId());
 
         Map<String, Object> filters = new HashMap<>();
         filters.put("skills", skills == null ? "" : skills);
@@ -334,10 +338,13 @@ public class HrRestController {
 
         return ResponseEntity.ok(Map.of(
                 "hr", hr,
+                // CHANGED: hasAccess driven by trial/plan
                 "candidates", candidates.stream()
-                        .map(candidate -> toHrCandidateSummary(candidate, statuses.get(candidate.getId())))
+                        .map(candidate -> toHrCandidateSummary(candidate, hasAccess))
                         .toList(),
-                "filters", filters));
+                "filters", filters,
+                "accessAllowed", hasAccess,
+                "trialExpired", !hasAccess));
     }
 
     @GetMapping("/dashboard/candidates/search")
@@ -354,22 +361,22 @@ public class HrRestController {
         }
 
         hr = refreshHr(hr, session);
+        boolean hasAccess = hrService.isAccessAllowed(hr);
         List<Candidate> candidates = candidateService.searchCandidatesForHrDashboard(
-                name,
-                skill,
-                experience,
-                scoreSort);
-        Map<Long, CandidateAccessRequestStatus> statuses = candidateAccessRequestService.findStatusesForHr(hr.getId());
+                name, skill, experience, scoreSort);
 
         return ResponseEntity.ok(Map.of(
+                // CHANGED: hasAccess driven by trial/plan
                 "candidates", candidates.stream()
-                        .map(candidate -> toHrCandidateSummary(candidate, statuses.get(candidate.getId())))
+                        .map(candidate -> toHrCandidateSummary(candidate, hasAccess))
                         .toList(),
                 "filters", Map.of(
                         "name", name == null ? "" : name,
                         "skill", skill == null ? "" : skill,
                         "experience", experience,
-                        "scoreSort", scoreSort == null ? "" : scoreSort)));
+                        "scoreSort", scoreSort == null ? "" : scoreSort),
+                "accessAllowed", hasAccess,
+                "trialExpired", !hasAccess));
     }
 
     // ------------------ QUESTION UPLOAD ------------------
@@ -413,8 +420,7 @@ public class HrRestController {
             }
 
             Assessment assessment = assessmentService.createAssessment(assessmentName, description, sections);
-            return ResponseEntity
-                    .ok(Map.of("message", "Assessment created successfully", "assessmentId", assessment.getId()));
+            return ResponseEntity.ok(Map.of("message", "Assessment created successfully", "assessmentId", assessment.getId()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -471,7 +477,6 @@ public class HrRestController {
 
         List<Question> questions = questionService.getQuestionsBySubject(subject);
 
-        // Group by level and section name to find available counts
         Map<Integer, Map<String, Object>> sectionsMap = new HashMap<>();
 
         for (Question q : questions) {
@@ -552,8 +557,7 @@ public class HrRestController {
 
         try {
             assessmentService.toggleLock(id, lock);
-            return ResponseEntity
-                    .ok(Map.of("message", "Assessment " + (lock ? "locked" : "unlocked") + " successfully."));
+            return ResponseEntity.ok(Map.of("message", "Assessment " + (lock ? "locked" : "unlocked") + " successfully."));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to update assessment status."));
         }
@@ -567,9 +571,16 @@ public class HrRestController {
             return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
 
         Hr refreshedHr = refreshHr(hr, session);
-        List<Candidate> candidates = candidateService.findAll().stream()
-                .filter(candidate -> candidateAccessRequestService.hasApprovedAccess(refreshedHr.getId(), candidate.getId()))
-                .toList();
+
+        // CHANGED: replaced per-candidate access-request filter with single trial/plan check
+        if (!hrService.isAccessAllowed(refreshedHr)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Your free trial has expired. Please purchase a plan to continue.",
+                    "trialExpired", true,
+                    "results", List.of()));
+        }
+
+        List<Candidate> candidates = candidateService.findAll();
         List<Map<String, Object>> results = new ArrayList<>();
 
         for (Candidate c : candidates) {
@@ -593,8 +604,12 @@ public class HrRestController {
             return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
 
         hr = refreshHr(hr, session);
-        if (!candidateAccessRequestService.hasApprovedAccess(hr.getId(), candidateId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Contact Admin to view full details"));
+
+        // CHANGED: replaced access-request check with trial/plan check
+        if (!hrService.isAccessAllowed(hr)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Your free trial has expired. Please purchase a plan to continue.",
+                    "trialExpired", true));
         }
 
         return ResponseEntity.ok(Map.of(
@@ -636,13 +651,16 @@ public class HrRestController {
         }
     }
 
+    // ------------------ PRIVATE HELPERS ------------------
+
     private Hr refreshHr(Hr hr, HttpSession session) {
         Hr latest = hr.getId() == null ? hr : hrService.findById(hr.getId()).orElse(hr);
         session.setAttribute("hr", latest);
         return latest;
     }
 
-    private Map<String, Object> toHrCandidateSummary(Candidate candidate, CandidateAccessRequestStatus status) {
+    // CHANGED: now takes a plain boolean instead of CandidateAccessRequestStatus
+    private Map<String, Object> toHrCandidateSummary(Candidate candidate, boolean hasAccess) {
         Map<String, Object> summary = new HashMap<>();
         summary.put("id", candidate.getId());
         summary.put("fullName", candidate.getFullName());
@@ -652,8 +670,7 @@ public class HrRestController {
                         ? candidate.getExperienceLevel()
                         : "Candidate");
         summary.put("experience", candidate.getExperience() != null ? candidate.getExperience() : 0);
-        summary.put("hasAccess", status == CandidateAccessRequestStatus.APPROVED);
-        summary.put("requestStatus", status == null ? "NONE" : status.name());
+        summary.put("hasAccess", hasAccess);
         return summary;
     }
 }
