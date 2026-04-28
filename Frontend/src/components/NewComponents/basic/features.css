@@ -1,0 +1,112 @@
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap');
+
+/* Page Style */
+.features-page {
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #e6f7ff);
+  padding: 60px 20px;
+}
+
+/* Hero Section */
+.features-hero {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.features-hero h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  background-clip: text;           
+  -webkit-background-clip: text;   
+  color: transparent;               
+  -webkit-text-fill-color: transparent; 
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 1s forwards 0.2s;
+}
+
+.features-hero p {
+  font-size: 1.2rem;
+  color: #333;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 1s forwards 0.4s;
+}
+
+/* Feature Cards Section */
+.features-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+}
+
+.feature-card {
+  background: #ffffff;
+  padding: 25px 20px;
+  border-radius: 20px;
+  width: 280px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+.feature-card:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+.feature-card span {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  display: inline-block;
+}
+
+.feature-card h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #ff512f, #dd2476);
+  background-clip: text;          
+  -webkit-background-clip: text;   
+  color: transparent;               
+  -webkit-text-fill-color: transparent; 
+}
+
+.feature-card p {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Animation Class */
+.feature-card.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: all 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .features-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .feature-card {
+    width: 90%;
+  }
+}

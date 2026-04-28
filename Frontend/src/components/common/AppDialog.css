@@ -1,0 +1,98 @@
+.app-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 5000;
+}
+
+.app-dialog-card {
+  width: min(100%, 460px);
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+  border: 1px solid #e2e8f0;
+}
+
+.app-dialog-card.tone-danger {
+  border-color: #fecaca;
+}
+
+.app-dialog-card.tone-warning {
+  border-color: #fed7aa;
+}
+
+.app-dialog-card.tone-success {
+  border-color: #bbf7d0;
+}
+
+.app-dialog-badge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.app-dialog-title {
+  margin: 16px 0 10px;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.app-dialog-message {
+  margin: 0;
+  color: #475569;
+  line-height: 1.65;
+  font-size: 0.96rem;
+  white-space: pre-line;
+}
+
+.app-dialog-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.app-dialog-btn {
+  min-width: 110px;
+  border: none;
+  border-radius: 14px;
+  padding: 11px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-dialog-btn.secondary {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.app-dialog-btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.app-dialog-btn.primary.tone-danger {
+  background: #dc2626;
+}
+
+.app-dialog-btn.primary.tone-warning {
+  background: #ea580c;
+}
+
+.app-dialog-btn.primary.tone-success {
+  background: #16a34a;
+}

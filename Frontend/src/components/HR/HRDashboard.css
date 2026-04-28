@@ -1,0 +1,733 @@
+.hr-dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.hr-sidebar {
+  width: 280px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 20px;
+  background: linear-gradient(180deg, #172033 0%, #1e293b 100%);
+  color: white;
+  z-index: 100;
+}
+
+.hr-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hr-sidebar-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #60a5fa, #4f46e5);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.hr-sidebar-brand h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.hr-sidebar-brand p {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+.hr-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hr-nav-item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #cbd5e1;
+  font-size: 0.98rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.hr-nav-item:hover {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22);
+  transform: translateX(4px);
+}
+
+.hr-nav-item.active {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22);
+}
+
+.hr-nav-group {
+  list-style: none;
+}
+
+.hr-nav-group-trigger {
+  width: 100%;
+  border: none;
+  background: rgba(59, 130, 246, 0.12);
+  color: #bfdbfe;
+  text-align: left;
+}
+
+.hr-nav-group-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 0.24s ease, opacity 0.24s ease;
+  margin-top: 0;
+}
+
+.hr-nav-group:hover .hr-nav-group-panel,
+.hr-nav-group:focus-within .hr-nav-group-panel,
+.hr-nav-group.open .hr-nav-group-panel {
+  max-height: 140px;
+  opacity: 1;
+  pointer-events: auto;
+  margin-top: 6px;
+}
+
+.hr-sub-nav-item {
+  margin-left: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  width: calc(100% - 12px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.hr-sub-nav-item:hover,
+.hr-sub-nav-item.active {
+  background: rgba(59, 130, 246, 0.9);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.hr-sidebar-footer {
+  margin-top: auto;
+}
+
+.hr-content-main {
+  flex: 1;
+  margin-left: 280px;
+  padding: 36px;
+}
+
+.hr-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 32px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 24px 50px rgba(79, 70, 229, 0.2);
+}
+
+.hr-hero-copy-block {
+  max-width: 720px;
+}
+
+.hr-hero-eyebrow {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hr-hero h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+}
+
+.hr-hero-copy {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.hr-hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 220px;
+}
+
+.hr-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.hr-hero-user {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.hr-hero-user strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hr-hero-user span {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.88rem;
+}
+
+.hr-stats-grid {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.hr-stat-card {
+  background: white;
+  padding: 24px;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hr-stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+}
+
+.hr-stat-info h3 {
+  margin: 0 0 6px;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hr-stat-info p {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.hr-panel,
+.hrm-alert,
+.hr-section-card {
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.hr-panel {
+  margin-top: 28px;
+  padding: 28px;
+}
+
+.hr-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.hr-panel-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.hr-panel-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.hr-panel-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.hr-section-card {
+  padding: 32px;
+}
+
+.hr-candidate-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 1fr) 180px 180px auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.hr-filter-input-wrap {
+  position: relative;
+}
+
+.hr-filter-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.hr-filter-input,
+.hr-filter-select {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 0 14px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hr-filter-input-wrap .hr-filter-input {
+  padding-left: 42px;
+}
+
+.hr-filter-input:focus,
+.hr-filter-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.hr-filter-reset {
+  height: 46px;
+  border: none;
+  border-radius: 14px;
+  background: #e0e7ff;
+  color: #3730a3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hr-candidate-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 28px 16px !important;
+}
+
+.hr-section-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 16px;
+}
+
+.hr-section-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.hrm-alert {
+  margin-top: 24px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hrm-alert.error {
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.hrm-alert.success {
+  color: #166534;
+  background: #ecfdf5;
+}
+
+.hr-subscription-banner {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.hr-subscription-banner strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1rem;
+}
+
+.hr-subscription-banner p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.hr-subscription-banner.expired {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.hr-subscription-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 16px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hr-subscription-banner.expired .hr-subscription-btn {
+  background: #dc2626;
+}
+
+.hr-table-shell {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.hr-table-container {
+  overflow-x: auto;
+}
+
+.hr-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hr-data-table th {
+  text-align: left;
+  padding: 16px;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.hr-data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.hrm-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hrm-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 800;
+}
+
+.hrm-name {
+  font-weight: 700;
+}
+
+.hrm-email {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.hrm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.hrm-badge.verified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hrm-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hr-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hr-view-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hr-job-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hr-job-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hr-job-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hr-job-field span {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hr-job-field input,
+.hr-job-field select,
+.hr-job-field textarea {
+  width: 100%;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.hr-job-field input:focus,
+.hr-job-field select:focus,
+.hr-job-field textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.hr-job-field textarea {
+  resize: vertical;
+}
+
+.hr-job-submit {
+  align-self: flex-start;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.hr-job-submit.hr-job-submit-inline {
+  padding: 10px 14px;
+}
+
+.hr-job-action-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hr-job-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hr-job-edit-btn,
+.hr-job-cancel-btn,
+.hr-job-delete-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.hr-job-edit-btn {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.hr-job-cancel-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.hr-job-delete-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.hr-btn-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  color: #fca5a5;
+  cursor: pointer;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+  font-size: 0.98rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.hr-btn-logout:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+@media (max-width: 1100px) {
+  .hr-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-candidate-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .hr-dashboard-wrapper {
+    flex-direction: column;
+  }
+
+  .hr-sidebar {
+    position: static;
+    width: 100%;
+    border-radius: 0 0 24px 24px;
+  }
+
+  .hr-content-main {
+    margin-left: 0;
+    padding: 20px;
+  }
+
+  .hr-hero,
+  .hr-panel-header,
+  .hr-subscription-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hr-candidate-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-job-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,199 @@
+.hri-layout {
+  min-height: 100vh;
+  display: flex;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.hri-sidebar {
+  width: 260px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: linear-gradient(180deg, #172033 0%, #1e293b 100%);
+  color: #fff;
+}
+
+.hri-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hri-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #60a5fa, #4f46e5);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.hri-brand h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.hri-brand p {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.hri-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hri-nav-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.hri-nav-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.hri-nav-btn.danger {
+  color: #fca5a5;
+}
+
+.hri-main {
+  flex: 1;
+  margin-left: 260px;
+  padding: 24px;
+}
+
+.hri-inline-msg {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.hri-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  padding: 16px;
+}
+
+.hri-table-wrap {
+  overflow: auto;
+}
+
+.hri-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hri-table th,
+.hri-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.hri-table th {
+  color: #475569;
+  font-size: 0.8rem;
+  background: #f8fafc;
+}
+
+.hri-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hri-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hri-status.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hri-status.rejected,
+.hri-status.restricted {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.hri-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hri-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.hri-btn.request {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.hri-btn.contact {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hri-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .hri-layout {
+    flex-direction: column;
+  }
+
+  .hri-sidebar {
+    position: static;
+    width: 100%;
+  }
+
+  .hri-main {
+    margin-left: 0;
+    padding: 14px;
+  }
+}
+

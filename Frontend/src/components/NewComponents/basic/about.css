@@ -1,0 +1,175 @@
+/* General Page Style */
+.about-page {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+  line-height: 1.6;
+  padding: 0 2rem;
+  background-color: #f5f7fa;
+}
+
+/* Hero Section */
+.about-hero {
+  text-align: center;
+  padding: 100px 20px;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: #fff;
+  border-radius: 20px;
+  margin-bottom: 60px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.about-hero h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+}
+
+.about-hero p {
+  font-size: 1.2rem;
+  max-width: 700px;
+  margin: auto;
+}
+
+.cta-btn {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 1.1rem;
+  color: #fff;
+  background: #d72540;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+.cta-btn:hover {
+  background: #ff4757;
+  transform: scale(1.05);
+}
+
+/* Section Animation */
+.animated-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.8s ease;
+}
+
+.animated-section.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section Headings */
+.about-details h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  color: #074378;
+}
+
+.about-details h2 .icon {
+  margin-right: 10px;
+  color: #cd171a;
+}
+
+/* Card Styles */
+.features-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.card {
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 30px 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  text-align: center;
+}
+
+.card:hover {
+  transform: translateY(-15px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, #024154, #0f86bd);
+  color: #fff;
+}
+
+.card h3 {
+  margin: 15px 0;
+}
+
+.card p {
+  font-size: 1rem;
+}
+
+/* Card Icons */
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+/* Alternate Section Backgrounds */
+.section-alt {
+  background-color: #f0f4f8;
+  border-radius: 20px;
+  padding: 50px 20px;
+}
+
+.section-gradient {
+  background: linear-gradient(135deg, #4393e9, #38f9d7);
+  color: #fff;
+  border-radius: 20px;
+  padding: 50px 20px;
+}
+
+/* Lists */
+.features-list, .workflow-list {
+  list-style: none;
+  margin-top: 20px;
+  padding-left: 0;
+}
+
+.features-list li, .workflow-list li {
+  position: relative;
+  padding-left: 30px;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.features-list li::before {
+  content: "✔️";
+  position: absolute;
+  left: 0;
+}
+
+.workflow-list li::before {
+  content: "*";
+  position: absolute;
+  left: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .features-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .about-hero h1 {
+    font-size: 2.2rem;
+  }
+
+  .about-details h2 {
+    font-size: 1.6rem;
+  }
+}

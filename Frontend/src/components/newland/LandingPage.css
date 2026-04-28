@@ -1,0 +1,284 @@
+/* LandingPage.css - Premium VirtueHire Aesthetic */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800&display=swap');
+
+.vh-landing-container {
+  min-height: 100vh;
+  /* Deep, vibrant modern gradient background */
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it stays above other things if needed, or normal flow */
+}
+
+/* Abstract Interactive Background Shapes */
+.vh-landing-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.5;
+}
+
+.vh-landing-shape-1 {
+  width: 700px;
+  height: 700px;
+  background: #c084fc;
+  top: -200px;
+  left: -200px;
+  animation: float-slow 20s ease-in-out infinite alternate;
+}
+
+.vh-landing-shape-2 {
+  width: 600px;
+  height: 600px;
+  background: #38bdf8;
+  bottom: -200px;
+  right: -200px;
+  animation: float-slow 25s ease-in-out infinite alternate-reverse;
+}
+
+.vh-landing-shape-3 {
+  width: 500px;
+  height: 500px;
+  background: #818cf8;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: float-slow 30s ease-in-out infinite alternate;
+}
+
+@keyframes float-slow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, -50px) scale(1.1); }
+  100% { transform: translate(-30px, 40px) scale(0.95); }
+}
+
+.vh-landing-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  max-width: 1300px;
+  padding: 40px;
+  gap: 80px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 1024px) {
+  .vh-landing-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 60px;
+    padding: 60px 20px;
+  }
+}
+
+.vh-landing-left {
+  flex: 1.2;
+  animation: slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.vh-landing-title {
+  font-size: 5rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  line-height: 1.1;
+  background: linear-gradient(to right, #ffffff 20%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -2px;
+}
+
+@media (max-width: 768px) {
+  .vh-landing-title {
+    font-size: 3.5rem;
+  }
+}
+
+.vh-landing-subtitle {
+  font-size: 1.3rem;
+  color: #cbd5e1;
+  margin-bottom: 48px;
+  font-weight: 300;
+  max-width: 540px;
+  line-height: 1.6;
+}
+
+@media (max-width: 1024px) {
+  .vh-landing-subtitle {
+    margin: 0 auto 40px auto;
+  }
+}
+
+.vh-landing-features {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vh-landing-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 18px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  width: fit-content;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: default;
+}
+
+@media (max-width: 1024px) {
+  .vh-landing-feature-item {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 380px;
+  }
+}
+
+.vh-landing-feature-item:hover {
+  transform: translateX(10px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.vh-feature-icon-wrapper {
+  background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.vh-landing-right {
+  flex: 0.8;
+  animation: slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  width: 100%;
+  max-width: 480px;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.vh-glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 32px;
+  padding: 50px 40px;
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.vh-card-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: white;
+  letter-spacing: -1px;
+}
+
+.vh-card-subtitle {
+  color: #94a3b8;
+  margin-bottom: 40px;
+  font-size: 1.1rem;
+}
+
+.vh-role-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vh-role-btn {
+  width: 100%;
+  padding: 18px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 1.15rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.vh-role-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.vh-role-btn:hover::before {
+  transform: translateX(100%);
+}
+
+.vh-role-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.vh-role-btn:active {
+  transform: translateY(0);
+}
+
+/* Radiant Hover Colors */
+.vh-role-btn.candidate:hover {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.4) 0%, rgba(124, 58, 237, 0.4) 100%);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.2);
+}
+
+.vh-role-btn.hr:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.4) 0%, rgba(56, 189, 248, 0.4) 100%);
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 15px 30px rgba(14, 165, 233, 0.2);
+}
+
+.vh-role-btn.admin:hover {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.4) 0%, rgba(244, 63, 94, 0.4) 100%);
+  border-color: rgba(244, 114, 182, 0.5);
+  box-shadow: 0 15px 30px rgba(236, 72, 153, 0.2);
+}

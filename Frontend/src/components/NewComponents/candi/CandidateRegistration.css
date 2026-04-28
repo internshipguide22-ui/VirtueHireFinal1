@@ -1,0 +1,280 @@
+/* Global Page */
+.login-page {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  font-family: "Poppins", sans-serif;
+  overflow: hidden;
+  background: #0f0c29;
+}
+
+/* Left Panel with animated rays */
+.left-panel {
+  flex: 1;
+  background: radial-gradient(circle at top left, #0f0c29, #302b63, #24243e);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding: 30px;
+  overflow: hidden;
+}
+
+.left-panel::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(0, 240, 255, 0.1) 0deg 10deg,
+    transparent 10deg 20deg
+  );
+  animation: rotateRays 20s linear infinite;
+  z-index: 1;
+}
+
+@keyframes rotateRays {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.brand {
+  font-size: 48px;
+  font-weight: bold;
+  color: #fff;
+  z-index: 2;
+}
+
+.brand span {
+  color: #00f0ff;
+  text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
+}
+
+.tagline {
+  font-size: 20px;
+  margin-top: 20px;
+  z-index: 2;
+  opacity: 0.9;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Right Panel */
+.right-panel {
+  flex: 1;
+  background: linear-gradient(135deg, #141e30, #243b55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Registration Card */
+.login-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(0, 240, 255, 0.2);
+  border-radius: 16px;
+  padding: 40px;
+  width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+  animation: fadeIn 1s ease forwards;
+}
+
+.title {
+  font-size: 28px;
+  color: #fff;
+  margin-bottom: 15px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+/* Form Grid Layout */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px 20px; /* row-gap 25px, col-gap 20px */
+}
+
+/* Inputs & Selects */
+form input,
+form select {
+  width: 80%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+  margin-bottom: 20px;
+}
+
+form input:focus,
+form select:focus {
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+}
+
+/* Gender Radio Buttons */
+/* Gender Section Horizontal */
+.gender-group {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* space between options */
+}
+
+.gender-group label {
+  font-size: 14px;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+}
+
+.gender-group input[type="radio"] {
+  margin-right: 6px;
+  accent-color: #00f0ff;
+}
+
+
+/* Skills Section with Checkboxes */
+.skills-section {
+  text-align: left;
+}
+
+.skills-label {
+  font-size: 14px;
+  color: #ddd;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.skill-item {
+  display: inline-block;
+  margin: 5px 15px 5px 0;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.skill-item input[type="checkbox"] {
+  margin-right: 5px;
+  accent-color: #00f0ff;
+}
+
+/* Full-width fields */
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Buttons */
+.login-btn,
+.reset-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-btn {
+  background: linear-gradient(90deg, #00f0ff, #0077ff);
+  color: #000;
+  padding: 14px;
+  grid-column: 1 / -1;
+  margin-bottom: 10px;
+}
+
+.login-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px #00f0ff;
+}
+
+.reset-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 14px;
+  grid-column: 1 / -1;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Link */
+.forgot {
+  font-size: 14px;
+  margin-top: 20px;
+  color: #ccc;
+}
+.forgot a {
+  color: #00f0ff;
+  text-decoration: none;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 25px;
+  border-radius: 12px;
+  font-weight: bold;
+  color: #fff;
+  animation: slideUp 0.6s ease;
+  z-index: 100;
+}
+
+.toast.success {
+  background: #2ecc71;
+  box-shadow: 0 0 15px #2ecc71;
+}
+
+.toast.error {
+  background: #e74c3c;
+  box-shadow: 0 0 15px #e74c3c;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar for card */
+.login-card::-webkit-scrollbar {
+  width: 6px;
+}
+.login-card::-webkit-scrollbar-thumb {
+  background-color: #00f0ff;
+  border-radius: 3px;
+}
+.error-text {
+  color: red;
+  font-size: 12px;
+  margin-top: -5px;
+  margin-bottom: 10px;
+}
