@@ -96,6 +96,20 @@ public class ResumeService {
                 .orElseThrow(() -> new RuntimeException("Resume not found"));
         Path filePath = resumeDir.resolve(resumeDocument.getPdfPath()).normalize();
         if (!Files.exists(filePath)) {
+            try {
+                if (!Files.exists(resumeDir)) {
+                    Files.createDirectories(resumeDir);
+                }
+                generatePdf(
+                        readResumeData(resumeDocument.getResumeDataJson()),
+                        firstNonBlank(resumeDocument.getTitle(), buildDefaultTitle(readResumeData(resumeDocument.getResumeDataJson()))),
+                        firstNonBlank(resumeDocument.getTemplateId(), "classic-professional"),
+                        filePath);
+            } catch (IOException ex) {
+                throw new RuntimeException("Resume PDF not found", ex);
+            }
+        }
+        if (!Files.exists(filePath)) {
             throw new RuntimeException("Resume PDF not found");
         }
         return filePath;

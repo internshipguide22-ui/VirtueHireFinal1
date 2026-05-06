@@ -21,7 +21,7 @@ import api from "../../services/api";
 import "./AdminDashboard.css";
 import "./CandidateDetails.css";
 import { useAppDialog } from "../common/AppDialog";
-import { getCandidateFileUrl, getResumeFileName } from "../Candidate/profile/profileUtils";
+import { getApiUrl, getCandidateFileUrl, getResumeFileName } from "../Candidate/profile/profileUtils";
 
 const EMPTY_FORM = {
   fullName: "",
@@ -227,6 +227,7 @@ export default function CandidateDetails() {
 
   const skills = useMemo(() => splitSkills(candidate?.skills || ""), [candidate?.skills]);
   const resumeUrl = getCandidateFileUrl(candidate?.resumePath);
+  const resumeDownloadUrl = getApiUrl(`/admin/download/resume/${id}`);
   const resumeName = getResumeFileName(candidate?.resumePath);
 
   if (loading) {
@@ -615,7 +616,7 @@ export default function CandidateDetails() {
                         <FileText size={16} /> View Resume
                       </a>
                       <a
-                        href={resumeUrl}
+                        href={resumeDownloadUrl}
                         download={resumeName || "resume"}
                         className="adm-btn-secondary"
                       >

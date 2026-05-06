@@ -107,7 +107,7 @@ public class ResumeRestController {
     }
 
     // ─── Admin endpoint: serve file by filename ───────────────────────────────
-    @GetMapping("/admin/file/{filename}")
+    @GetMapping("/admin/file/{filename:.+}")
     public ResponseEntity<Resource> adminViewFile(
             @PathVariable String filename,
             @RequestParam(defaultValue = "inline") String disposition,

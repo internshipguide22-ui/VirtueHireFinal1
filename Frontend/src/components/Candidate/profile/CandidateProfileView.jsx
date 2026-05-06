@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Download,
+  Eye,
   FileText,
   GraduationCap,
   Mail,
@@ -12,12 +13,12 @@ import {
   Phone,
   UserRound,
 } from "lucide-react";
-import { fetchCandidateProfile } from "./profileApi";
+import { fetchCandidateProfile, fetchOwnResumeBlob } from "./profileApi";
 import {
   DEFAULT_PROFILE_IMAGE,
   formatDisplayValue,
-  getApiUrl,
   getCandidateFileUrl,
+  getApiUrl,
   getResumeFileName,
   getSkillList,
   isPdfResume,
@@ -30,6 +31,8 @@ export default function CandidateProfileView() {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resumePreviewUrl, setResumePreviewUrl] = useState("");
+  const [resumeBusy, setResumeBusy] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -57,6 +60,33 @@ export default function CandidateProfileView() {
     loadProfile();
   }, [navigate]);
 
+  useEffect(() => {
+    let objectUrl = "";
+
+    const loadPreview = async () => {
+      if (!candidate?.resumePath || !isPdfResume(candidate.resumePath)) {
+        setResumePreviewUrl("");
+        return;
+      }
+
+      try {
+        const blob = await fetchOwnResumeBlob("inline");
+        objectUrl = URL.createObjectURL(blob);
+        setResumePreviewUrl(objectUrl);
+      } catch (err) {
+        setResumePreviewUrl("");
+      }
+    };
+
+    loadPreview();
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [candidate]);
+
   if (loading) {
     return (
       <div className="candidate-profile-shell">
@@ -77,12 +107,54 @@ export default function CandidateProfileView() {
 
   const profileImage =
     getCandidateFileUrl(candidate.profilePic) || DEFAULT_PROFILE_IMAGE;
-  const resumeUrl =
-    getApiUrl(candidate.resumeUrl) || getCandidateFileUrl(candidate.resumePath);
-  const resumeDownloadUrl =
-    getApiUrl(candidate.resumeDownloadUrl) || resumeUrl;
   const resumeName = getResumeFileName(candidate.resumePath);
   const skills = getSkillList(candidate.skills);
+  const resumeViewUrl = getApiUrl(candidate.resumeUrl);
+
+  const handleViewResume = async () => {
+    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+    setResumeBusy("view");
+    try {
+      const blob = await fetchOwnResumeBlob("inline");
+      const objectUrl = URL.createObjectURL(blob);
+      if (previewWindow) {
+        previewWindow.location.href = objectUrl;
+      } else if (resumeViewUrl) {
+        window.open(resumeViewUrl, "_blank", "noopener,noreferrer");
+        URL.revokeObjectURL(objectUrl);
+        return;
+      } else {
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
+      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+      if (previewWindow) {
+        previewWindow.close();
+      }
+      setError("Unable to open your resume right now. Please re-upload it once and try again.");
+    } finally {
+      setResumeBusy("");
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    setResumeBusy("download");
+    try {
+      const blob = await fetchOwnResumeBlob("attachment");
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = resumeName || "resume";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      setError("Unable to download your resume right now. Please re-upload it once and try again.");
+    } finally {
+      setResumeBusy("");
+    }
+  };
 
   const detailItems = [
     {
@@ -199,24 +271,24 @@ export default function CandidateProfileView() {
               <strong>{resumeName || "No resume uploaded"}</strong>
             </div>
 
-            {resumeUrl ? (
+            {candidate.resumePath ? (
               <div className="candidate-profile-inline-actions">
-                <a
-                  href={resumeUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={handleViewResume}
                   className="candidate-profile-link-btn secondary"
                 >
-                  View Resume
-                </a>
-                <a
-                  href={resumeDownloadUrl}
-                  download={resumeName}
+                  <Eye size={16} />
+                  {resumeBusy === "view" ? "Opening..." : "View Resume"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadResume}
                   className="candidate-profile-link-btn secondary"
                 >
                   <Download size={16} />
-                  Download
-                </a>
+                  {resumeBusy === "download" ? "Downloading..." : "Download"}
+                </button>
               </div>
             ) : (
               <p className="candidate-profile-muted">
@@ -267,7 +339,7 @@ export default function CandidateProfileView() {
           </div>
         </section>
 
-        {resumeUrl && (
+        {resumePreviewUrl && (
           <section className="candidate-profile-section">
             <div className="candidate-profile-section-header">
               <h3>Resume Preview</h3>
@@ -275,7 +347,7 @@ export default function CandidateProfileView() {
 
             {isPdfResume(candidate.resumePath) ? (
               <iframe
-                src={resumeUrl}
+                src={resumePreviewUrl}
                 title="Candidate resume preview"
                 className="candidate-profile-resume-preview"
               />

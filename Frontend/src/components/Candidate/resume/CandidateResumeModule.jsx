@@ -20,7 +20,7 @@ import {
   updateResume,
 } from "./resumeApi";
 import { ResumeTemplateRender, ResumeTemplateThumbnail } from "./ResumeTemplateRender";
-import { updateCandidateProfile } from "../profile/profileApi";
+import { fetchOwnResumeBlob, updateCandidateProfile } from "../profile/profileApi";
 import { getApiUrl, getCandidateFileUrl, getResumeFileName, isPdfResume } from "../profile/profileUtils";
 import "./CandidateResumeModule.css";
 
@@ -218,6 +218,7 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
   const [atsResult, setAtsResult] = useState(null);
   const [profileResumeFile, setProfileResumeFile] = useState(null);
   const [uploadingProfileResume, setUploadingProfileResume] = useState(false);
+  const [profileResumePreviewUrl, setProfileResumePreviewUrl] = useState("");
 
   // FIX: Track per-resume loading states so buttons show feedback during blob fetch.
   const [pdfLoading, setPdfLoading] = useState({});
@@ -250,6 +251,33 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
         location: current.personalInfo.location || [candidate?.city, candidate?.state].filter(Boolean).join(", "),
       },
     }));
+  }, [candidate]);
+
+  useEffect(() => {
+    let objectUrl = "";
+
+    const loadProfileResumePreview = async () => {
+      if (!candidate?.resumePath || !isPdfResume(candidate.resumePath)) {
+        setProfileResumePreviewUrl("");
+        return;
+      }
+
+      try {
+        const blob = await fetchOwnResumeBlob("inline");
+        objectUrl = URL.createObjectURL(blob);
+        setProfileResumePreviewUrl(objectUrl);
+      } catch (err) {
+        setProfileResumePreviewUrl("");
+      }
+    };
+
+    loadProfileResumePreview();
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [candidate]);
 
   const template = useMemo(
@@ -438,9 +466,52 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
 
   const profileResumeUrl =
     getApiUrl(candidate?.resumeUrl) || getCandidateFileUrl(candidate?.resumePath);
-  const profileResumeDownloadUrl =
-    getApiUrl(candidate?.resumeDownloadUrl) || profileResumeUrl;
   const profileResumeName = getResumeFileName(candidate?.resumePath);
+
+  const handleViewProfileResume = async () => {
+    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+    setPdfLoading((prev) => ({ ...prev, profileView: true }));
+    try {
+      const blob = await fetchOwnResumeBlob("inline");
+      const objectUrl = URL.createObjectURL(blob);
+      if (previewWindow) {
+        previewWindow.location.href = objectUrl;
+      } else if (profileResumeUrl) {
+        window.open(profileResumeUrl, "_blank", "noopener,noreferrer");
+        URL.revokeObjectURL(objectUrl);
+        return;
+      } else {
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
+      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+      if (previewWindow) {
+        previewWindow.close();
+      }
+      setError("Unable to open your uploaded resume. Please re-upload it once and try again.");
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, profileView: false }));
+    }
+  };
+
+  const handleDownloadProfileResume = async () => {
+    setPdfLoading((prev) => ({ ...prev, profileDownload: true }));
+    try {
+      const blob = await fetchOwnResumeBlob("attachment");
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = profileResumeName || "resume";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      setError("Unable to download your uploaded resume. Please re-upload it once and try again.");
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, profileDownload: false }));
+    }
+  };
 
   const handleProfileResumeUpload = async () => {
     if (!profileResumeFile || !candidate) {
@@ -509,14 +580,14 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
             <div className="resume-card-actions">
               {profileResumeUrl ? (
                 <>
-                  <a href={profileResumeUrl} target="_blank" rel="noreferrer" className="resume-action-btn">
+                  <button type="button" onClick={handleViewProfileResume} className="resume-action-btn">
                     <Eye size={15} />
-                    View Resume
-                  </a>
-                  <a href={profileResumeDownloadUrl} download={profileResumeName} className="resume-action-btn">
+                    {pdfLoading.profileView ? "Opening..." : "View Resume"}
+                  </button>
+                  <button type="button" onClick={handleDownloadProfileResume} className="resume-action-btn">
                     <Download size={15} />
-                    Download Resume
-                  </a>
+                    {pdfLoading.profileDownload ? "Downloading..." : "Download Resume"}
+                  </button>
                 </>
               ) : null}
             </div>
@@ -548,11 +619,16 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
           </div>
         </div>
 
-        {profileResumeUrl && isPdfResume(candidate?.resumePath) ? (
+        {profileResumePreviewUrl && isPdfResume(candidate?.resumePath) ? (
           <div className="resume-embedded-preview">
-            <iframe src={profileResumeUrl} title="Uploaded profile resume preview" className="resume-embedded-frame" />
+            <iframe
+              src={profileResumePreviewUrl}
+              title="Uploaded profile resume preview"
+              className="resume-embedded-frame"
+            />
           </div>
         ) : null}
+
       </section>
 
       <section className="candidate-panel">

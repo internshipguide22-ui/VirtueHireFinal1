@@ -224,9 +224,17 @@ const AssessmentLevel = () => {
         const candData = JSON.parse(localStorage.getItem("candidate") || "{}");
         setCandidate(candData);
 
-        // ✅ Use encodedSubject for API call
-        const res = await api.get(`/assessment/status/${encodedSubject}`, {
+        const res = await api.get("/assessment/status", {
+          params: {
+            name: subject,
+            t: Date.now(),
+          },
           withCredentials: true,
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
         });
 
         if (res.data?.error) {

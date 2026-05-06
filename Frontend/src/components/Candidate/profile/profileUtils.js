@@ -45,7 +45,7 @@ export function normalizeCandidate(candidate = {}) {
 
 export function getCandidateFileUrl(filename, disposition = "inline") {
   if (!filename) return "";
-  return `${API_BASE_URL}/candidates/resumes/admin/file/${encodeURIComponent(filename)}?disposition=${disposition}`;
+  return `${API_BASE_URL}/candidates/file/${encodeURIComponent(filename)}?disposition=${disposition}`;
 }
 
 export function getApiUrl(pathOrUrl) {

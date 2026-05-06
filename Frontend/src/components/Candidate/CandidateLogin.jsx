@@ -343,6 +343,9 @@ function CandidateLogin() {
 
       const { user } = res.data;
       const loggedInUser = { ...user, role: "Candidate" };
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+      }
       localStorage.setItem("user", JSON.stringify(loggedInUser));
       localStorage.setItem("role", "Candidate");
 

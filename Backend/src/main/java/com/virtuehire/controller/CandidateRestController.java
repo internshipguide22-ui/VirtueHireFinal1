@@ -616,8 +616,12 @@ public class CandidateRestController {
             return ResponseEntity.notFound().build();
         }
 
-        Path path = uploadDir.resolve(normalizedStoredFileName).normalize();
-        if (!path.startsWith(uploadDir)) {
+        Path path = resolveStoredFilePath(normalizedStoredFileName);
+        if (path == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!path.startsWith(uploadDir) && !path.startsWith(getAlternateUploadDir())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -639,6 +643,81 @@ public class CandidateRestController {
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .body(resource);
+    }
+
+    private Path resolveStoredFilePath(String storedFileName) {
+        Path primaryPath = uploadDir.resolve(storedFileName).normalize();
+        if (Files.exists(primaryPath) && Files.isReadable(primaryPath)) {
+            return primaryPath;
+        }
+
+        Path alternateUploadDir = getAlternateUploadDir();
+        if (alternateUploadDir != null) {
+            Path alternatePath = alternateUploadDir.resolve(storedFileName).normalize();
+            if (Files.exists(alternatePath) && Files.isReadable(alternatePath)) {
+                return alternatePath;
+            }
+        }
+
+        Path fuzzyMatch = findMatchingStoredFile(storedFileName);
+        return fuzzyMatch != null ? fuzzyMatch : primaryPath;
+    }
+
+    private Path findMatchingStoredFile(String storedFileName) {
+        String normalizedRequestedName = extractFileName(storedFileName);
+        String requestedOriginalName = getOriginalFileName(normalizedRequestedName);
+
+        List<Path> candidateDirs = new ArrayList<>();
+        candidateDirs.add(uploadDir);
+        Path alternateUploadDir = getAlternateUploadDir();
+        if (alternateUploadDir != null && !alternateUploadDir.equals(uploadDir)) {
+            candidateDirs.add(alternateUploadDir);
+        }
+
+        for (Path dir : candidateDirs) {
+            if (dir == null || !Files.isDirectory(dir)) {
+                continue;
+            }
+
+            try (var stream = Files.list(dir)) {
+                Optional<Path> exactOriginalNameMatch = stream
+                        .filter(Files::isRegularFile)
+                        .filter(path -> {
+                            String candidateName = extractFileName(path.getFileName().toString());
+                            String candidateOriginalName = getOriginalFileName(candidateName);
+                            return candidateName.equalsIgnoreCase(normalizedRequestedName)
+                                    || candidateOriginalName.equalsIgnoreCase(normalizedRequestedName)
+                                    || candidateOriginalName.equalsIgnoreCase(requestedOriginalName);
+                        })
+                        .findFirst();
+
+                if (exactOriginalNameMatch.isPresent()) {
+                    return exactOriginalNameMatch.get().normalize();
+                }
+            } catch (IOException ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private Path getAlternateUploadDir() {
+        Path current = uploadDir.toAbsolutePath().normalize();
+        Path parent = current.getParent();
+        if (parent == null) {
+            return null;
+        }
+
+        Path currentName = current.getFileName();
+        Path parentName = parent.getFileName();
+
+        if (currentName != null && "uploads".equalsIgnoreCase(currentName.toString())
+                && parentName != null && "Backend".equalsIgnoreCase(parentName.toString())
+                && parent.getParent() != null) {
+            return parent.getParent().resolve("uploads").normalize();
+        }
+
+        return current.resolveSibling("Backend").resolve("uploads").normalize();
     }
 
     private String extractFileName(String fileName) {

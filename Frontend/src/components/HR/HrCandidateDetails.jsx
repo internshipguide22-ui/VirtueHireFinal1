@@ -19,6 +19,7 @@ import { ensureHrSubscription } from "../../utils/hrSubscription";
 import {
   DEFAULT_PROFILE_IMAGE,
   getCandidateFileUrl,
+  getApiUrl,
   getResumeFileName,
 } from "../Candidate/profile/profileUtils";
 
@@ -141,7 +142,10 @@ function HrCandidateDetails() {
     ? getCandidateFileUrl(candidate?.profilePic)
     : DEFAULT_PROFILE_IMAGE;
   const resumeUrl = canAccessResume
-    ? getCandidateFileUrl(candidate?.resumePath)
+    ? getApiUrl(`/hrs/candidates/${id}/resume?disposition=inline`)
+    : "";
+  const resumeDownloadUrl = canAccessResume
+    ? getApiUrl(`/hrs/candidates/${id}/resume?disposition=attachment`)
     : "";
 
   if (loading) {
@@ -293,7 +297,7 @@ function HrCandidateDetails() {
                   </a>
                   <a
                     className="hcd-action-btn hcd-action-btn-primary"
-                    href={resumeUrl}
+                    href={resumeDownloadUrl}
                     download={resumeName || "resume"}
                   >
                     <Download size={16} /> Download Resume

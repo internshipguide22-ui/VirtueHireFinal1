@@ -6,6 +6,14 @@ export async function fetchCandidateProfile() {
   return response.data?.candidate;
 }
 
+export async function fetchOwnResumeBlob(disposition = "inline") {
+  const response = await api.get(
+    `/candidates/me/resume?disposition=${encodeURIComponent(disposition)}`,
+    { withCredentials: true, responseType: "blob" },
+  );
+  return response.data;
+}
+
 export async function updateCandidateProfile(formValues, files = {}) {
   const payload = new FormData();
 
