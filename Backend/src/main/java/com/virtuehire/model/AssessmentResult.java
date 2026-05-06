@@ -33,6 +33,9 @@ public class AssessmentResult implements Serializable {
     @Column(name = "answers_json", columnDefinition = "LONGTEXT")
     private String answersJson;
 
+    @Column(nullable = false)
+    private boolean offlineMode = false;
+
     private LocalDateTime attemptedAt = LocalDateTime.now();
 
     // ✅ New field to track failed lock time
@@ -112,5 +115,13 @@ public class AssessmentResult implements Serializable {
 
     public void setLockedAt(LocalDateTime lockedAt) {
         this.lockedAt = lockedAt;
+    }
+
+    public boolean isOfflineMode() {
+        return offlineMode;
+    }
+
+    public void setOfflineMode(boolean offlineMode) {
+        this.offlineMode = offlineMode;
     }
 }

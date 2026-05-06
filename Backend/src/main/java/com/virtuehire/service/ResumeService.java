@@ -1,3 +1,5 @@
+// PATH: Backend/src/main/java/com/virtuehire/service/ResumeService.java
+
 package com.virtuehire.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -34,6 +36,7 @@ public class ResumeService {
     private final ResumeDocumentRepository resumeDocumentRepository;
     private final ObjectMapper objectMapper;
     private final Path resumeDir;
+    private final Path uploadDir; // ← ADDED: root upload dir for candidate-uploaded files
 
     public ResumeService(
             ResumeDocumentRepository resumeDocumentRepository,
@@ -41,7 +44,8 @@ public class ResumeService {
             @Value("${file.upload-dir}") String uploadDirPath) {
         this.resumeDocumentRepository = resumeDocumentRepository;
         this.objectMapper = objectMapper;
-        this.resumeDir = Paths.get(uploadDirPath).toAbsolutePath().normalize().resolve("generated-resumes");
+        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize(); // ← ADDED
+        this.resumeDir = this.uploadDir.resolve("generated-resumes"); // ← CHANGED to use uploadDir
     }
 
     public List<Map<String, Object>> listCandidateResumes(Long candidateId) {
@@ -101,6 +105,11 @@ public class ResumeService {
         ResumeDocument resumeDocument = resumeDocumentRepository.findByIdAndCandidateId(resumeId, candidateId)
                 .orElseThrow(() -> new RuntimeException("Resume not found"));
         return resumeDocument.getPdfPath();
+    }
+
+    // ── ADDED: resolves a candidate-uploaded file (resumePath) by filename ──
+    public Path resolveFileByName(String filename) {
+        return uploadDir.resolve(filename).normalize();
     }
 
     private Map<String, Object> saveResume(ResumeDocument resumeDocument, Map<String, Object> payload, boolean creating)

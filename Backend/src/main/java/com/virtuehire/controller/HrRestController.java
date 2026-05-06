@@ -9,6 +9,8 @@ import com.virtuehire.service.HrService;
 import com.virtuehire.service.QuestionService;
 import com.virtuehire.service.AssessmentResultService;
 import com.virtuehire.service.AssessmentService;
+import com.virtuehire.service.HiringWorkflowService;
+import com.virtuehire.service.TestAllocationService;
 import com.virtuehire.model.Assessment;
 import com.virtuehire.model.AssessmentSection;
 import com.virtuehire.repository.AssessmentSectionRepository;
@@ -43,6 +45,8 @@ public class HrRestController {
     private final QuestionService questionService;
     private final AssessmentResultService assessmentResultService;
     private final AssessmentService assessmentService;
+    private final HiringWorkflowService hiringWorkflowService;
+    private final TestAllocationService testAllocationService;
     private final AssessmentSectionRepository assessmentSectionRepository;
     private final Path uploadDir;
 
@@ -50,6 +54,8 @@ public class HrRestController {
             CandidateAccessRequestService candidateAccessRequestService,
             QuestionService questionService, AssessmentResultService assessmentResultService,
             AssessmentService assessmentService,
+            HiringWorkflowService hiringWorkflowService,
+            TestAllocationService testAllocationService,
             AssessmentSectionRepository assessmentSectionRepository,
             @Value("${file.upload-dir}") String uploadDirPath) {
         this.hrService = hrService;
@@ -58,6 +64,8 @@ public class HrRestController {
         this.questionService = questionService;
         this.assessmentResultService = assessmentResultService;
         this.assessmentService = assessmentService;
+        this.hiringWorkflowService = hiringWorkflowService;
+        this.testAllocationService = testAllocationService;
         this.assessmentSectionRepository = assessmentSectionRepository;
         this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize();
     }
@@ -221,6 +229,7 @@ public class HrRestController {
         return ResponseEntity.ok(Map.of(
                 "candidate", candidate,
                 "detailedResults", enrichedResults,
+                "statusSummary", assessmentResultService.getCandidateStatusSummary(candidateId),
                 "canView", true,
                 "hasAccess", true));
     }
@@ -243,6 +252,7 @@ public class HrRestController {
         boolean hasAccess = hrService.isAccessAllowed(hr);
         return ResponseEntity.ok(Map.of(
                 "candidate", toHrCandidateSummary(candidate, hasAccess),
+                "statusSummary", assessmentResultService.getCandidateStatusSummary(candidateId),
                 "hasAccess", hasAccess,
                 "trialExpired", !hasAccess));
     }
@@ -492,7 +502,10 @@ public class HrRestController {
             }
 
             Map<String, Object> sectionData = sectionsMap.get(level);
-            sectionData.put("availableQuestions", (int) sectionData.get("availableQuestions") + 1);
+            // FIX: Safe type casting for availableQuestions
+            Object countObj = sectionData.get("availableQuestions");
+            int currentCount = countObj != null ? ((Number) countObj).intValue() : 0;
+            sectionData.put("availableQuestions", currentCount + 1);
         }
 
         List<Map<String, Object>> sections = new ArrayList<>(sectionsMap.values());
@@ -651,6 +664,170 @@ public class HrRestController {
         }
     }
 
+    // ==================== HIRING WORKFLOW ENDPOINTS ====================
+
+    // --------- GET AVAILABLE TESTS FOR ASSIGNMENT ---------
+    @GetMapping("/available-tests")
+    public ResponseEntity<?> getAvailableTests(HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            List<Map<String, Object>> tests = testAllocationService.getAvailableTests();
+            return ResponseEntity.ok(Map.of("tests", tests));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch available tests"));
+        }
+    }
+
+    // --------- ASSIGN TEST TO CANDIDATE ---------
+    @PostMapping("/assign-test")
+    public ResponseEntity<?> assignTestToCandidate(
+            @RequestBody Map<String, Object> request,
+            HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            // FIX: Add null checks before parsing
+            Object candidateIdObj = request.get("candidateId");
+            Object testNameObj = request.get("testName");
+            
+            if (candidateIdObj == null || testNameObj == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "candidateId and testName are required"));
+            }
+            
+            Long candidateId = Long.parseLong(candidateIdObj.toString());
+            String testName = testNameObj.toString();
+
+            // Prevent duplicate assignments
+            if (testAllocationService.getAssignedTestsForCandidate(candidateId).stream()
+                    .anyMatch(m -> m.getTestName().equalsIgnoreCase(testName))) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Test already assigned to this candidate"));
+            }
+
+            var mapping = testAllocationService.assignTestToCandidate(candidateId, testName, hr.getId());
+            return ResponseEntity.ok(Map.of(
+                    "message", "Test assigned successfully",
+                    "testName", testName,
+                    "candidateId", candidateId,
+                    "mappingId", mapping.getId()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to assign test: " + e.getMessage()));
+        }
+    }
+
+    // --------- GET TESTS ASSIGNED TO CANDIDATE ---------
+    @GetMapping("/candidates/{candidateId}/assigned-tests")
+    public ResponseEntity<?> getAssignedTests(@PathVariable Long candidateId, HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            var mappings = hiringWorkflowService.getAssignedTestsForCandidate(candidateId);
+            return ResponseEntity.ok(Map.of(
+                    "candidateId", candidateId,
+                    "assignedTests", mappings));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch assigned tests"));
+        }
+    }
+
+    // --------- APPROVE CANDIDATE ---------
+    @PostMapping("/approve-candidate")
+    public ResponseEntity<?> approveCandidate(
+            @RequestBody Map<String, Object> request,
+            HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            // FIX: Add null check before parsing
+            Object candidateIdObj = request.get("candidateId");
+            if (candidateIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "candidateId is required"));
+            }
+            
+            Long candidateId = Long.parseLong(candidateIdObj.toString());
+            String feedback = request.getOrDefault("feedback", "Approved").toString();
+
+            var approved = hiringWorkflowService.approveCandidate(candidateId, feedback);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Candidate approved successfully",
+                    "candidateId", candidateId,
+                    "status", approved.getApplicationStatus().toString(),
+                    "feedback", approved.getHrFeedback()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to approve candidate"));
+        }
+    }
+
+    // --------- REJECT CANDIDATE ---------
+    @PostMapping("/reject-candidate")
+    public ResponseEntity<?> rejectCandidate(
+            @RequestBody Map<String, Object> request,
+            HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            // FIX: Add null check before parsing
+            Object candidateIdObj = request.get("candidateId");
+            if (candidateIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "candidateId is required"));
+            }
+            
+            Long candidateId = Long.parseLong(candidateIdObj.toString());
+            String feedback = request.getOrDefault("feedback", "Rejected").toString();
+
+            var rejected = hiringWorkflowService.rejectCandidate(candidateId, feedback);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Candidate rejected successfully",
+                    "candidateId", candidateId,
+                    "status", rejected.getApplicationStatus().toString(),
+                    "feedback", rejected.getHrFeedback()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to reject candidate"));
+        }
+    }
+
+    // --------- GET CANDIDATES FOR HR ACTION ---------
+    @GetMapping("/candidates-for-action")
+    public ResponseEntity<?> getCandidatesForAction(HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            var candidates = hiringWorkflowService.getCandidatesForHrAction();
+            return ResponseEntity.ok(Map.of("candidates", candidates));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch candidates"));
+        }
+    }
+
+    // --------- GET CANDIDATE STATUS & FEEDBACK ---------
+    @GetMapping("/candidates/{candidateId}/status-feedback")
+    public ResponseEntity<?> getCandidateStatusFeedback(@PathVariable Long candidateId, HttpSession session) {
+        Hr hr = (Hr) session.getAttribute("hr");
+        if (hr == null)
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+
+        try {
+            var feedback = hiringWorkflowService.getCandidateFeedback(candidateId);
+            return ResponseEntity.ok(feedback != null ? feedback : Map.of("error", "Candidate not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch candidate feedback"));
+        }
+    }
+
     // ------------------ PRIVATE HELPERS ------------------
 
     private Hr refreshHr(Hr hr, HttpSession session) {
@@ -669,6 +846,9 @@ public class HrRestController {
                 : candidate.getExperienceLevel() != null && !candidate.getExperienceLevel().isBlank()
                         ? candidate.getExperienceLevel()
                         : "Candidate");
+        summary.put("selectionStatus", candidate.getSelectionStatus() != null && !candidate.getSelectionStatus().isBlank()
+                ? candidate.getSelectionStatus()
+                : "Under Review");
         summary.put("experience", candidate.getExperience() != null ? candidate.getExperience() : 0);
         summary.put("hasAccess", hasAccess);
         return summary;

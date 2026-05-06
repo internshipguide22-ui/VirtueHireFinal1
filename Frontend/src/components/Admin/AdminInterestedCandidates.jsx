@@ -6,7 +6,7 @@ import {
   getContactAccessRequests,
   reviewContactAccessRequest,
   subscribeContactAccessRequests,
-  subscribeJobs
+  subscribeJobs,
 } from "../../utils/jobsStore";
 import "../Jobs/JobsModule.css";
 import "./AdminInterestedCandidates.css";
@@ -17,7 +17,9 @@ export default function AdminInterestedCandidates() {
 
   useEffect(() => {
     setInterestedCandidates(getAllInterestedCandidates());
-    const unsubscribeJobs = subscribeJobs(() => setInterestedCandidates(getAllInterestedCandidates()));
+    const unsubscribeJobs = subscribeJobs(() =>
+      setInterestedCandidates(getAllInterestedCandidates()),
+    );
     setRequests(getContactAccessRequests());
     const unsubscribeRequests = subscribeContactAccessRequests(setRequests);
 
@@ -28,8 +30,14 @@ export default function AdminInterestedCandidates() {
   }, []);
 
   const pendingRequests = useMemo(
-    () => requests.filter((request) => request.status === "PENDING" || request.status === "APPROVED" || request.status === "REJECTED"),
-    [requests]
+    () =>
+      requests.filter(
+        (request) =>
+          request.status === "PENDING" ||
+          request.status === "APPROVED" ||
+          request.status === "REJECTED",
+      ),
+    [requests],
   );
 
   const handleReview = (requestId, status) => {
@@ -37,14 +45,16 @@ export default function AdminInterestedCandidates() {
   };
 
   return (
-    <AdminLayout
-      hidePageHeader
-    >
+    <AdminLayout hidePageHeader>
       <div className="aic-stack">
         <section className="aic-card">
-          <span className="jobs-summary-badge">{interestedCandidates.length} Interested Entries</span>
+          <span className="jobs-summary-badge">
+            {interestedCandidates.length} Interested Entries
+          </span>
           {interestedCandidates.length === 0 ? (
-            <div className="jobs-empty-state">No interested candidates yet.</div>
+            <div className="jobs-empty-state">
+              No interested candidates yet.
+            </div>
           ) : (
             <div className="aic-table-wrap">
               <table className="aic-table">
@@ -76,7 +86,9 @@ export default function AdminInterestedCandidates() {
         </section>
 
         <section className="aic-card">
-          <span className="jobs-summary-badge">{pendingRequests.length} Contact Access Requests</span>
+          <span className="jobs-summary-badge">
+            {pendingRequests.length} Contact Access Requests
+          </span>
           {pendingRequests.length === 0 ? (
             <div className="jobs-empty-state">No access requests yet.</div>
           ) : (
@@ -100,14 +112,22 @@ export default function AdminInterestedCandidates() {
                       </td>
                       <td>
                         <div className="aic-main">{request.candidateName}</div>
-                        <div className="aic-sub">{request.candidateExperience ?? 0} years</div>
+                        <div className="aic-sub">
+                          {request.candidateExperience ?? 0} years
+                        </div>
                       </td>
                       <td>{request.jobTitle || "N/A"}</td>
                       <td>
-                        <span className={`aic-status ${request.status.toLowerCase()}`}>
-                          {request.status === "APPROVED" ? <CheckCircle2 size={14} /> :
-                            request.status === "PENDING" ? <Clock3 size={14} /> :
-                              <XCircle size={14} />}
+                        <span
+                          className={`aic-status ${request.status.toLowerCase()}`}
+                        >
+                          {request.status === "APPROVED" ? (
+                            <CheckCircle2 size={14} />
+                          ) : request.status === "PENDING" ? (
+                            <Clock3 size={14} />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
                           {request.status}
                         </span>
                       </td>

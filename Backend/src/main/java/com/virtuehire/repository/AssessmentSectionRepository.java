@@ -11,8 +11,8 @@ import java.util.Optional;
 @Repository
 public interface AssessmentSectionRepository extends JpaRepository<AssessmentSection, Long> {
     List<AssessmentSection> findByAssessmentIdOrderBySectionNumberAsc(Long assessmentId);
+    List<AssessmentSection> findByAssessment_AssessmentNameIgnoreCase(String assessmentName);
 
     @Query("SELECT s FROM AssessmentSection s WHERE s.assessment.assessmentName = :assessmentName AND s.sectionNumber = :sectionNumber")
     Optional<AssessmentSection> findByAssessmentNameAndSectionNumber(String assessmentName, int sectionNumber);
 }
-

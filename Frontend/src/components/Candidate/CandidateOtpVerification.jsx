@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, ShieldCheck } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  ShieldCheck,
+} from "lucide-react";
 import api from "../../services/api";
 import "../VerifyEmail.css";
 
@@ -15,7 +21,10 @@ export default function CandidateOtpVerification() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const emailFromQuery = params.get("email") || localStorage.getItem("pendingVerificationEmail") || "";
+    const emailFromQuery =
+      params.get("email") ||
+      localStorage.getItem("pendingVerificationEmail") ||
+      "";
     setEmail(emailFromQuery);
   }, [location.search]);
 
@@ -23,7 +32,10 @@ export default function CandidateOtpVerification() {
     event.preventDefault();
 
     if (!email) {
-      setStatus({ type: "error", msg: "Missing candidate email. Please register again." });
+      setStatus({
+        type: "error",
+        msg: "Missing candidate email. Please register again.",
+      });
       return;
     }
 
@@ -44,7 +56,9 @@ export default function CandidateOtpVerification() {
       localStorage.removeItem("pendingVerificationEmail");
       setStatus({
         type: "success",
-        msg: response.data.message || "Email verified successfully. You can now log in.",
+        msg:
+          response.data.message ||
+          "Email verified successfully. You can now log in.",
       });
 
       setTimeout(() => {
@@ -53,7 +67,9 @@ export default function CandidateOtpVerification() {
     } catch (error) {
       setStatus({
         type: "error",
-        msg: error.response?.data?.error || "OTP verification failed. Please try again.",
+        msg:
+          error.response?.data?.error ||
+          "OTP verification failed. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -62,7 +78,10 @@ export default function CandidateOtpVerification() {
 
   const handleResendOtp = async () => {
     if (!email) {
-      setStatus({ type: "error", msg: "Missing candidate email. Please register again." });
+      setStatus({
+        type: "error",
+        msg: "Missing candidate email. Please register again.",
+      });
       return;
     }
 
@@ -78,7 +97,9 @@ export default function CandidateOtpVerification() {
     } catch (error) {
       setStatus({
         type: "error",
-        msg: error.response?.data?.error || "Failed to resend OTP. Please try again.",
+        msg:
+          error.response?.data?.error ||
+          "Failed to resend OTP. Please try again.",
       });
     } finally {
       setResending(false);
@@ -94,13 +115,18 @@ export default function CandidateOtpVerification() {
 
         <h1 className="vfy-title">Verify Candidate Email</h1>
         <p className="vfy-subtitle">
-          We sent a 6-digit OTP to <span className="vfy-email-highlight">{email || "your email"}</span>.
+          We sent a 6-digit OTP to{" "}
+          <span className="vfy-email-highlight">{email || "your email"}</span>.
           Enter it below to activate your candidate account.
         </p>
 
         {status.msg && (
           <div className={`vfy-alert ${status.type}`}>
-            {status.type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            {status.type === "success" ? (
+              <CheckCircle size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
             <span>{status.msg}</span>
           </div>
         )}
@@ -112,7 +138,9 @@ export default function CandidateOtpVerification() {
               maxLength="6"
               placeholder="0 0 0 0 0 0"
               value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+              onChange={(event) =>
+                setCode(event.target.value.replace(/\D/g, ""))
+              }
               className="vfy-code-input"
               disabled={loading || status.type === "success"}
             />

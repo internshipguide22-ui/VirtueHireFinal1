@@ -16,7 +16,9 @@ export default function AdminViewJobs() {
   const formatPostedDate = (value) => {
     if (!value) return "Not available";
     const parsedDate = new Date(value);
-    return Number.isNaN(parsedDate.getTime()) ? "Not available" : parsedDate.toLocaleDateString();
+    return Number.isNaN(parsedDate.getTime())
+      ? "Not available"
+      : parsedDate.toLocaleDateString();
   };
 
   useEffect(() => {
@@ -37,8 +39,14 @@ export default function AdminViewJobs() {
 
   const filteredJobs = jobs.filter((job) => {
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
-    const matchesRole = !roleFilter.trim() || (job.title || "").toLowerCase().includes(roleFilter.trim().toLowerCase());
-    const matchesLocation = !locationFilter.trim() || (job.location || "").toLowerCase().includes(locationFilter.trim().toLowerCase());
+    const matchesRole =
+      !roleFilter.trim() ||
+      (job.title || "").toLowerCase().includes(roleFilter.trim().toLowerCase());
+    const matchesLocation =
+      !locationFilter.trim() ||
+      (job.location || "")
+        .toLowerCase()
+        .includes(locationFilter.trim().toLowerCase());
     return matchesStatus && matchesRole && matchesLocation;
   });
 
@@ -60,7 +68,11 @@ export default function AdminViewJobs() {
             {jobs.length} Active Job{jobs.length === 1 ? "" : "s"}
           </span>
           <div className="jobs-filter-row">
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="jobs-filter-input">
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="jobs-filter-input"
+            >
               <option value="all">All Status</option>
               <option value={JOB_STATUS.OPEN}>Open</option>
               <option value={JOB_STATUS.PAUSED}>Paused</option>
@@ -85,7 +97,9 @@ export default function AdminViewJobs() {
 
         {filteredJobs.length === 0 ? (
           <div className="jobs-empty-state">
-            {jobs.length === 0 ? "No jobs are currently published by HR teams." : "No jobs match the selected filters."}
+            {jobs.length === 0
+              ? "No jobs are currently published by HR teams."
+              : "No jobs match the selected filters."}
           </div>
         ) : (
           <div className="jobs-table-wrap">
@@ -108,13 +122,21 @@ export default function AdminViewJobs() {
                   <tr key={job.id}>
                     <td className="jobs-row-title">
                       <strong>{job.title}</strong>
-                      <div className="jobs-row-company">{job.company || "Unknown company"}</div>
+                      <div className="jobs-row-company">
+                        {job.company || "Unknown company"}
+                      </div>
                     </td>
                     <td>
-                      <span className={`job-status-badge status-${job.status || JOB_STATUS.OPEN}`}>{getAdminStatusLabel(job.status)}</span>
+                      <span
+                        className={`job-status-badge status-${job.status || JOB_STATUS.OPEN}`}
+                      >
+                        {getAdminStatusLabel(job.status)}
+                      </span>
                     </td>
                     <td>
-                      <span className="job-pill">{job.type || "Not specified"}</span>
+                      <span className="job-pill">
+                        {job.type || "Not specified"}
+                      </span>
                     </td>
                     <td>{job.location || "Not specified"}</td>
                     <td>{job.experience || "Not specified"}</td>
@@ -125,7 +147,9 @@ export default function AdminViewJobs() {
                           <strong>Skills:</strong> {job.skills}
                         </p>
                       ) : null}
-                      <p className="jobs-description-text">{job.description || "No description provided."}</p>
+                      <p className="jobs-description-text">
+                        {job.description || "No description provided."}
+                      </p>
                     </td>
                     <td className="jobs-posted-cell">
                       <strong>{job.postedBy || "HR Team"}</strong>
@@ -136,7 +160,9 @@ export default function AdminViewJobs() {
                         <button
                           type="button"
                           className="interested-toggle-btn"
-                          onClick={() => navigate("/admin/interested-candidates")}
+                          onClick={() =>
+                            navigate("/admin/interested-candidates")
+                          }
                         >
                           <Users size={15} />
                           Interested Candidates

@@ -1,13 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CheckCircle2, Clock3, Eye, LayoutDashboard, List, LogOut, ShieldAlert } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Eye,
+  LayoutDashboard,
+  List,
+  LogOut,
+  ShieldAlert,
+} from "lucide-react";
 import {
   createContactAccessRequest,
   getAllInterestedCandidates,
   getContactAccessRequests,
   getHrCandidateAccessStatus,
   subscribeContactAccessRequests,
-  subscribeJobs
+  subscribeJobs,
 } from "../../utils/jobsStore";
 import api from "../../services/api";
 import "../Jobs/JobsModule.css";
@@ -40,7 +48,9 @@ export default function HRInterestedCandidates() {
 
   useEffect(() => {
     setInterestedCandidates(getAllInterestedCandidates());
-    const unsubscribeJobs = subscribeJobs(() => setInterestedCandidates(getAllInterestedCandidates()));
+    const unsubscribeJobs = subscribeJobs(() =>
+      setInterestedCandidates(getAllInterestedCandidates()),
+    );
     setRequests(getContactAccessRequests());
     const unsubscribeRequests = subscribeContactAccessRequests(setRequests);
 
@@ -78,7 +88,7 @@ export default function HRInterestedCandidates() {
     createContactAccessRequest({
       hr: hrUser,
       candidate: row,
-      job: row
+      job: row,
     });
     setMessage(`Contact access request submitted for ${row.fullName}.`);
   };
@@ -88,29 +98,49 @@ export default function HRInterestedCandidates() {
       title: "Candidate Contact",
       message: `Email: ${row.email || "N/A"}\nPhone: ${row.phoneNumber || "N/A"}`,
       tone: "info",
-      confirmLabel: "Close"
+      confirmLabel: "Close",
     });
   };
 
   const statusBadge = (status) => {
-    if (status === "APPROVED") return <span className="hri-status approved"><CheckCircle2 size={14} /> Approved</span>;
-    if (status === "PENDING") return <span className="hri-status pending"><Clock3 size={14} /> Pending</span>;
-    if (status === "REJECTED") return <span className="hri-status rejected"><ShieldAlert size={14} /> Declined</span>;
-    return <span className="hri-status restricted"><ShieldAlert size={14} /> No Access</span>;
+    if (status === "APPROVED")
+      return (
+        <span className="hri-status approved">
+          <CheckCircle2 size={14} /> Approved
+        </span>
+      );
+    if (status === "PENDING")
+      return (
+        <span className="hri-status pending">
+          <Clock3 size={14} /> Pending
+        </span>
+      );
+    if (status === "REJECTED")
+      return (
+        <span className="hri-status rejected">
+          <ShieldAlert size={14} /> Declined
+        </span>
+      );
+    return (
+      <span className="hri-status restricted">
+        <ShieldAlert size={14} /> No Access
+      </span>
+    );
   };
 
   const rows = useMemo(
     () =>
       interestedCandidates.map((row) => ({
         ...row,
-        accessStatus: getHrCandidateAccessStatus(hrUser || {}, row.candidateId)
+        accessStatus: getHrCandidateAccessStatus(hrUser || {}, row.candidateId),
       })),
-    [interestedCandidates, hrUser]
+    [interestedCandidates, hrUser],
   );
 
   const visibleRows = useMemo(
-    () => (selectedJobId ? rows.filter((row) => row.jobId === selectedJobId) : rows),
-    [rows, selectedJobId]
+    () =>
+      selectedJobId ? rows.filter((row) => row.jobId === selectedJobId) : rows,
+    [rows, selectedJobId],
   );
 
   return (
@@ -126,15 +156,29 @@ export default function HRInterestedCandidates() {
         </div>
 
         <nav className="hri-nav">
-          <button type="button" className="hri-nav-btn" onClick={() => navigate("/hr/dashboard")}>
+          <button
+            type="button"
+            className="hri-nav-btn"
+            onClick={() => navigate("/hr/dashboard")}
+          >
             <LayoutDashboard size={18} />
             Dashboard
           </button>
-          <button type="button" className="hri-nav-btn" onClick={() => navigate("/hr/dashboard", { state: { activeTab: "view-jobs" } })}>
+          <button
+            type="button"
+            className="hri-nav-btn"
+            onClick={() =>
+              navigate("/hr/dashboard", { state: { activeTab: "view-jobs" } })
+            }
+          >
             <List size={18} />
             View Jobs
           </button>
-          <button type="button" className="hri-nav-btn danger" onClick={() => navigate("/hrs/login")}>
+          <button
+            type="button"
+            className="hri-nav-btn danger"
+            onClick={() => navigate("/hrs/login")}
+          >
             <LogOut size={18} />
             Exit
           </button>
@@ -147,13 +191,16 @@ export default function HRInterestedCandidates() {
         <section className="hri-card">
           <div className="jobs-toolbar" style={{ marginBottom: "18px" }}>
             <span className="jobs-summary-badge">
-              {visibleRows.length} Interested Candidate{visibleRows.length === 1 ? "" : "s"}
+              {visibleRows.length} Interested Candidate
+              {visibleRows.length === 1 ? "" : "s"}
               {selectedJobTitle ? ` for ${selectedJobTitle}` : ""}
             </span>
           </div>
 
           {visibleRows.length === 0 ? (
-            <div className="jobs-empty-state">No interested candidates available yet.</div>
+            <div className="jobs-empty-state">
+              No interested candidates available yet.
+            </div>
           ) : (
             <div className="hri-table-wrap">
               <table className="hri-table">
@@ -188,10 +235,10 @@ export default function HRInterestedCandidates() {
                                     id: row.candidateId,
                                     fullName: row.fullName,
                                     skills: row.skills,
-                                    experience: row.experience
+                                    experience: row.experience,
                                   },
-                                  from: "/hr/interested-candidates"
-                                }
+                                  from: "/hr/interested-candidates",
+                                },
                               })
                             }
                           >
@@ -202,7 +249,10 @@ export default function HRInterestedCandidates() {
                             type="button"
                             className="hri-btn request"
                             onClick={() => requestAccess(row)}
-                            disabled={row.accessStatus === "APPROVED" || row.accessStatus === "PENDING"}
+                            disabled={
+                              row.accessStatus === "APPROVED" ||
+                              row.accessStatus === "PENDING"
+                            }
                           >
                             {row.accessStatus === "APPROVED"
                               ? "Admin Approved"
@@ -211,7 +261,11 @@ export default function HRInterestedCandidates() {
                                 : "Request Admin"}
                           </button>
                           {row.accessStatus === "APPROVED" ? (
-                            <button type="button" className="hri-btn contact" onClick={() => openContact(row)}>
+                            <button
+                              type="button"
+                              className="hri-btn contact"
+                              onClick={() => openContact(row)}
+                            >
                               Contact Candidate
                             </button>
                           ) : null}

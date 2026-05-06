@@ -6,21 +6,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--space-2xl);
   z-index: 5000;
 }
 
 .app-dialog-card {
   width: min(100%, 460px);
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 28px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-4xl);
+  padding: var(--space-3xl);
   box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .app-dialog-card.tone-danger {
-  border-color: #fecaca;
+  border-color: var(--color-error-light);
 }
 
 .app-dialog-card.tone-warning {
@@ -34,55 +34,55 @@
 .app-dialog-badge {
   display: inline-flex;
   padding: 6px 10px;
-  border-radius: 999px;
-  background: #e0e7ff;
-  color: #3730a3;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-light);
+  color: var(--color-accent-dark);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: 0.02em;
 }
 
 .app-dialog-title {
-  margin: 16px 0 10px;
-  color: #0f172a;
+  margin: var(--space-lg) 0 var(--space-sm);
+  color: var(--text-primary);
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-extrabold);
 }
 
 .app-dialog-message {
   margin: 0;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.65;
   font-size: 0.96rem;
   white-space: pre-line;
 }
 
 .app-dialog-actions {
-  margin-top: 24px;
+  margin-top: var(--space-2xl);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-md);
   flex-wrap: wrap;
 }
 
 .app-dialog-btn {
   min-width: 110px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 11px 16px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
 
 .app-dialog-btn.secondary {
-  background: #f8fafc;
-  color: #334155;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .app-dialog-btn.primary {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--text-white);
 }
 
 .app-dialog-btn.primary.tone-danger {

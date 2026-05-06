@@ -5,9 +5,9 @@
 }
 
 body {
-  font-family: "Poppins", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f3f4f6 !important;
-  color: #1f2937 !important;
+  font-family: var(--font-family);
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -22,30 +22,30 @@ body {
   padding-top: 100px;
   padding-bottom: 50px;
   width: 100%;
-  background: #f3f4f6 !important;
+  background: var(--bg-primary) !important;
   min-height: 100vh !important;
 }
 
 /* ========== Timer Badge ========== */
 .timer-badge-fixed {
-  background-color: #ffffff !important;
-  color: #ef4444 !important;
-  padding: 12px 20px !important;
-  border-radius: 12px !important;
+  background-color: var(--bg-secondary) !important;
+  color: var(--color-error-light) !important;
+  padding: var(--space-md) var(--space-xl) !important;
+  border-radius: var(--radius-lg) !important;
   font-size: 1.1rem !important;
-  font-weight: 700 !important;
+  font-weight: var(--font-weight-extrabold) !important;
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2) !important;
   z-index: 1000 !important;
-  border: 2px solid #ef4444 !important;
+  border: 2px solid var(--color-error-light) !important;
   letter-spacing: 0.5px !important;
 }
 
 /* ========== Assessment Card ========== */
 .assessment-card {
-  background: #ffffff !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid #e5e7eb !important;
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-2xl) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--border-color) !important;
   width: 85%;
   max-width: 900px;
   padding: 40px;
@@ -55,17 +55,17 @@ body {
 
 .assessment-card:hover {
   transform: translateY(-4px) !important;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 /* ========== Title ========== */
 .exam-title {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: var(--color-hero-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-size: 2.2rem !important;
-  font-weight: 800 !important;
+  font-weight: var(--font-weight-extrabold) !important;
   margin-bottom: 12px !important;
   text-align: center !important;
 }
@@ -73,24 +73,24 @@ body {
 /* Total Questions Info */
 .exam-subtitle {
   text-align: center !important;
-  color: #6b7280 !important;
-  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-weight-semibold) !important;
   margin-bottom: 30px !important;
   font-size: 1rem !important;
 }
 
 /* ========== Question Container ========== */
 .exam-question-container {
-  background-color: #f9fafb !important;
-  padding: 24px !important;
-  border-radius: 12px !important;
-  border-left: 4px solid #4f46e5 !important;
-  margin-bottom: 24px !important;
+  background-color: var(--bg-primary) !important;
+  padding: var(--space-2xl) !important;
+  border-radius: var(--radius-lg) !important;
+  border-left: 4px solid var(--color-primary) !important;
+  margin-bottom: var(--space-2xl) !important;
   transition: all 0.2s ease !important;
 }
 
 .exam-question-container:hover {
-  background-color: #f3f4f6 !important;
+  background-color: #f9fafb !important;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1) !important;
 }
 
@@ -286,17 +286,17 @@ body {
   overflow: hidden;
   background: #0f172a;
   width: 100%;
-  min-height: 160px;        /* ensures shell never collapses */
+  min-height: 160px; /* ensures shell never collapses */
 }
 
 .exam-camera-preview {
   width: 100%;
-  height: 160px;            /* fixed height so face is always visible */
+  height: 160px; /* fixed height so face is always visible */
   display: block;
-  object-fit: cover;        /* fills frame, crops edges — face stays centred */
+  object-fit: cover; /* fills frame, crops edges — face stays centred */
   object-position: center;
   background: #0f172a;
-  transform: scaleX(-1);    /* mirror so movements feel natural (selfie mode) */
+  transform: scaleX(-1); /* mirror so movements feel natural (selfie mode) */
 }
 
 .exam-camera-preview.hidden {

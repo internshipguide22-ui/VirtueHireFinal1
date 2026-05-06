@@ -1,190 +1,302 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "../../services/api";
 
 const AssessmentComplete = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showConfetti, setShowConfetti] = useState(false);
+  const [awardingBadge, setAwardingBadge] = useState(false);
+
+  const completionSubject =
+    location.state?.subject ||
+    localStorage.getItem("selectedAssessment") ||
+    sessionStorage.getItem("selectedAssessment") ||
+    "";
+  const deliveryMode =
+    location.state?.deliveryMode ||
+    sessionStorage.getItem("assessmentDeliveryMode") ||
+    localStorage.getItem("assessmentDeliveryMode") ||
+    "online";
 
   useEffect(() => {
     setShowConfetti(true);
   }, []);
 
+  useEffect(() => {
+    const awardOfflineBadge = async () => {
+      if (deliveryMode !== "offline" || !completionSubject) {
+        return;
+      }
+
+      try {
+        setAwardingBadge(true);
+        const res = await api.post(
+          "/candidates/offline-badge",
+          { subject: completionSubject },
+          { withCredentials: true },
+        );
+
+        const updatedCandidate = res.data?.candidate;
+        if (updatedCandidate) {
+          localStorage.setItem("candidate", JSON.stringify(updatedCandidate));
+        }
+      } catch (error) {
+        console.error("Failed to award offline badge:", error);
+      } finally {
+        setAwardingBadge(false);
+      }
+    };
+
+    awardOfflineBadge();
+  }, [completionSubject, deliveryMode]);
+
   const handleGoHome = () => {
-    const storedCandidate = JSON.parse(localStorage.getItem("candidate") || "{}");
-    storedCandidate.badge = storedCandidate.badge || "Certified";
+    const storedCandidate = JSON.parse(
+      localStorage.getItem("candidate") || "{}",
+    );
+    if (!storedCandidate.badge) {
+      storedCandidate.badge =
+        deliveryMode === "offline" && completionSubject
+          ? `${completionSubject} Certified`
+          : "Certified";
+    }
     localStorage.setItem("candidate", JSON.stringify(storedCandidate));
     navigate("/candidates/welcome", { state: { refreshBadge: Date.now() } });
   };
 
   return (
-    <div style={{
-      fontFamily: "Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      background: "linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "100vh",
-      padding: "40px 20px",
-      position: "relative",
-      overflow: "hidden"
-    }}>
+    <div
+      style={{
+        fontFamily:
+          "Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        background: "linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        padding: "40px 20px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
       {/* Animated Background Elements */}
-      <div style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        right: "0",
-        bottom: "0",
-        pointerEvents: "none",
-        overflow: "hidden"
-      }}>
+      <div
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "0",
+          right: "0",
+          bottom: "0",
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
         {/* Animated Circles */}
-        <div style={{
-          position: "absolute",
-          width: "400px",
-          height: "400px",
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-          opacity: 0.1,
-          top: "-100px",
-          right: "-100px",
-          animation: "float 6s ease-in-out infinite"
-        }} />
-        <div style={{
-          position: "absolute",
-          width: "300px",
-          height: "300px",
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-          opacity: 0.1,
-          bottom: "-50px",
-          left: "-50px",
-          animation: "float 8s ease-in-out infinite reverse"
-        }} />
+        <div
+          style={{
+            position: "absolute",
+            width: "400px",
+            height: "400px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+            opacity: 0.1,
+            top: "-100px",
+            right: "-100px",
+            animation: "float 6s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: "300px",
+            height: "300px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            opacity: 0.1,
+            bottom: "-50px",
+            left: "-50px",
+            animation: "float 8s ease-in-out infinite reverse",
+          }}
+        />
       </div>
 
       {/* Main Card */}
-      <div style={{
-        backgroundColor: "#ffffff",
-        padding: "60px 50px",
-        borderRadius: "20px",
-        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-        maxWidth: "600px",
-        width: "100%",
-        textAlign: "center",
-        position: "relative",
-        zIndex: 10,
-        animation: "slideUp 0.6s ease-out"
-      }}>
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          padding: "60px 50px",
+          borderRadius: "20px",
+          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+          maxWidth: "600px",
+          width: "100%",
+          textAlign: "center",
+          position: "relative",
+          zIndex: 10,
+          animation: "slideUp 0.6s ease-out",
+        }}
+      >
         {/* Celebration Icon */}
-        <div style={{
-          fontSize: "4rem",
-          marginBottom: "20px",
-          animation: "bounce 1.5s ease-in-out infinite"
-        }}>
+        <div
+          style={{
+            fontSize: "4rem",
+            marginBottom: "20px",
+            animation: "bounce 1.5s ease-in-out infinite",
+          }}
+        >
           🎉
         </div>
 
         {/* Main Heading */}
-        <h1 style={{
-          fontSize: "2.8rem",
-          fontWeight: "800",
-          marginBottom: "16px",
-          background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text"
-        }}>
+        <h1
+          style={{
+            fontSize: "2.8rem",
+            fontWeight: "800",
+            marginBottom: "16px",
+            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
           Congratulations!
         </h1>
 
         {/* Subtitle */}
-        <p style={{
-          fontSize: "1.3rem",
-          color: "#6b7280",
-          marginBottom: "30px",
-          fontWeight: "500",
-          lineHeight: "1.8"
-        }}>
+        <p
+          style={{
+            fontSize: "1.3rem",
+            color: "#6b7280",
+            marginBottom: "30px",
+            fontWeight: "500",
+            lineHeight: "1.8",
+          }}
+        >
           You have successfully completed <br />
-          <span style={{ color: "#1f2937", fontWeight: "700", fontSize: "1.4rem" }}>
+          <span
+            style={{ color: "#1f2937", fontWeight: "700", fontSize: "1.4rem" }}
+          >
             all levels of the assessment
           </span>
         </p>
 
         {/* Achievement Stats */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "20px",
-          marginBottom: "40px"
-        }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "20px",
+            marginBottom: "40px",
+          }}
+        >
           {/* Stat 1 */}
-          <div style={{
-            backgroundColor: "#f0f9ff",
-            padding: "24px",
-            borderRadius: "12px",
-            border: "2px solid #dbeafe"
-          }}>
-            <div style={{
-              fontSize: "2.5rem",
-              fontWeight: "800",
-              color: "#3b82f6",
-              marginBottom: "8px"
-            }}>
+          <div
+            style={{
+              backgroundColor: "#f0f9ff",
+              padding: "24px",
+              borderRadius: "12px",
+              border: "2px solid #dbeafe",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "2.5rem",
+                fontWeight: "800",
+                color: "#3b82f6",
+                marginBottom: "8px",
+              }}
+            >
               3
             </div>
-            <div style={{
-              color: "#6b7280",
-              fontWeight: "600",
-              fontSize: "0.95rem"
-            }}>
+            <div
+              style={{
+                color: "#6b7280",
+                fontWeight: "600",
+                fontSize: "0.95rem",
+              }}
+            >
               Levels Completed
             </div>
           </div>
 
           {/* Stat 2 */}
-          <div style={{
-            backgroundColor: "#f0fdf4",
-            padding: "24px",
-            borderRadius: "12px",
-            border: "2px solid #dcfce7"
-          }}>
-            <div style={{
-              fontSize: "2.5rem",
-              fontWeight: "800",
-              color: "#10b981",
-              marginBottom: "8px"
-            }}>
+          <div
+            style={{
+              backgroundColor: "#f0fdf4",
+              padding: "24px",
+              borderRadius: "12px",
+              border: "2px solid #dcfce7",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "2.5rem",
+                fontWeight: "800",
+                color: "#10b981",
+                marginBottom: "8px",
+              }}
+            >
               100%
             </div>
-            <div style={{
-              color: "#6b7280",
-              fontWeight: "600",
-              fontSize: "0.95rem"
-            }}>
+            <div
+              style={{
+                color: "#6b7280",
+                fontWeight: "600",
+                fontSize: "0.95rem",
+              }}
+            >
               Success Rate
             </div>
           </div>
         </div>
 
         {/* Achievement Message */}
-        <div style={{
-          backgroundColor: "#fef3c7",
-          border: "2px solid #fcd34d",
-          borderRadius: "12px",
-          padding: "20px",
-          marginBottom: "40px"
-        }}>
-          <p style={{
-            color: "#92400e",
-            fontWeight: "600",
-            margin: "0",
-            fontSize: "1rem"
-          }}>
-            ⭐ Outstanding performance! You've demonstrated excellent skills and dedication.
+        <div
+          style={{
+            backgroundColor: "#fef3c7",
+            border: "2px solid #fcd34d",
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: "40px",
+          }}
+        >
+          <p
+            style={{
+              color: "#92400e",
+              fontWeight: "600",
+              margin: "0",
+              fontSize: "1rem",
+            }}
+          >
+            ⭐ Outstanding performance! You've demonstrated excellent skills and
+            dedication.
           </p>
         </div>
+
+        {deliveryMode === "offline" && completionSubject ? (
+          <div
+            style={{
+              backgroundColor: "#eef2ff",
+              border: "2px solid #c7d2fe",
+              borderRadius: "12px",
+              padding: "18px",
+              marginBottom: "24px",
+            }}
+          >
+            <p
+              style={{
+                color: "#3730a3",
+                fontWeight: "700",
+                margin: "0",
+                fontSize: "1rem",
+              }}
+            >
+              {awardingBadge
+                ? `Assigning your ${completionSubject} Certified badge...`
+                : `Your ${completionSubject} Certified badge now has priority on your profile.`}
+            </p>
+          </div>
+        ) : null}
 
         {/* Button */}
         <button
@@ -204,7 +316,7 @@ const AssessmentComplete = () => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "10px"
+            gap: "10px",
           }}
           onMouseOver={(e) => {
             e.target.style.boxShadow = "0 10px 30px rgba(79, 70, 229, 0.4)";
@@ -220,13 +332,16 @@ const AssessmentComplete = () => {
         </button>
 
         {/* Secondary Text */}
-        <p style={{
-          marginTop: "24px",
-          color: "#9ca3af",
-          fontSize: "0.9rem",
-          fontWeight: "500"
-        }}>
-          You can now take assessments for other subjects or review your progress.
+        <p
+          style={{
+            marginTop: "24px",
+            color: "#9ca3af",
+            fontSize: "0.9rem",
+            fontWeight: "500",
+          }}
+        >
+          You can now take assessments for other subjects or review your
+          progress.
         </p>
       </div>
 

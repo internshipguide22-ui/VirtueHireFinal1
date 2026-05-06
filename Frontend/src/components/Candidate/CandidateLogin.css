@@ -1,8 +1,8 @@
 /* src/components/Candidate/CandidateLogin.css
 
 .login-body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f7f8;
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -11,68 +11,69 @@
 }
 
 .login-form {
-  background-color: #ffffff;
-  padding: 30px 40px;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-secondary);
+  padding: var(--space-3xl) var(--space-4xl);
+  border-radius: var(--radius-4xl);
+  box-shadow: var(--shadow-md);
   width: 350px;
 }
 
 h2 {
   text-align: center;
-  color: #333333;
-  margin-bottom: 25px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2xl);
 }
 
 input[type="email"],
 input[type="password"] {
   width: 100%;
-  padding: 10px;
-  margin: 8px 0 15px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: var(--space-lg);
+  margin: var(--space-sm) 0 var(--space-lg) 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   box-sizing: border-box;
   transition: 0.3s;
 }
 
 input:focus {
-  border-color: #4caf50;
+  border-color: var(--color-primary);
   outline: none;
 }
 
 button {
   width: 100%;
-  background-color: #4caf50;
-  color: white;
-  padding: 12px;
+  background-color: var(--color-primary);
+  color: var(--text-white);
+  padding: var(--space-lg);
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 16px;
   transition: 0.3s;
+  font-weight: var(--font-weight-bold);
 }
 
 button:hover {
-  background-color: #45a049;
+  background-color: #2563eb;
 }
 
 .error-msg {
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  color: #721c24;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 15px;
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--border-color);
+  color: var(--color-error-text);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
   text-align: center;
 }
 
 p a {
   display: block;
   text-align: center;
-  margin-top: 20px;
-  color: #4caf50;
+  margin-top: var(--space-2xl);
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 p a:hover {
@@ -80,29 +81,27 @@ p a:hover {
 }
 
 label {
-  font-weight: bold;
-  margin-bottom: 5px;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-sm);
   display: block;
 }
 
 .readonly-email {
-  background-color: #f0f0f0;
-  color: #555;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
 }
 
 .success-msg {
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  color: #155724;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 15px;
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--border-color);
+  color: var(--color-success-text);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
   text-align: center;
 } */
 
-
-Global page
-.login-page {
+Global page .login-page {
   display: flex;
   height: 100vh;
   width: 100%;
@@ -131,7 +130,9 @@ Global page
 }
 .brand span {
   color: #00f0ff;
-  text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
+  text-shadow:
+    0 0 10px #00f0ff,
+    0 0 25px #00f0ff;
 }
 
 .tagline {
@@ -146,25 +147,30 @@ Global page
   position: absolute;
   width: 200%;
   height: 200%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 240, 255, 0.1) 0,
-    rgba(0, 240, 255, 0.1) 2px,
-    transparent 2px,
-    transparent 40px
-  ),
-  repeating-linear-gradient(
-    90deg,
-    rgba(0, 240, 255, 0.1) 0,
-    rgba(0, 240, 255, 0.1) 2px,
-    transparent 2px,
-    transparent 40px
-  );
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 240, 255, 0.1) 0,
+      rgba(0, 240, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 240, 255, 0.1) 0,
+      rgba(0, 240, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 40px
+    );
   animation: moveGrid 20s linear infinite;
 }
 @keyframes moveGrid {
-  from { transform: translate(0,0); }
-  to { transform: translate(-100px,-100px); }
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-100px, -100px);
+  }
 }
 
 /* Right Panel */
@@ -231,8 +237,8 @@ form input {
   padding: 12px;
   margin: 10px 0;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
   color: #fff;
   outline: none;
   transition: 0.3s;
@@ -294,12 +300,24 @@ form input:focus {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 /* Forgot Password Button */
 .forgot-btn-container {
@@ -315,7 +333,9 @@ form input:focus {
   border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .forgot-btn:hover {

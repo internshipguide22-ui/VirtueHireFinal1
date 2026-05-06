@@ -127,7 +127,8 @@ const QuestionManagement = () => {
         console.error(err);
         await showAlert({
           title: "Upload Failed",
-          message: "Upload failed: " + (err.response?.data?.error || err.message),
+          message:
+            "Upload failed: " + (err.response?.data?.error || err.message),
           tone: "danger",
         });
       })
@@ -186,7 +187,8 @@ const QuestionManagement = () => {
       {dialogNode}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>
-          <i className="fas fa-question-circle me-2"></i>Question Bank Management
+          <i className="fas fa-question-circle me-2"></i>Question Bank
+          Management
         </h1>
       </div>
 
@@ -238,7 +240,9 @@ const QuestionManagement = () => {
               <form onSubmit={handleAddQuestion}>
                 <div className="row">
                   <div className="col-md-6 mb-3">
-                    <label className="form-label">Assessment Name (Company) *</label>
+                    <label className="form-label">
+                      Assessment Name (Company) *
+                    </label>
                     <input
                       type="text"
                       className="form-control"
@@ -356,23 +360,32 @@ const QuestionManagement = () => {
                   {showCodingFormat && (
                     <div className="mt-2 p-2 bg-light border rounded small">
                       <p className="mb-1 fw-bold">MCQ / MSQ questions:</p>
-                      <code className="d-block mb-2" style={{ fontSize: "0.72rem" }}>
+                      <code
+                        className="d-block mb-2"
+                        style={{ fontSize: "0.72rem" }}
+                      >
                         type, question, option1, option2, option3, option4,
-                        correctAn, hasCompi, description,
-                        input1, output1, input2, output2
+                        correctAn, hasCompi, description, input1, output1,
+                        input2, output2
                       </code>
                       <p className="mb-1">MCQ example:</p>
-                      <code className="d-block mb-2" style={{ fontSize: "0.72rem" }}>
+                      <code
+                        className="d-block mb-2"
+                        style={{ fontSize: "0.72rem" }}
+                      >
                         MCQ, What is 2+2?, 3, 4, 5, 6, 4, false, , , , ,
                       </code>
                       <p className="mb-1 fw-bold">Coding questions:</p>
                       <code className="d-block" style={{ fontSize: "0.72rem" }}>
-                        CODING, , , , , , , true, Add two numbers, "1 2", 3, "5 7", 12
+                        CODING, , , , , , , true, Add two numbers, "1 2", 3, "5
+                        7", 12
                       </code>
                       <hr className="my-2" />
                       <p className="mb-0 text-muted">
-                        OR use the original format (MCQ only):<br />
-                        question, option_a, option_b, option_c, option_d, correct_answer
+                        OR use the original format (MCQ only):
+                        <br />
+                        question, option_a, option_b, option_c, option_d,
+                        correct_answer
                       </p>
                     </div>
                   )}
@@ -401,7 +414,9 @@ const QuestionManagement = () => {
               {sections.map((sec, idx) => (
                 <div key={idx} className="row g-2 mb-2 align-items-center">
                   <div className="col-2">
-                    <span className="badge bg-secondary">#{sec.sectionNumber}</span>
+                    <span className="badge bg-secondary">
+                      #{sec.sectionNumber}
+                    </span>
                   </div>
                   <div className="col-6">
                     <input

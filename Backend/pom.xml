@@ -19,7 +19,8 @@
     </parent>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
+        <lombok.version>1.18.30</lombok.version>
         <commons-csv.version>1.10.0</commons-csv.version>
         <commons-io.version>2.15.1</commons-io.version>
         <pdfbox.version>2.0.33</pdfbox.version>
@@ -148,8 +149,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>21</source>
+                    <target>21</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

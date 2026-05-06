@@ -22,12 +22,19 @@ const PaymentDashboard = () => {
         const data = res.data || [];
 
         const totalPayments = data.length;
-        const successfulPayments = data.filter(p => p.status === "SUCCESS").length;
+        const successfulPayments = data.filter(
+          (p) => p.status === "SUCCESS",
+        ).length;
         const failedPayments = totalPayments - successfulPayments;
         const totalRevenue = data.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         setPayments(data);
-        setStats({ totalPayments, successfulPayments, failedPayments, totalRevenue });
+        setStats({
+          totalPayments,
+          successfulPayments,
+          failedPayments,
+          totalRevenue,
+        });
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -41,10 +48,14 @@ const PaymentDashboard = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "SUCCESS": return "badge bg-success";
-      case "FAILED": return "badge bg-danger";
-      case "PENDING": return "badge bg-warning";
-      default: return "badge bg-secondary";
+      case "SUCCESS":
+        return "badge bg-success";
+      case "FAILED":
+        return "badge bg-danger";
+      case "PENDING":
+        return "badge bg-warning";
+      default:
+        return "badge bg-secondary";
     }
   };
 
@@ -53,7 +64,9 @@ const PaymentDashboard = () => {
 
   return (
     <div className="container-fluid my-4">
-      <h1 className="mb-4"><i className="fas fa-chart-line me-2"></i>Payment Dashboard</h1>
+      <h1 className="mb-4">
+        <i className="fas fa-chart-line me-2"></i>Payment Dashboard
+      </h1>
 
       {/* Stats Cards */}
       <div className="row g-4 mb-4">
@@ -107,7 +120,10 @@ const PaymentDashboard = () => {
       <div className="card mt-4">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Recent Transactions</h5>
-          <button className="btn btn-sm btn-outline-primary" onClick={() => window.location.reload()}>
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => window.location.reload()}
+          >
             <i className="fas fa-sync-alt me-1"></i>Refresh
           </button>
         </div>
@@ -128,14 +144,24 @@ const PaymentDashboard = () => {
                 payments.map((payment) => (
                   <tr key={payment.id}>
                     <td>{payment.hr?.fullName || "N/A"}</td>
-                    <td><span className="badge bg-secondary">{payment.planType}</span></td>
+                    <td>
+                      <span className="badge bg-secondary">
+                        {payment.planType}
+                      </span>
+                    </td>
                     <td>₹{payment.amount?.toFixed(2)}</td>
-                    <td><span className={getStatusClass(payment.status)}>{payment.status}</span></td>
+                    <td>
+                      <span className={getStatusClass(payment.status)}>
+                        {payment.status}
+                      </span>
+                    </td>
                     <td>{new Date(payment.createdAt).toLocaleString()}</td>
                     <td>
                       <button
                         className="btn btn-sm btn-outline-info"
-                        onClick={() => navigate(`/admin/payments/${payment.id}`)}
+                        onClick={() =>
+                          navigate(`/admin/payments/${payment.id}`)
+                        }
                       >
                         <i className="fas fa-eye"></i>
                       </button>
@@ -163,13 +189,19 @@ const PaymentDashboard = () => {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
-              <button className="btn btn-outline-primary w-100"><i className="fas fa-file-excel me-2"></i>Export to Excel</button>
+              <button className="btn btn-outline-primary w-100">
+                <i className="fas fa-file-excel me-2"></i>Export to Excel
+              </button>
             </div>
             <div className="col-md-4">
-              <button className="btn btn-outline-success w-100"><i className="fas fa-file-csv me-2"></i>Export to CSV</button>
+              <button className="btn btn-outline-success w-100">
+                <i className="fas fa-file-csv me-2"></i>Export to CSV
+              </button>
             </div>
             <div className="col-md-4">
-              <button className="btn btn-outline-info w-100"><i className="fas fa-chart-bar me-2"></i>Generate Report</button>
+              <button className="btn btn-outline-info w-100">
+                <i className="fas fa-chart-bar me-2"></i>Generate Report
+              </button>
             </div>
           </div>
         </div>

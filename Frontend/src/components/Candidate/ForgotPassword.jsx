@@ -162,7 +162,9 @@ const ForgotPassword = () => {
         setError("❌ Email not found!");
       }
     } catch (err) {
-      setError(err.response?.data?.error || "⚠️ Error sending email. Try again.");
+      setError(
+        err.response?.data?.error || "⚠️ Error sending email. Try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -173,14 +175,21 @@ const ForgotPassword = () => {
       <style>{styles}</style>
       <div className="vh-auth-container">
         <div className="vh-auth-card">
-          <button className="vh-back-btn" onClick={() => navigate("/candidate/login")}>
+          <button
+            className="vh-back-btn"
+            onClick={() => navigate("/candidate/login")}
+          >
             <ArrowLeft size={18} /> Back to Login
           </button>
 
           <h1 className="vh-auth-title">Forgot Password</h1>
-          <p className="vh-auth-subtitle">Enter your email to receive a password reset link and code.</p>
+          <p className="vh-auth-subtitle">
+            Enter your email to receive a password reset link and code.
+          </p>
 
-          {message && <div className="vh-alert vh-alert-success">{message}</div>}
+          {message && (
+            <div className="vh-alert vh-alert-success">{message}</div>
+          )}
           {error && <div className="vh-alert vh-alert-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>

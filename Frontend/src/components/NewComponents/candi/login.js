@@ -32,7 +32,7 @@ function Login() {
       const res = await fetch(`${API_BASE_URL}/candidates/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData
+        body: formData,
       });
 
       const data = await res.json();
@@ -58,247 +58,247 @@ function Login() {
   };
 
   const containerStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    margin: '0',
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    overflow: 'auto'
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    margin: "0",
+    position: "fixed",
+    top: "0",
+    left: "0",
+    right: "0",
+    bottom: "0",
+    overflow: "auto",
   };
 
   const leftSideStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    color: 'white',
-    maxWidth: '450px',
-    marginRight: '80px'
+    display: "flex",
+    flexDirection: "column",
+    color: "white",
+    maxWidth: "450px",
+    marginRight: "80px",
   };
 
   const titleStyle = {
-    fontSize: '3.5rem',
-    fontWeight: 'bold',
-    marginBottom: '1rem',
-    color: 'white'
+    fontSize: "3.5rem",
+    fontWeight: "bold",
+    marginBottom: "1rem",
+    color: "white",
   };
 
   const subtitleStyle = {
-    fontSize: '1.25rem',
-    marginBottom: '2rem',
-    color: 'rgba(255, 255, 255, 0.9)'
+    fontSize: "1.25rem",
+    marginBottom: "2rem",
+    color: "rgba(255, 255, 255, 0.9)",
   };
 
   const featureItemStyle = {
-    display: 'flex',
-    alignItems: 'start',
-    gap: '15px',
-    marginBottom: '20px'
+    display: "flex",
+    alignItems: "start",
+    gap: "15px",
+    marginBottom: "20px",
   };
 
   const checkmarkStyle = {
-    fontSize: '1.5rem',
-    color: 'white'
+    fontSize: "1.5rem",
+    color: "white",
   };
 
   const featureTitleStyle = {
-    fontWeight: '600',
-    fontSize: '1.125rem',
-    color: 'white'
+    fontWeight: "600",
+    fontSize: "1.125rem",
+    color: "white",
   };
 
   const cardStyle = {
-    background: 'white',
-    borderRadius: '16px',
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-    padding: '40px',
-    width: '100%',
-    maxWidth: '450px',
-    position: 'relative'
+    background: "white",
+    borderRadius: "16px",
+    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+    padding: "40px",
+    width: "100%",
+    maxWidth: "450px",
+    position: "relative",
   };
 
   const backButtonStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    background: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: '0.95rem',
-    color: '#6b7280',
-    marginBottom: '20px',
-    transition: 'all 0.2s'
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    background: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    padding: "8px 16px",
+    cursor: "pointer",
+    fontSize: "0.95rem",
+    color: "#6b7280",
+    marginBottom: "20px",
+    transition: "all 0.2s",
   };
 
   const cardTitleStyle = {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: '0.5rem'
+    fontSize: "2rem",
+    fontWeight: "bold",
+    color: "#1f2937",
+    marginBottom: "0.5rem",
   };
 
   const cardSubtitleStyle = {
-    color: '#6b7280',
-    marginBottom: '2rem'
+    color: "#6b7280",
+    marginBottom: "2rem",
   };
 
   const tabContainerStyle = {
-    display: 'flex',
-    gap: '12px',
-    marginBottom: '24px',
-    borderBottom: '1px solid #e5e7eb',
-    paddingBottom: '0'
+    display: "flex",
+    gap: "12px",
+    marginBottom: "24px",
+    borderBottom: "1px solid #e5e7eb",
+    paddingBottom: "0",
   };
 
   const activeTabStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '12px 20px',
-    background: '#4f46e5',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px 8px 0 0',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '0.95rem'
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 20px",
+    background: "#4f46e5",
+    color: "white",
+    border: "none",
+    borderRadius: "8px 8px 0 0",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "0.95rem",
   };
 
   const inactiveTabStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '12px 20px',
-    background: 'transparent',
-    color: '#6b7280',
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '0.95rem'
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 20px",
+    background: "transparent",
+    color: "#6b7280",
+    border: "none",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "0.95rem",
   };
 
   const formGroupStyle = {
-    marginBottom: '20px'
+    marginBottom: "20px",
   };
 
   const labelStyle = {
-    display: 'block',
-    color: '#374151',
-    fontWeight: '600',
-    marginBottom: '8px',
-    fontSize: '0.95rem'
+    display: "block",
+    color: "#374151",
+    fontWeight: "600",
+    marginBottom: "8px",
+    fontSize: "0.95rem",
   };
 
   const inputContainerStyle = {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center'
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
   };
 
   const inputIconStyle = {
-    position: 'absolute',
-    left: '12px',
-    color: '#9ca3af'
+    position: "absolute",
+    left: "12px",
+    color: "#9ca3af",
   };
 
   const inputStyle = {
-    width: '100%',
-    padding: '12px 12px 12px 42px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    outline: 'none',
-    transition: 'all 0.2s'
+    width: "100%",
+    padding: "12px 12px 12px 42px",
+    border: "1px solid #d1d5db",
+    borderRadius: "8px",
+    fontSize: "1rem",
+    outline: "none",
+    transition: "all 0.2s",
   };
 
   const passwordInputStyle = {
     ...inputStyle,
-    paddingRight: '42px'
+    paddingRight: "42px",
   };
 
   const eyeIconStyle = {
-    position: 'absolute',
-    right: '12px',
-    color: '#9ca3af',
-    cursor: 'pointer'
+    position: "absolute",
+    right: "12px",
+    color: "#9ca3af",
+    cursor: "pointer",
   };
 
   const helperTextStyle = {
-    fontSize: '0.85rem',
-    color: '#6b7280',
-    marginTop: '4px'
+    fontSize: "0.85rem",
+    color: "#6b7280",
+    marginTop: "4px",
   };
 
   const rememberRowStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px'
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "24px",
   };
 
   const checkboxLabelStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    color: '#374151',
-    fontSize: '0.9rem',
-    cursor: 'pointer'
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    color: "#374151",
+    fontSize: "0.9rem",
+    cursor: "pointer",
   };
 
   const forgotLinkStyle = {
-    color: '#4f46e5',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    textDecoration: 'none',
-    fontWeight: '600'
+    color: "#4f46e5",
+    fontSize: "0.9rem",
+    cursor: "pointer",
+    textDecoration: "none",
+    fontWeight: "600",
   };
 
   const signInButtonStyle = {
-    width: '100%',
-    background: '#4f46e5',
-    color: 'white',
-    fontWeight: '600',
-    padding: '14px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    marginBottom: '16px',
-    transition: 'all 0.2s'
+    width: "100%",
+    background: "#4f46e5",
+    color: "white",
+    fontWeight: "600",
+    padding: "14px",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1rem",
+    marginBottom: "16px",
+    transition: "all 0.2s",
   };
 
   const registerTextStyle = {
-    textAlign: 'center',
-    color: '#6b7280',
-    fontSize: '0.95rem'
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: "0.95rem",
   };
 
   const registerLinkStyle = {
-    color: '#4f46e5',
-    fontWeight: '600',
-    cursor: 'pointer',
-    textDecoration: 'none',
-    marginLeft: '4px'
+    color: "#4f46e5",
+    fontWeight: "600",
+    cursor: "pointer",
+    textDecoration: "none",
+    marginLeft: "4px",
   };
 
   const toastStyle = {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    padding: '16px 24px',
-    borderRadius: '8px',
-    color: 'white',
-    fontWeight: '600',
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    padding: "16px 24px",
+    borderRadius: "8px",
+    color: "white",
+    fontWeight: "600",
     zIndex: 1000,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    background: toast.type === 'success' ? '#10b981' : '#ef4444'
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    background: toast.type === "success" ? "#10b981" : "#ef4444",
   };
 
   return (
@@ -306,9 +306,7 @@ function Login() {
       {/* Left Side - Branding */}
       <div style={leftSideStyle}>
         <h1 style={titleStyle}>VirtueHire</h1>
-        <p style={subtitleStyle}>
-          Empowering Talent, Enabling Success
-        </p>
+        <p style={subtitleStyle}>Empowering Talent, Enabling Success</p>
 
         <div>
           <div style={featureItemStyle}>
@@ -338,14 +336,14 @@ function Login() {
       <div style={cardStyle}>
         <button
           style={backButtonStyle}
-          onClick={() => navigate('/landing')}
-          onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+          onClick={() => navigate("/landing")}
+          onMouseOver={(e) => (e.currentTarget.style.background = "#f9fafb")}
+          onMouseOut={(e) => (e.currentTarget.style.background = "white")}
         >
           ← Back
         </button>
 
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: "2rem" }}>
           <h2 style={cardTitleStyle}>Welcome Back</h2>
           <p style={cardSubtitleStyle}>Sign in to continue to VirtueHire</p>
         </div>
@@ -379,8 +377,8 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={inputStyle}
                 required
-                onFocus={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#4f46e5")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
               />
             </div>
             <div style={helperTextStyle}>Use registered email</div>
@@ -398,10 +396,13 @@ function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={passwordInputStyle}
                 required
-                onFocus={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#4f46e5")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
               />
-              <div style={eyeIconStyle} onClick={() => setShowPassword(!showPassword)}>
+              <div
+                style={eyeIconStyle}
+                onClick={() => setShowPassword(!showPassword)}
+              >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </div>
             </div>
@@ -414,13 +415,13 @@ function Login() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               />
               <span>Remember me</span>
             </label>
             <span
               style={forgotLinkStyle}
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate("/forgot-password")}
             >
               Forgot Password?
             </span>
@@ -431,8 +432,8 @@ function Login() {
             type="button"
             onClick={handleSubmit}
             style={signInButtonStyle}
-            onMouseOver={(e) => e.currentTarget.style.background = '#4338ca'}
-            onMouseOut={(e) => e.currentTarget.style.background = '#4f46e5'}
+            onMouseOver={(e) => (e.currentTarget.style.background = "#4338ca")}
+            onMouseOut={(e) => (e.currentTarget.style.background = "#4f46e5")}
           >
             Sign In
           </button>
@@ -443,7 +444,7 @@ function Login() {
           Don't have an account?
           <span
             style={registerLinkStyle}
-            onClick={() => navigate('/candidate-registration')}
+            onClick={() => navigate("/candidate-registration")}
           >
             Register Now
           </span>
@@ -451,15 +452,9 @@ function Login() {
       </div>
 
       {/* Toast Notification */}
-      {toast.message && (
-        <div style={toastStyle}>
-          {toast.message}
-        </div>
-      )}
+      {toast.message && <div style={toastStyle}>{toast.message}</div>}
     </div>
   );
 }
 
 export default Login;
-
-

@@ -17,10 +17,13 @@ import {
   ArrowRight,
   FileText,
   ArrowLeft,
-  CalendarDays
-} from 'lucide-react';
-import './HRRegistration.css';
-import { HR_SUBSCRIPTION_PLANS, activateHrSubscription } from "../../utils/hrSubscription";
+  CalendarDays,
+} from "lucide-react";
+import "./HRRegistration.css";
+import {
+  HR_SUBSCRIPTION_PLANS,
+  activateHrSubscription,
+} from "../../utils/hrSubscription";
 
 const HRRegistration = () => {
   const navigate = useNavigate();
@@ -47,7 +50,7 @@ const HRRegistration = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
@@ -60,7 +63,7 @@ const HRRegistration = () => {
       setError("File size exceeds 5MB limit.");
       return;
     }
-    setFormData(prev => ({ ...prev, idProof: file }));
+    setFormData((prev) => ({ ...prev, idProof: file }));
     setError("");
   };
 
@@ -89,7 +92,7 @@ const HRRegistration = () => {
       "jobTitle",
       "industry",
       "city",
-      "state"
+      "state",
     ];
 
     if (requiredFields.some((field) => trimmedData[field] === "")) {
@@ -152,7 +155,7 @@ const HRRegistration = () => {
     Object.entries({
       ...formData,
       ...validatedData,
-      idProof: formData.idProof
+      idProof: formData.idProof,
     }).forEach(([key, value]) => {
       if (value !== null) {
         data.append(key, value);
@@ -164,15 +167,22 @@ const HRRegistration = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       activateHrSubscription(validatedData.email, "FREE_TRIAL_3_MONTHS");
-      setMessage(res.data.message || "Registration successful! Status: Pending Verification.");
+      setMessage(
+        res.data.message ||
+          "Registration successful! Status: Pending Verification.",
+      );
       setError("");
 
       setTimeout(() => {
-        navigate(`/verify-email?email=${encodeURIComponent(validatedData.email)}&role=hr`);
+        navigate(
+          `/verify-email?email=${encodeURIComponent(validatedData.email)}&role=hr`,
+        );
       }, 1500);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || "Registration failed. Please try again.");
+      setError(
+        err.response?.data?.error || "Registration failed. Please try again.",
+      );
       setMessage("");
     } finally {
       setLoading(false);
@@ -190,7 +200,10 @@ const HRRegistration = () => {
 
         <div className="hr-reg-welcome">
           <h1>Find Top Talent with Precision</h1>
-          <p>Join the elite network of HR professionals using VirtueHire's AI-powered assessment platform to streamline recruitment.</p>
+          <p>
+            Join the elite network of HR professionals using VirtueHire's
+            AI-powered assessment platform to streamline recruitment.
+          </p>
         </div>
 
         <div className="hr-reg-subscription-panel">
@@ -198,7 +211,10 @@ const HRRegistration = () => {
             <CalendarDays size={20} />
             <div>
               <h3>HR Module Access</h3>
-              <p>Every HR account starts with a free 3-month access window. After that, you can continue with a subscription.</p>
+              <p>
+                Every HR account starts with a free 3-month access window. After
+                that, you can continue with a subscription.
+              </p>
             </div>
           </div>
 
@@ -217,26 +233,41 @@ const HRRegistration = () => {
 
         <div className="hr-reg-features">
           <div className="hr-reg-feature-item">
-            <div className="hr-reg-feature-icon"><CheckCircle size={24} /></div>
+            <div className="hr-reg-feature-icon">
+              <CheckCircle size={24} />
+            </div>
             <div className="hr-reg-feature-text">
               <h3>Verified Candidates</h3>
-              <p>Access pre-vetted candidates with validated skill assessments and badges.</p>
+              <p>
+                Access pre-vetted candidates with validated skill assessments
+                and badges.
+              </p>
             </div>
           </div>
 
           <div className="hr-reg-feature-item">
-            <div className="hr-reg-feature-icon"><Briefcase size={24} /></div>
+            <div className="hr-reg-feature-icon">
+              <Briefcase size={24} />
+            </div>
             <div className="hr-reg-feature-text">
               <h3>Smart Dashboards</h3>
-              <p>Advanced tracking for your recruitment pipeline and candidate progress.</p>
+              <p>
+                Advanced tracking for your recruitment pipeline and candidate
+                progress.
+              </p>
             </div>
           </div>
 
           <div className="hr-reg-feature-item">
-            <div className="hr-reg-feature-icon"><FileText size={24} /></div>
+            <div className="hr-reg-feature-icon">
+              <FileText size={24} />
+            </div>
             <div className="hr-reg-feature-text">
               <h3>In-depth Analytics</h3>
-              <p>Detailed performance reports and skill analytics for every candidate.</p>
+              <p>
+                Detailed performance reports and skill analytics for every
+                candidate.
+              </p>
             </div>
           </div>
         </div>
@@ -245,13 +276,19 @@ const HRRegistration = () => {
       {/* Right Form Side */}
       <div className="hr-reg-form-side">
         <div className="hr-reg-card">
-          <button type="button" className="hr-reg-back-btn" onClick={() => navigate("/hrs/login")}>
+          <button
+            type="button"
+            className="hr-reg-back-btn"
+            onClick={() => navigate("/hrs/login")}
+          >
             <ArrowLeft size={16} />
             Back
           </button>
 
           <div className="hr-reg-pricing-note">
-            <strong>Subscription note:</strong> HR access is free for the first 3 months only. Renewal plans are available as 1 month, 3 months, and 1 year subscriptions.
+            <strong>Subscription note:</strong> HR access is free for the first
+            3 months only. Renewal plans are available as 1 month, 3 months, and
+            1 year subscriptions.
           </div>
 
           {message && (
@@ -273,13 +310,22 @@ const HRRegistration = () => {
               {/* Personal Info */}
               <div className="hr-reg-field full">
                 <label>Full Name</label>
-                <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <User
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="text"
                     name="fullName"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="e.g. John Doe"
                     value={formData.fullName}
                     onChange={handleChange}
@@ -290,13 +336,22 @@ const HRRegistration = () => {
 
               <div className="hr-reg-field">
                 <label>Email Address</label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Mail
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="email"
                     name="email"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="name@company.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -307,13 +362,22 @@ const HRRegistration = () => {
 
               <div className="hr-reg-field">
                 <label>Phone Number</label>
-                <div style={{ position: 'relative' }}>
-                  <Phone size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Phone
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="text"
                     name="phoneNumber"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="+91 XXXXX XXXXX"
                     value={formData.phoneNumber}
                     onChange={handleChange}
@@ -325,13 +389,22 @@ const HRRegistration = () => {
               {/* Password */}
               <div className="hr-reg-field">
                 <label>Password</label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Lock
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="password"
                     name="password"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
@@ -342,13 +415,22 @@ const HRRegistration = () => {
 
               <div className="hr-reg-field">
                 <label>Confirm Password</label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Lock
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="password"
                     name="confirmPassword"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
@@ -360,13 +442,22 @@ const HRRegistration = () => {
               {/* Company Info */}
               <div className="hr-reg-field">
                 <label>Company Name</label>
-                <div style={{ position: 'relative' }}>
-                  <Building2 size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Building2
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="text"
                     name="companyName"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="VirtueHire Inc."
                     value={formData.companyName}
                     onChange={handleChange}
@@ -377,13 +468,22 @@ const HRRegistration = () => {
 
               <div className="hr-reg-field">
                 <label>Job Title</label>
-                <div style={{ position: 'relative' }}>
-                  <Briefcase size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Briefcase
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="text"
                     name="jobTitle"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="Talent Acquisition"
                     value={formData.jobTitle}
                     onChange={handleChange}
@@ -394,13 +494,22 @@ const HRRegistration = () => {
 
               <div className="hr-reg-field">
                 <label>Company Website</label>
-                <div style={{ position: 'relative' }}>
-                  <Globe size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <div style={{ position: "relative" }}>
+                  <Globe
+                    size={18}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                    }}
+                  />
                   <input
                     type="text"
                     name="companyWebsite"
                     className="hr-reg-input"
-                    style={{ paddingLeft: '40px' }}
+                    style={{ paddingLeft: "40px" }}
                     placeholder="https://..."
                     value={formData.companyWebsite}
                     onChange={handleChange}
@@ -462,21 +571,29 @@ const HRRegistration = () => {
                   <div className="hr-reg-file-content">
                     <Upload className="hr-reg-file-icon" size={32} />
                     {formData.idProof ? (
-                      <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formData.idProof.name}</span>
+                      <span style={{ color: "#3b82f6", fontWeight: "600" }}>
+                        {formData.idProof.name}
+                      </span>
                     ) : (
                       <span>Drop your ID proof here or click to browse</span>
                     )}
-                    <span style={{ fontSize: '12px' }}>Accepted: JPG, PNG, PDF (Max: 5MB)</span>
+                    <span style={{ fontSize: "12px" }}>
+                      Accepted: JPG, PNG, PDF (Max: 5MB)
+                    </span>
                   </div>
                 </label>
               </div>
             </div>
 
-            <button type="submit" className="hr-reg-submit-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="hr-reg-submit-btn"
+              disabled={loading}
+            >
               {loading ? (
                 <>Processing...</>
               ) : (
-                <> 
+                <>
                   Sign Up <ArrowRight size={20} />
                 </>
               )}
@@ -484,9 +601,12 @@ const HRRegistration = () => {
           </form>
 
           <footer className="hr-reg-footer plain">
-            Already have an HR account? <Link to="/hrs/login">Sign In here</Link>
+            Already have an HR account?{" "}
+            <Link to="/hrs/login">Sign In here</Link>
             <br />
-            <Link to="/payments/plans?audience=hr">View HR subscription plans</Link>
+            <Link to="/payments/plans?audience=hr">
+              View HR subscription plans
+            </Link>
           </footer>
         </div>
       </div>

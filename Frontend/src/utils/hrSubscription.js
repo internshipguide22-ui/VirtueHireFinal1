@@ -32,7 +32,8 @@ export const HR_SUBSCRIPTION_PLANS = [
 ];
 
 const getPlanByType = (planType) =>
-  HR_SUBSCRIPTION_PLANS.find((plan) => plan.type === planType) || HR_SUBSCRIPTION_PLANS[0];
+  HR_SUBSCRIPTION_PLANS.find((plan) => plan.type === planType) ||
+  HR_SUBSCRIPTION_PLANS[0];
 
 const addDays = (date, days) => {
   const copy = new Date(date);
@@ -40,7 +41,10 @@ const addDays = (date, days) => {
   return copy;
 };
 
-const getStorageKey = (identity) => `${STORAGE_PREFIX}${String(identity || "").trim().toLowerCase()}`;
+const getStorageKey = (identity) =>
+  `${STORAGE_PREFIX}${String(identity || "")
+    .trim()
+    .toLowerCase()}`;
 
 export const getHrIdentity = (userOrEmail) => {
   if (!userOrEmail) return "";
@@ -93,7 +97,11 @@ export const getHrSubscription = (userOrEmail) => {
   }
 };
 
-export const activateHrSubscription = (userOrEmail, planType, startDate = new Date()) => {
+export const activateHrSubscription = (
+  userOrEmail,
+  planType,
+  startDate = new Date(),
+) => {
   const identity = getHrIdentity(userOrEmail);
   if (!identity) return null;
 

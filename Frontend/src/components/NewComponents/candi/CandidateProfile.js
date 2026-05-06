@@ -33,9 +33,7 @@ function CandidateProfile() {
 
   if (!user) {
     return (
-      <h2 className="no-data">
-        No profile data found. Please log in again.
-      </h2>
+      <h2 className="no-data">No profile data found. Please log in again.</h2>
     );
   }
 
@@ -51,12 +49,12 @@ function CandidateProfile() {
         {/* Profile Header */}
         <div className="profile-header">
           <h1>
-            👋 Welcome, <span>{user.firstName} {user.lastName}</span>
+            👋 Welcome,{" "}
+            <span>
+              {user.firstName} {user.lastName}
+            </span>
           </h1>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="edit-btn"
-          >
+          <button onClick={() => setIsEditing(!isEditing)} className="edit-btn">
             {isEditing ? "Cancel" : "Edit Profile"}
           </button>
         </div>

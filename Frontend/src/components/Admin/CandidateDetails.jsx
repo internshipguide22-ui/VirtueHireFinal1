@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import api from "../../services/api";
-import { API_BASE_URL } from "../../config";
 import "./AdminDashboard.css";
 import "./CandidateDetails.css";
 import { useAppDialog } from "../common/AppDialog";
+import { getCandidateFileUrl, getResumeFileName } from "../Candidate/profile/profileUtils";
 
 const EMPTY_FORM = {
   fullName: "",
@@ -226,6 +226,8 @@ export default function CandidateDetails() {
   };
 
   const skills = useMemo(() => splitSkills(candidate?.skills || ""), [candidate?.skills]);
+  const resumeUrl = getCandidateFileUrl(candidate?.resumePath);
+  const resumeName = getResumeFileName(candidate?.resumePath);
 
   if (loading) {
     return (
@@ -291,7 +293,7 @@ export default function CandidateDetails() {
             <div className="adm-candidate-profile">
               <div className="adm-candidate-avatar">
                 {candidate.profilePic ? (
-                  <img src={`${API_BASE_URL}/candidates/file/${candidate.profilePic}`} alt={candidate.fullName} />
+                  <img src={getCandidateFileUrl(candidate.profilePic)} alt={candidate.fullName} />
                 ) : (
                   getInitials(candidate.fullName)
                 )}
@@ -601,11 +603,25 @@ export default function CandidateDetails() {
               <div className="adm-files-grid">
                 <div className="adm-file-card">
                   <h4><FileText size={14} style={{ verticalAlign: "middle", marginRight: 6 }} /> Resume</h4>
-                  <p>{candidate.resumePath || "No resume uploaded."}</p>
-                  {candidate.resumePath ? (
-                    <a href={`${API_BASE_URL}/admin/download/resume/${candidate.id}`} className="adm-btn-secondary" download>
-                      <Download size={16} /> Download Resume
-                    </a>
+                  <p>{resumeName || "No resume uploaded."}</p>
+                  {resumeUrl ? (
+                    <div className="adm-edit-actions">
+                      <a
+                        href={resumeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="adm-btn-ghost"
+                      >
+                        <FileText size={16} /> View Resume
+                      </a>
+                      <a
+                        href={resumeUrl}
+                        download={resumeName || "resume"}
+                        className="adm-btn-secondary"
+                      >
+                        <Download size={16} /> Download Resume
+                      </a>
+                    </div>
                   ) : null}
                 </div>
 
@@ -613,7 +629,7 @@ export default function CandidateDetails() {
                   <h4><User size={14} style={{ verticalAlign: "middle", marginRight: 6 }} /> Profile Image</h4>
                   <p>{candidate.profilePic || "No profile image uploaded."}</p>
                   {candidate.profilePic ? (
-                    <a href={`${API_BASE_URL}/candidates/file/${candidate.profilePic}`} className="adm-btn-ghost" target="_blank" rel="noreferrer">
+                    <a href={getCandidateFileUrl(candidate.profilePic)} className="adm-btn-ghost" target="_blank" rel="noreferrer">
                       View Image
                     </a>
                   ) : null}

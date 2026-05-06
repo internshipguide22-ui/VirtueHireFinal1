@@ -23,7 +23,10 @@ const HrPaymentPlans = () => {
         <div className="col-md-4 mb-4">
           <div
             className="card text-center h-100"
-            style={{ position: "relative", transition: "transform 0.3s, box-shadow 0.3s" }}
+            style={{
+              position: "relative",
+              transition: "transform 0.3s, box-shadow 0.3s",
+            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-10px)";
               e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.2)";
@@ -58,8 +61,12 @@ const HrPaymentPlans = () => {
               </div>
 
               <ul className="list-unstyled text-start mb-4">
-                <li className="mb-2">✓ <strong>Unlimited</strong> candidate views</li>
-                <li className="mb-2">✓ Valid for <strong>30 days</strong></li>
+                <li className="mb-2">
+                  ✓ <strong>Unlimited</strong> candidate views
+                </li>
+                <li className="mb-2">
+                  ✓ Valid for <strong>30 days</strong>
+                </li>
                 <li className="mb-2">✓ Best for active recruiters</li>
                 <li className="mb-2">✓ Download all resumes</li>
                 <li className="mb-2">✓ Access candidate contact info</li>
@@ -89,8 +96,12 @@ const HrPaymentPlans = () => {
               </div>
 
               <ul className="list-unstyled text-start mb-4">
-                <li className="mb-2">✓ View <strong>10 candidates</strong></li>
-                <li className="mb-2">✓ <strong>No expiry date</strong></li>
+                <li className="mb-2">
+                  ✓ View <strong>10 candidates</strong>
+                </li>
+                <li className="mb-2">
+                  ✓ <strong>No expiry date</strong>
+                </li>
                 <li className="mb-2">✓ Use views anytime</li>
                 <li className="mb-2">✓ Download resumes</li>
                 <li className="mb-2">✓ Access contact information</li>
@@ -120,7 +131,9 @@ const HrPaymentPlans = () => {
               </div>
 
               <ul className="list-unstyled text-start mb-4">
-                <li className="mb-2">✓ View <strong>1 candidate</strong></li>
+                <li className="mb-2">
+                  ✓ View <strong>1 candidate</strong>
+                </li>
                 <li className="mb-2">✓ Instant access</li>
                 <li className="mb-2">✓ No commitment</li>
                 <li className="mb-2">✓ Download resume</li>
@@ -168,7 +181,8 @@ const HrPaymentPlans = () => {
               data-bs-parent="#faqAccordion"
             >
               <div className="accordion-body">
-                Your plan will automatically expire after 30 days. You'll need to purchase a new plan to continue viewing candidate details.
+                Your plan will automatically expire after 30 days. You'll need
+                to purchase a new plan to continue viewing candidate details.
               </div>
             </div>
           </div>
@@ -190,7 +204,9 @@ const HrPaymentPlans = () => {
               data-bs-parent="#faqAccordion"
             >
               <div className="accordion-body">
-                Yes! If you purchase 10 Candidates or Single Candidate plans, the views will be added to your account. However, Monthly Unlimited will replace any existing plan.
+                Yes! If you purchase 10 Candidates or Single Candidate plans,
+                the views will be added to your account. However, Monthly
+                Unlimited will replace any existing plan.
               </div>
             </div>
           </div>
@@ -212,7 +228,8 @@ const HrPaymentPlans = () => {
               data-bs-parent="#faqAccordion"
             >
               <div className="accordion-body">
-                No! The 10 Candidates and Single Candidate plans never expire. Use your views whenever you need them.
+                No! The 10 Candidates and Single Candidate plans never expire.
+                Use your views whenever you need them.
               </div>
             </div>
           </div>

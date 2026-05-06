@@ -58,9 +58,7 @@ export default function CandidateRegister() {
 
   const handleSkillChange = (skill) => {
     setSkills((prev) =>
-      prev.includes(skill)
-        ? prev.filter((s) => s !== skill)
-        : [...prev, skill]
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
     );
   };
 
@@ -134,7 +132,9 @@ export default function CandidateRegister() {
       setToast({
         show: true,
         type: "error",
-        message: err.response?.data?.message || "Registration failed. Please try again.",
+        message:
+          err.response?.data?.message ||
+          "Registration failed. Please try again.",
       });
       setTimeout(() => setToast({ show: false, message: "", type: "" }), 4000);
     }
@@ -148,7 +148,9 @@ export default function CandidateRegister() {
         {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Join VirtueHire</h1>
-          <p style={styles.subtitle}>Create your account and start your journey</p>
+          <p style={styles.subtitle}>
+            Create your account and start your journey
+          </p>
         </div>
 
         <div style={styles.formWrapper}>
@@ -157,14 +159,17 @@ export default function CandidateRegister() {
             <div
               style={{
                 ...styles.messageDiv,
-                backgroundColor: toast.type === "success" ? "#dcfce7" : "#fee2e2",
+                backgroundColor:
+                  toast.type === "success" ? "#dcfce7" : "#fee2e2",
                 borderLeft: `4px solid ${toast.type === "success" ? "#10b981" : "#ef4444"}`,
               }}
             >
-              <p style={{
-                ...styles.messageText,
-                color: toast.type === "success" ? "#166534" : "#991b1b",
-              }}>
+              <p
+                style={{
+                  ...styles.messageText,
+                  color: toast.type === "success" ? "#166534" : "#991b1b",
+                }}
+              >
                 {toast.message}
               </p>
             </div>
@@ -339,19 +344,26 @@ export default function CandidateRegister() {
             <div style={styles.skillsSection}>
               <label style={styles.skillsLabel}>Skills:</label>
               <div style={styles.skillsContainer}>
-                {["C", "C++", "Java", "Python", "SQL", "JavaScript", "React", "Node.js"].map(
-                  (skill) => (
-                    <label key={skill} style={styles.skillItem}>
-                      <input
-                        type="checkbox"
-                        checked={skills.includes(skill)}
-                        onChange={() => handleSkillChange(skill)}
-                        style={styles.checkbox}
-                      />
-                      {skill}
-                    </label>
-                  )
-                )}
+                {[
+                  "C",
+                  "C++",
+                  "Java",
+                  "Python",
+                  "SQL",
+                  "JavaScript",
+                  "React",
+                  "Node.js",
+                ].map((skill) => (
+                  <label key={skill} style={styles.skillItem}>
+                    <input
+                      type="checkbox"
+                      checked={skills.includes(skill)}
+                      onChange={() => handleSkillChange(skill)}
+                      style={styles.checkbox}
+                    />
+                    {skill}
+                  </label>
+                ))}
               </div>
             </div>
           </div>
@@ -376,9 +388,7 @@ export default function CandidateRegister() {
                   📁 {resumeFile ? resumeFile.name : "Choose file"}
                 </span>
               </label>
-              <small style={styles.smallText}>
-                PDF, DOC, DOCX (Max: 5MB)
-              </small>
+              <small style={styles.smallText}>PDF, DOC, DOCX (Max: 5MB)</small>
             </div>
 
             {/* Profile Picture Upload */}
@@ -397,9 +407,7 @@ export default function CandidateRegister() {
                   🖼️ {profilePicFile ? profilePicFile.name : "Choose image"}
                 </span>
               </label>
-              <small style={styles.smallText}>
-                JPG, PNG, GIF (Max: 5MB)
-              </small>
+              <small style={styles.smallText}>JPG, PNG, GIF (Max: 5MB)</small>
             </div>
           </div>
 
@@ -408,12 +416,14 @@ export default function CandidateRegister() {
             onClick={handleSubmit}
             style={styles.button}
             onMouseOver={(e) => {
-              e.target.style.background = "linear-gradient(135deg, #4338ca 0%, #6d28d9 100%)";
+              e.target.style.background =
+                "linear-gradient(135deg, #4338ca 0%, #6d28d9 100%)";
               e.target.style.boxShadow = "0 8px 20px rgba(79, 70, 229, 0.4)";
               e.target.style.transform = "translateY(-2px)";
             }}
             onMouseOut={(e) => {
-              e.target.style.background = "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)";
+              e.target.style.background =
+                "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)";
               e.target.style.boxShadow = "0 4px 12px rgba(79, 70, 229, 0.3)";
               e.target.style.transform = "translateY(0)";
             }}
@@ -423,16 +433,20 @@ export default function CandidateRegister() {
 
           {/* Success Message - Stays visible */}
           {toast.show && toast.type === "success" && (
-            <div style={{
-              ...styles.messageDiv,
-              backgroundColor: "#dcfce7",
-              borderLeft: "4px solid #10b981",
-              marginTop: "20px"
-            }}>
-              <p style={{
-                ...styles.messageText,
-                color: "#166534",
-              }}>
+            <div
+              style={{
+                ...styles.messageDiv,
+                backgroundColor: "#dcfce7",
+                borderLeft: "4px solid #10b981",
+                marginTop: "20px",
+              }}
+            >
+              <p
+                style={{
+                  ...styles.messageText,
+                  color: "#166534",
+                }}
+              >
                 {toast.message}
               </p>
             </div>
@@ -459,7 +473,8 @@ export default function CandidateRegister() {
 
 const styles = {
   body: {
-    fontFamily: "Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily:
+      "Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     backgroundColor: "#f3f4f6",
     display: "flex",
     justifyContent: "center",

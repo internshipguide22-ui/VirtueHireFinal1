@@ -1,0 +1,5 @@
+subject,text,option1,option2,option3,option4,correctAnswer
+Java,What is Object-Oriented Programming?,A programming paradigm based on objects and classes,A style of procedural programming,A database management technique,A networking protocol,A
+Java,Which of these is NOT a principle of OOP?,Encapsulation,Inheritance,Compilation,Polymorphism,C
+Java,What does the 'static' keyword mean?,Belongs to the class rather than instance,Can only be used once,Cannot be modified,Is thread-safe,A
+Java,What is inheritance in Java?,Mechanism where one class acquires properties of another,A way to hide data,A type of loop construct,A method of file handling,A

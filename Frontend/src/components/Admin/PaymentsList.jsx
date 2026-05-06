@@ -157,7 +157,6 @@
 
 // export default AdminPayments;
 
-
 // src/pages/admin/PaymentsList.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -179,7 +178,9 @@ const PaymentsList = () => {
       .then((res) => {
         const data = res.data.payments || [];
         const totalPayments = data.length;
-        const successfulPayments = data.filter(p => p.status === "SUCCESS").length;
+        const successfulPayments = data.filter(
+          (p) => p.status === "SUCCESS",
+        ).length;
         const totalRevenue = data.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         setPayments(data);
@@ -198,16 +199,22 @@ const PaymentsList = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "SUCCESS": return "status-badge status-success";
-      case "PENDING": return "status-badge status-pending";
-      case "FAILED": return "status-badge status-failed";
-      default: return "status-badge status-cancelled";
+      case "SUCCESS":
+        return "status-badge status-success";
+      case "PENDING":
+        return "status-badge status-pending";
+      case "FAILED":
+        return "status-badge status-failed";
+      default:
+        return "status-badge status-cancelled";
     }
   };
 
   return (
     <div className="container my-4">
-      <h1><i className="fas fa-money-bill-wave me-2"></i>Payment Management</h1>
+      <h1>
+        <i className="fas fa-money-bill-wave me-2"></i>Payment Management
+      </h1>
 
       {/* Statistics */}
       <div className="row mb-4">
@@ -230,7 +237,9 @@ const PaymentsList = () => {
         <div className="col-md-3">
           <div className="card text-white bg-warning">
             <div className="card-body">
-              <h5 className="card-title">{stats.totalPayments - stats.successfulPayments}</h5>
+              <h5 className="card-title">
+                {stats.totalPayments - stats.successfulPayments}
+              </h5>
               <p className="card-text">Failed/Pending</p>
             </div>
           </div>
@@ -270,7 +279,9 @@ const PaymentsList = () => {
                     <td>{payment.id}</td>
                     <td>{payment.hr?.fullName || "N/A"}</td>
                     <td>
-                      <span className="badge bg-secondary">{payment.planType}</span>
+                      <span className="badge bg-secondary">
+                        {payment.planType}
+                      </span>
                     </td>
                     <td>₹{payment.amount?.toFixed(2)}</td>
                     <td>
@@ -279,7 +290,11 @@ const PaymentsList = () => {
                       </span>
                     </td>
                     <td>{new Date(payment.createdAt).toLocaleString()}</td>
-                    <td><small className="text-muted">{payment.paymentGatewayId}</small></td>
+                    <td>
+                      <small className="text-muted">
+                        {payment.paymentGatewayId}
+                      </small>
+                    </td>
                   </tr>
                 ))
               ) : (

@@ -1,5 +1,8 @@
 package com.virtuehire.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.virtuehire.model.*;
 import com.virtuehire.service.*;
 import com.virtuehire.repository.*;
@@ -13,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/assessment")
@@ -27,6 +31,7 @@ public class AssessmentRestController {
     private final QuestionRepository questionRepository;
     private final QuestionService questionService;
     private final CodeExecutionService codeExecutionService;
+    private final ObjectMapper objectMapper;
 
     public AssessmentRestController(
             AssessmentResultService resultService,
@@ -35,7 +40,8 @@ public class AssessmentRestController {
             CandidateAnswerRepository candidateAnswerRepository,
             QuestionRepository questionRepository,
             QuestionService questionService,
-            CodeExecutionService codeExecutionService) {
+            CodeExecutionService codeExecutionService,
+            ObjectMapper objectMapper) {
 
         this.resultService = resultService;
         this.assessmentService = assessmentService;
@@ -44,6 +50,7 @@ public class AssessmentRestController {
         this.questionRepository = questionRepository;
         this.questionService = questionService;
         this.codeExecutionService = codeExecutionService;
+        this.objectMapper = objectMapper;
     }
 
     // =========================================================
@@ -75,19 +82,29 @@ public class AssessmentRestController {
         }
 
         Assessment assessment = assessmentOpt.get();
-        
-        // Determine which level the candidate can attempt next
-        int nextLevel = resultService.getNextLevel(candidate.getId(), assessment.getId());
-        
-        // If candidate has never attempted this assessment, nextLevel should be 1
-        if (nextLevel == 0) {
-            nextLevel = 1;
-        }
+        List<AssessmentSection> sections = assessmentService.getAssessmentSections(assessment.getId());
+        List<AssessmentResult> results = resultService.getResultsForAssessment(candidate.getId(), assessment.getAssessmentName());
+        int nextLevel = resultService.getNextLevelForAssessment(
+                candidate.getId(),
+                assessment.getAssessmentName(),
+                sections);
+        boolean isLocked = assessment.isLocked() || resultService.isAssessmentLocked(
+                candidate.getId(),
+                assessment.getAssessmentName(),
+                sections);
+        String error = assessment.isLocked()
+                ? "This assessment is locked by the admin."
+                : resultService.getAssessmentLockMessage(candidate.getId(), assessment.getAssessmentName(), sections);
 
         return ResponseEntity.ok(Map.of(
                 "assessmentName", assessment.getAssessmentName(),
                 "nextLevel", nextLevel,
-                "assessmentId", assessment.getId()
+                "assessmentId", assessment.getId(),
+                "totalSections", sections.size(),
+                "configs", buildSectionConfigs(sections),
+                "results", buildResultSummaries(results),
+                "isLocked", isLocked,
+                "error", error
         ));
     }
 
@@ -218,6 +235,7 @@ public class AssessmentRestController {
             List<AssessmentQuestion> aqs = aqRepo.findBySectionId(section.getId());
 
             int correct = 0;
+            List<Map<String, Object>> answersForStorage = new ArrayList<>();
 
             for (AssessmentQuestion aq : aqs) {
                 Question q = aq.getQuestion();
@@ -235,28 +253,44 @@ public class AssessmentRestController {
 
                         int passed = ((Number) result.get("passedTestCases")).intValue();
                         int total  = ((Number) result.get("totalTestCases")).intValue();
+                        boolean isCorrect = passed == total;
 
-                        if (passed == total) correct++;
+                        if (isCorrect) correct++;
+
+                        answersForStorage.add(buildCodingAnswerPayload(q, ans, isCorrect));
                     }
                 } else {
                     // MCQ scoring
                     String given = request.answers != null
                             ? request.answers.get(q.getId().toString())
                             : null;
-                    if (given != null && given.equalsIgnoreCase(q.getCorrectAnswer())) {
+                    boolean isCorrect = given != null && given.equalsIgnoreCase(q.getCorrectAnswer());
+                    if (isCorrect) {
                         correct++;
                     }
+                    answersForStorage.add(buildMcqAnswerPayload(q, given, isCorrect));
                 }
             }
 
             int total = aqs.size();
             int percentage = total > 0 ? (correct * 100 / total) : 0;
-            boolean passed = percentage >= 60;
+            boolean passed = percentage >= section.getPassPercentage();
+            AssessmentResult savedResult = resultService.saveResult(
+                    candidate.getId(),
+                    assessment.getAssessmentName(),
+                    level,
+                    percentage,
+                    section.getPassPercentage(),
+                    serializeAnswers(answersForStorage),
+                    "offline".equalsIgnoreCase(request.deliveryMode));
+
+            persistCandidateAnswers(savedResult, candidate.getId(), answersForStorage);
 
             return ResponseEntity.ok(Map.of(
                     "score", correct,
                     "percentage", percentage,
-                    "passed", passed
+                    "passed", passed,
+                    "resultId", savedResult.getId()
             ));
 
         } catch (Exception e) {
@@ -272,6 +306,30 @@ public class AssessmentRestController {
     @GetMapping("/subjects")
     public List<String> getConfiguredSubjects() {
         return assessmentService.getAllAssessmentNames();
+    }
+
+    @GetMapping("/results/{resultId}/answers")
+    public ResponseEntity<?> getResultAnswers(@PathVariable Long resultId, HttpSession session) {
+        Candidate candidate = (Candidate) session.getAttribute("candidate");
+        if (candidate == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+        }
+
+        Optional<AssessmentResult> resultOpt = resultService.getCandidateResults(candidate.getId()).stream()
+                .filter(result -> Objects.equals(result.getId(), resultId))
+                .findFirst();
+
+        if (resultOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Result not found"));
+        }
+
+        AssessmentResult result = resultOpt.get();
+        try {
+            List<Map<String, Object>> answers = parseStoredAnswers(result.getAnswersJson());
+            return ResponseEntity.ok(answers);
+        } catch (Exception ex) {
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     // =========================================================
@@ -366,6 +424,106 @@ public class AssessmentRestController {
                 .toList();
     }
 
+    private List<Map<String, Object>> buildSectionConfigs(List<AssessmentSection> sections) {
+        return sections.stream()
+                .map(section -> {
+                    Map<String, Object> config = new LinkedHashMap<>();
+                    config.put("sectionNumber", section.getSectionNumber());
+                    config.put("sectionName", section.getSubject());
+                    config.put("subject", section.getSubject());
+                    config.put("questionCount", section.getQuestionCount());
+                    config.put("timeLimit", section.getSectionTime());
+                    config.put("passPercentage", section.getPassPercentage());
+                    config.put("sectionMode", section.getSectionMode());
+                    config.put("supportedLanguages", parseSupportedLanguages(section.getSupportedLanguages()));
+                    return config;
+                })
+                .toList();
+    }
+
+    private List<Map<String, Object>> buildResultSummaries(List<AssessmentResult> results) {
+        return results.stream()
+                .map(result -> {
+                    Map<String, Object> summary = new LinkedHashMap<>();
+                    summary.put("id", result.getId());
+                    summary.put("subject", result.getSubject());
+                    summary.put("level", result.getLevel());
+                    summary.put("score", result.getScore());
+                    summary.put("attemptedAt", result.getAttemptedAt());
+                    summary.put("lockedAt", result.getLockedAt());
+                    return summary;
+                })
+                .toList();
+    }
+
+    private Map<String, Object> buildMcqAnswerPayload(Question question, String userAnswer, boolean isCorrect) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("questionId", question.getId());
+        payload.put("question", question.getText());
+        payload.put("options", question.getOptions() != null ? question.getOptions() : List.of());
+        payload.put("userAnswer", userAnswer);
+        payload.put("correctAnswer", question.getCorrectAnswer());
+        payload.put("isCorrect", isCorrect);
+        payload.put("questionType", question.getQuestionType());
+        return payload;
+    }
+
+    private Map<String, Object> buildCodingAnswerPayload(Question question, CodingAnswerRequest answer, boolean isCorrect) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("questionId", question.getId());
+        payload.put("question", question.getText());
+        payload.put("options", List.of());
+        payload.put("userAnswer", answer != null ? answer.sourceCode : null);
+        payload.put("correctAnswer", isCorrect ? "All test cases passed" : "Not all test cases passed");
+        payload.put("isCorrect", isCorrect);
+        payload.put("questionType", question.getQuestionType());
+        return payload;
+    }
+
+    private String serializeAnswers(List<Map<String, Object>> answers) {
+        try {
+            return objectMapper.writeValueAsString(answers);
+        } catch (JsonProcessingException ex) {
+            return "[]";
+        }
+    }
+
+    private List<Map<String, Object>> parseStoredAnswers(String answersJson) throws JsonProcessingException {
+        if (answersJson == null || answersJson.isBlank()) {
+            return List.of();
+        }
+
+        return objectMapper.readValue(answersJson, new TypeReference<List<Map<String, Object>>>() {});
+    }
+
+    private void persistCandidateAnswers(AssessmentResult result, Long candidateId, List<Map<String, Object>> answers) {
+        if (result == null || result.getId() == null) {
+            return;
+        }
+
+        candidateAnswerRepository.deleteByResultId(result.getId());
+
+        List<CandidateAnswer> entities = answers.stream()
+                .map(answer -> {
+                    CandidateAnswer entity = new CandidateAnswer();
+                    entity.setCandidateId(candidateId);
+                    entity.setResultId(result.getId());
+                    Object questionId = answer.get("questionId");
+                    if (questionId instanceof Number number) {
+                        entity.setQuestionId(number.longValue());
+                    }
+                    Object userAnswer = answer.get("userAnswer");
+                    entity.setUserAnswer(userAnswer != null ? String.valueOf(userAnswer) : null);
+                    entity.setCorrect(Boolean.TRUE.equals(answer.get("isCorrect")));
+                    return entity;
+                })
+                .collect(Collectors.toList());
+
+        if (!entities.isEmpty()) {
+            candidateAnswerRepository.saveAll(entities);
+        }
+    }
+
     // =========================================================
     // DTOs
     // =========================================================
@@ -376,6 +534,7 @@ public class AssessmentRestController {
         public Integer violations;
         public String lastActivity;
         public Boolean isAutoSubmit;
+        public String deliveryMode;
     }
 
     public static class CodingAnswerRequest {

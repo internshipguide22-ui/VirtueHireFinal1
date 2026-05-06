@@ -1,28 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import api from '../../services/api';
-import AdminLayout from '../Admin/AdminLayout';
-import { Check, X, User, Building2, Mail, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
-import './HRManagement.css';
-import { API_BASE_URL } from '../../config';
-import { useAppDialog } from '../common/AppDialog';
+import React, { useState, useEffect } from "react";
+import { useLocation, Link } from "react-router-dom";
+import api from "../../services/api";
+import AdminLayout from "../Admin/AdminLayout";
+import {
+  Check,
+  X,
+  User,
+  Building2,
+  Mail,
+  ExternalLink,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+import "./HRManagement.css";
+import { API_BASE_URL } from "../../config";
+import { useAppDialog } from "../common/AppDialog";
 
 export default function HRManagement() {
   const location = useLocation();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState("all");
   const [hrs, setHrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectModal, setRejectModal] = useState({ open: false, hrId: null });
-  const [rejectReason, setRejectReason] = useState('');
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [rejectReason, setRejectReason] = useState("");
+  const [message, setMessage] = useState({ type: "", text: "" });
   const { showConfirm, dialogNode } = useAppDialog();
 
   // API Base URL - points to Virtue-Candidate backend
-  const API_BASE = '/admin/hrs';
+  const API_BASE = "/admin/hrs";
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const filterFromUrl = params.get('filter') || 'all';
+    const filterFromUrl = params.get("filter") || "all";
     setFilter(filterFromUrl);
     fetchHrs(filterFromUrl);
   }, [location.search]);
@@ -34,7 +43,7 @@ export default function HRManagement() {
       // Backend returns Map.of("hrs", hrs), so we need response.data.hrs
       setHrs(response.data.hrs || []);
     } catch (err) {
-      showMsg('error', 'Failed to load HR data from server.');
+      showMsg("error", "Failed to load HR data from server.");
       console.error(err);
       setHrs([]); // Fallback to empty array on error
     } finally {
@@ -44,16 +53,16 @@ export default function HRManagement() {
 
   const showMsg = (type, text) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+    setTimeout(() => setMessage({ type: "", text: "" }), 4000);
   };
 
   const handleVerify = async (id) => {
     try {
       await api.post(`/admin/verify/${id}`);
       await fetchHrs(filter);
-      showMsg('success', 'HR account successfully verified!');
+      showMsg("success", "HR account successfully verified!");
     } catch (err) {
-      showMsg('error', 'Failed to verify HR account.');
+      showMsg("error", "Failed to verify HR account.");
       console.error(err);
     }
   };
@@ -62,65 +71,101 @@ export default function HRManagement() {
     if (!rejectReason.trim()) return;
     try {
       // Assuming unverify logic for rejection in this demo
-      await api.post(`/admin/unverify/${rejectModal.hrId}`, { reason: rejectReason });
+      await api.post(`/admin/unverify/${rejectModal.hrId}`, {
+        reason: rejectReason,
+      });
       await fetchHrs(filter);
-      showMsg('info', `Verification rejected. Reason: ${rejectReason}`);
+      showMsg("info", `Verification rejected. Reason: ${rejectReason}`);
       setRejectModal({ open: false, hrId: null });
-      setRejectReason('');
+      setRejectReason("");
     } catch (err) {
-      showMsg('error', 'Failed to reject HR verification.');
+      showMsg("error", "Failed to reject HR verification.");
       console.error(err);
     }
   };
 
   const handleDeleteHr = async (id, name) => {
     const confirmed = await showConfirm({
-      title: 'Delete HR Account',
-      message: `Delete HR account for ${name || 'this user'}? This action cannot be undone.`,
-      tone: 'danger',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel'
+      title: "Delete HR Account",
+      message: `Delete HR account for ${name || "this user"}? This action cannot be undone.`,
+      tone: "danger",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
     });
     if (!confirmed) return;
 
     try {
       await api.delete(`/admin/hrs/${id}`);
       await fetchHrs(filter);
-      showMsg('success', 'HR account deleted successfully.');
+      showMsg("success", "HR account deleted successfully.");
     } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Failed to delete HR account.');
+      showMsg(
+        "error",
+        err.response?.data?.error || "Failed to delete HR account.",
+      );
       console.error(err);
     }
   };
 
-  const filteredHrs = hrs.filter(hr => {
-    if (filter === 'verified') return hr.verified;
-    if (filter === 'unverified') return hr.emailVerified && !hr.verified;
+  const filteredHrs = hrs.filter((hr) => {
+    if (filter === "verified") return hr.verified;
+    if (filter === "unverified") return hr.emailVerified && !hr.verified;
     return true;
   });
 
+  const verifiedCount = hrs.filter((hr) => hr.verified).length;
+  const pendingCount = hrs.filter(
+    (hr) => hr.emailVerified && !hr.verified,
+  ).length;
+  const totalCount = hrs.length;
+
   return (
     <AdminLayout
+      title="HR Account Management"
       description="Review HR registrations, verify partner accounts, and keep access aligned with platform policies."
+      contentClassName="adm-module-stack"
       actions={
-        <button onClick={fetchHrs} className="adm-refresh-btn" title="Refresh Data">
-          <RefreshCw size={18} className={loading ? 'spinning' : ''} /> Refresh
+        <button
+          onClick={fetchHrs}
+          className="adm-refresh-btn"
+          title="Refresh Data"
+        >
+          <RefreshCw size={18} className={loading ? "spinning" : ""} /> Refresh
         </button>
       }
     >
       {dialogNode}
       <div className="hrm-container hrm-admin-shell">
-        <header className="hrm-header">
-          <div className="hrm-header-title">
-            <h1>HR Account Management</h1>
-            <p>Review and verify HR professional accounts for Virtue Hire platform</p>
+        <section className="hrm-overview-card">
+          <div className="hrm-overview-copy">
+            <span className="hrm-kicker">Partner Operations</span>
+            <h2>Keep recruiter access clean, verified, and ready for action.</h2>
+            <p>
+              Review registration quality, verify legitimate HR partners, and
+              remove inactive or invalid accounts without leaving the admin
+              workspace.
+            </p>
           </div>
-        </header>
+          <div className="hrm-overview-stats">
+            <article className="hrm-stat-card">
+              <span>Total HRs</span>
+              <strong>{totalCount}</strong>
+            </article>
+            <article className="hrm-stat-card">
+              <span>Pending</span>
+              <strong>{pendingCount}</strong>
+            </article>
+            <article className="hrm-stat-card">
+              <span>Verified</span>
+              <strong>{verifiedCount}</strong>
+            </article>
+          </div>
+        </section>
 
         {/* Status Messages */}
         {message.text && (
           <div className={`hrm-alert ${message.type}`}>
-            {message.type === 'success' ? <Check size={20} /> : <X size={20} />}
+            {message.type === "success" ? <Check size={20} /> : <X size={20} />}
             {message.text}
           </div>
         )}
@@ -128,22 +173,25 @@ export default function HRManagement() {
         {/* Filters */}
         <div className="hrm-filters">
           <button
-            onClick={() => setFilter('all')}
-            className={filter === 'all' ? 'active' : ''}
+            onClick={() => setFilter("all")}
+            className={filter === "all" ? "active" : ""}
           >
             All Accounts
+            <span>{totalCount}</span>
           </button>
           <button
-            onClick={() => setFilter('unverified')}
-            className={filter === 'unverified' ? 'active' : ''}
+            onClick={() => setFilter("unverified")}
+            className={filter === "unverified" ? "active" : ""}
           >
             Pending Approval
+            <span>{pendingCount}</span>
           </button>
           <button
-            onClick={() => setFilter('verified')}
-            className={filter === 'verified' ? 'active' : ''}
+            onClick={() => setFilter("verified")}
+            className={filter === "verified" ? "active" : ""}
           >
             Verified HRs
+            <span>{verifiedCount}</span>
           </button>
         </div>
 
@@ -187,9 +235,11 @@ export default function HRManagement() {
                       <td>
                         <div className="hrm-company">
                           <Building2 size={16} />
-                          <span>{hr.companyName || 'N/A'}</span>
+                          <span>{hr.companyName || "N/A"}</span>
                         </div>
-                        <div className="hrm-job-title">{hr.jobTitle || 'HR Manager'}</div>
+                        <div className="hrm-job-title">
+                          {hr.jobTitle || "HR Manager"}
+                        </div>
                       </td>
                       <td>
                         {hr.idProofPath ? (
@@ -203,16 +253,22 @@ export default function HRManagement() {
                             View Document
                           </a>
                         ) : (
-                          <span className="hrm-no-proof">No Proof Uploaded</span>
+                          <span className="hrm-no-proof">
+                            No Proof Uploaded
+                          </span>
                         )}
                       </td>
                       <td>
                         {hr.verified ? (
                           <span className="hrm-badge verified">Verified</span>
                         ) : hr.emailVerified ? (
-                          <span className="hrm-badge pending">Pending Admin Approval</span>
+                          <span className="hrm-badge pending">
+                            Pending Admin Approval
+                          </span>
                         ) : (
-                          <span className="hrm-badge pending">Pending Email Verification</span>
+                          <span className="hrm-badge pending">
+                            Pending Email Verification
+                          </span>
                         )}
                       </td>
                       <td>
@@ -228,14 +284,18 @@ export default function HRManagement() {
                                 <span>Verify</span>
                               </button>
                               <button
-                                onClick={() => setRejectModal({ open: true, hrId: hr.id })}
+                                onClick={() =>
+                                  setRejectModal({ open: true, hrId: hr.id })
+                                }
                                 className="hrm-btn reject"
                                 title="Reject Account"
                               >
                                 <X size={18} />
                               </button>
                               <button
-                                onClick={() => handleDeleteHr(hr.id, hr.fullName)}
+                                onClick={() =>
+                                  handleDeleteHr(hr.id, hr.fullName)
+                                }
                                 className="hrm-btn delete"
                                 title="Delete HR Account"
                               >
@@ -249,7 +309,9 @@ export default function HRManagement() {
                                 <span>Approved</span>
                               </div>
                               <button
-                                onClick={() => handleDeleteHr(hr.id, hr.fullName)}
+                                onClick={() =>
+                                  handleDeleteHr(hr.id, hr.fullName)
+                                }
                                 className="hrm-btn delete"
                                 title="Delete HR Account"
                               >
@@ -280,41 +342,48 @@ export default function HRManagement() {
             &larr; Back to Admin Dashboard
           </Link>
         </div>
-      {/* Rejection Modal */}
-      {rejectModal.open && (
-        <div className="hrm-modal-overlay">
-          <div className="hrm-modal">
-            <div className="hrm-modal-header">
-              <h3>Reject HR Verification</h3>
-              <button onClick={() => setRejectModal({ open: false, hrId: null })}><X size={20} /></button>
-            </div>
-            <div className="hrm-modal-body">
-              <p>Please provide a specific reason for rejecting this HR professional's account request.</p>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="e.g., ID proof image is blurred or invalid..."
-                rows="4"
-              />
-            </div>
-            <div className="hrm-modal-footer">
-              <button
-                className="hrm-modal-btn secondary"
-                onClick={() => setRejectModal({ open: false, hrId: null })}
-              >
-                Cancel
-              </button>
-              <button
-                className="hrm-modal-btn primary reject"
-                disabled={!rejectReason.trim()}
-                onClick={submitReject}
-              >
-                Confirm Rejection
-              </button>
+        {/* Rejection Modal */}
+        {rejectModal.open && (
+          <div className="hrm-modal-overlay">
+            <div className="hrm-modal">
+              <div className="hrm-modal-header">
+                <h3>Reject HR Verification</h3>
+                <button
+                  onClick={() => setRejectModal({ open: false, hrId: null })}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="hrm-modal-body">
+                <p>
+                  Please provide a specific reason for rejecting this HR
+                  professional's account request.
+                </p>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="e.g., ID proof image is blurred or invalid..."
+                  rows="4"
+                />
+              </div>
+              <div className="hrm-modal-footer">
+                <button
+                  className="hrm-modal-btn secondary"
+                  onClick={() => setRejectModal({ open: false, hrId: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="hrm-modal-btn primary reject"
+                  disabled={!rejectReason.trim()}
+                  onClick={submitReject}
+                >
+                  Confirm Rejection
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </AdminLayout>
   );

@@ -56,7 +56,9 @@
 
 .brand span {
   color: #00f0ff;
-  text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
+  text-shadow:
+    0 0 10px #00f0ff,
+    0 0 25px #00f0ff;
 }
 
 .tagline {
@@ -153,7 +155,6 @@ form select:focus {
   accent-color: #00f0ff;
 }
 
-
 /* Skills Section with Checkboxes */
 .skills-section {
   text-align: left;
@@ -191,7 +192,9 @@ form select:focus {
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .login-btn {
@@ -255,13 +258,25 @@ form select:focus {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Scrollbar for card */

@@ -15,7 +15,11 @@ export default function AdminManageTests() {
     <AdminLayout
       description="Create assessments and control live test availability from the Admin portal."
       actions={
-        <button type="button" className="adm-refresh-btn" onClick={handleSuccess}>
+        <button
+          type="button"
+          className="adm-refresh-btn"
+          onClick={handleSuccess}
+        >
           <RefreshCw size={18} /> Refresh
         </button>
       }

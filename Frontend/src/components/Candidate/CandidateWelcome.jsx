@@ -10,6 +10,7 @@ import {
   CircleCheck,
   Clock3,
   Award,
+  BadgeCheck,
   Mail,
   Phone,
   GraduationCap,
@@ -25,7 +26,13 @@ import { API_BASE_URL } from "../../config";
 import { DEFAULT_PROFILE_IMAGE } from "./profile/profileUtils";
 import "./CandidateWelcome.css";
 import "../Jobs/JobsModule.css";
-import { getCandidateJobStatus, getJobs, JOB_STATUS, setCandidateJobInterest, subscribeJobs } from "../../utils/jobsStore";
+import {
+  getCandidateJobStatus,
+  getJobs,
+  JOB_STATUS,
+  setCandidateJobInterest,
+  subscribeJobs,
+} from "../../utils/jobsStore";
 import { useAppDialog } from "../common/AppDialog";
 import CandidateResumeModule from "./resume/CandidateResumeModule";
 
@@ -61,29 +68,82 @@ export default function CandidateWelcome() {
       setCandidate(parsedCandidate);
 
       if (parsedCandidate.emailVerified === false) {
-        localStorage.setItem("pendingVerificationEmail", parsedCandidate.email || "");
+        localStorage.setItem(
+          "pendingVerificationEmail",
+          parsedCandidate.email || "",
+        );
         localStorage.removeItem("candidate");
-        navigate(`/candidate/verify-otp?email=${encodeURIComponent(parsedCandidate.email || "")}`);
+        navigate(
+          `/candidate/verify-otp?email=${encodeURIComponent(parsedCandidate.email || "")}`,
+        );
         return;
       }
 
       if (parsedCandidate.profilePic) {
-        setProfileSrc(`${API_BASE_URL}/candidates/file/${parsedCandidate.profilePic}`);
+        setProfileSrc(
+          `${API_BASE_URL}/candidates/file/${parsedCandidate.profilePic}`,
+        );
       }
 
       try {
-        const [profileRes, cumulativeRes, assessmentsRes] = await Promise.all([
+        const [profileResult, cumulativeResult, assessmentsResult] =
+          await Promise.allSettled([
           api.get("/candidates/me", { withCredentials: true }),
-          api.get(`/candidates/${parsedCandidate.id}/cumulative-results`, { withCredentials: true }),
-          api.get("/assessment/subjects", { withCredentials: true }),
+          api.get(`/candidates/${parsedCandidate.id}/cumulative-results`, {
+            withCredentials: true,
+          }),
+          api.get("/candidates/my-assessments", { withCredentials: true }),
         ]);
 
-        const latestCandidate = profileRes.data?.candidate || parsedCandidate;
+        const results = [profileResult, cumulativeResult, assessmentsResult];
+        const authError = results.find(
+          (result) =>
+            result.status === "rejected" &&
+            (result.reason?.response?.status === 401 ||
+              result.reason?.response?.status === 403),
+        );
+
+        if (authError) {
+          localStorage.removeItem("candidate");
+          navigate("/candidate/login");
+          return;
+        }
+
+        const profileRes =
+          profileResult.status === "fulfilled" ? profileResult.value : null;
+        const cumulativeRes =
+          cumulativeResult.status === "fulfilled" ? cumulativeResult.value : null;
+        const assessmentsRes =
+          assessmentsResult.status === "fulfilled"
+            ? assessmentsResult.value
+            : null;
+
+        const latestCandidate = {
+          ...parsedCandidate,
+          ...(profileRes?.data?.candidate || {}),
+        };
+
+        if (assessmentsRes?.data) {
+          latestCandidate.assignedAssessmentName =
+            assessmentsRes.data.assignedAssessmentName ??
+            latestCandidate.assignedAssessmentName;
+          latestCandidate.assessmentAssignmentStatus =
+            assessmentsRes.data.assessmentAssignmentStatus ??
+            latestCandidate.assessmentAssignmentStatus;
+          latestCandidate.assessmentAssignmentMessage =
+            assessmentsRes.data.assessmentAssignmentMessage ??
+            latestCandidate.assessmentAssignmentMessage;
+        }
 
         if (latestCandidate.emailVerified === false) {
-          localStorage.setItem("pendingVerificationEmail", latestCandidate.email || "");
+          localStorage.setItem(
+            "pendingVerificationEmail",
+            latestCandidate.email || "",
+          );
           localStorage.removeItem("candidate");
-          navigate(`/candidate/verify-otp?email=${encodeURIComponent(latestCandidate.email || "")}`);
+          navigate(
+            `/candidate/verify-otp?email=${encodeURIComponent(latestCandidate.email || "")}`,
+          );
           return;
         }
 
@@ -91,32 +151,70 @@ export default function CandidateWelcome() {
         localStorage.setItem("candidate", JSON.stringify(latestCandidate));
 
         if (latestCandidate.profilePic) {
-          setProfileSrc(`${API_BASE_URL}/candidates/file/${latestCandidate.profilePic}`);
+          setProfileSrc(
+            `${API_BASE_URL}/candidates/file/${latestCandidate.profilePic}`,
+          );
         }
 
-        const assessmentNames = Array.isArray(assessmentsRes.data) ? assessmentsRes.data : [];
-        const assignedAssessmentName = latestCandidate?.assignedAssessmentName
-          ? String(latestCandidate.assignedAssessmentName)
-          : "";
-
-        // Only show assessments relevant to the candidate's category (their assigned assessment).
-        const visibleAssessmentNames = assignedAssessmentName
-          ? assessmentNames.filter((name) => String(name) === assignedAssessmentName)
-          : [];
+        // Null-guarded: handles 404 or any failed response from my-assessments gracefully
+        const visibleAssessmentNames =
+          assessmentsRes?.data && Array.isArray(assessmentsRes.data.assessments)
+            ? assessmentsRes.data.assessments
+            : [];
 
         const statusResponses = await Promise.all(
           visibleAssessmentNames.map(async (name) => {
             try {
-              const res = await api.get(`/assessment/status/${encodeURIComponent(name)}`, { withCredentials: true });
+              const res = await api.get(
+                `/assessment/status/${encodeURIComponent(name)}`,
+                { withCredentials: true },
+              );
               return { name, ...res.data };
             } catch (err) {
-              return { name, results: [], nextLevel: 1, totalSections: 0, configs: [], isLocked: false };
+              return {
+                name,
+                results: [],
+                nextLevel: 1,
+                totalSections: 0,
+                configs: [],
+                isLocked: false,
+              };
             }
-          })
+          }),
         );
 
-        setCumulativeResults(cumulativeRes.data || []);
+        setCumulativeResults(
+          Array.isArray(cumulativeRes?.data) ? cumulativeRes.data : [],
+        );
         setAssessmentStatuses(statusResponses);
+
+        const failedRequests = [];
+        if (profileResult.status === "rejected") failedRequests.push("profile");
+        if (cumulativeResult.status === "rejected")
+          failedRequests.push("results");
+        if (assessmentsResult.status === "rejected")
+          failedRequests.push("assessments");
+
+        if (failedRequests.length > 0) {
+          console.error("Candidate portal partial load failure:", {
+            failedRequests,
+            profileError:
+              profileResult.status === "rejected" ? profileResult.reason : null,
+            cumulativeError:
+              cumulativeResult.status === "rejected"
+                ? cumulativeResult.reason
+                : null,
+            assessmentsError:
+              assessmentsResult.status === "rejected"
+                ? assessmentsResult.reason
+                : null,
+          });
+          setError(
+            `Some portal data could not be loaded: ${failedRequests.join(", ")}.`,
+          );
+        } else {
+          setError("");
+        }
       } catch (err) {
         console.error("Candidate portal load failed:", err);
         setError("Some portal data could not be loaded.");
@@ -149,7 +247,9 @@ export default function CandidateWelcome() {
     setCandidate(updatedCandidate);
     localStorage.setItem("candidate", JSON.stringify(updatedCandidate));
     if (updatedCandidate.profilePic) {
-      setProfileSrc(`${API_BASE_URL}/candidates/file/${updatedCandidate.profilePic}`);
+      setProfileSrc(
+        `${API_BASE_URL}/candidates/file/${updatedCandidate.profilePic}`,
+      );
     }
   };
 
@@ -170,18 +270,21 @@ export default function CandidateWelcome() {
       const results = assessment.results || [];
       const totalSections = assessment.totalSections || 0;
       const attemptedCount = results.length;
-      const configs = Array.isArray(assessment.configs) ? assessment.configs : [];
+      const configs = Array.isArray(assessment.configs)
+        ? assessment.configs
+        : [];
       const isLocked = Boolean(assessment.isLocked);
-      
+
       const passedCount = results.filter((result) => {
         const currentConfig = configs.find(
-          (config) => Number(config.sectionNumber) === Number(result.level)
+          (config) => Number(config.sectionNumber) === Number(result.level),
         );
         const requiredScore = Number(currentConfig?.passPercentage) || 60;
         return Number(result.score) >= requiredScore;
       }).length;
       const availableLevel = assessment.nextLevel || 1;
-      const progress = totalSections > 0 ? Math.round((passedCount / totalSections) * 100) : 0;
+      const progress =
+        totalSections > 0 ? Math.round((passedCount / totalSections) * 100) : 0;
 
       const item = {
         name: assessment.name,
@@ -191,7 +294,9 @@ export default function CandidateWelcome() {
         progress,
         nextLevel: availableLevel,
         latestScore: results.length ? results[results.length - 1].score : null,
-        latestAttemptedAt: results.length ? results[results.length - 1].attemptedAt : null,
+        latestAttemptedAt: results.length
+          ? results[results.length - 1].attemptedAt
+          : null,
         isCompleted: totalSections > 0 && passedCount === totalSections,
         isLocked,
       };
@@ -213,8 +318,10 @@ export default function CandidateWelcome() {
     const avgScore =
       cumulativeResults.length > 0
         ? Math.round(
-            cumulativeResults.reduce((sum, item) => sum + item.cumulativePercentage, 0) /
-              cumulativeResults.length
+            cumulativeResults.reduce(
+              (sum, item) => sum + item.cumulativePercentage,
+              0,
+            ) / cumulativeResults.length,
           )
         : 0;
 
@@ -238,13 +345,34 @@ export default function CandidateWelcome() {
   }, [cumulativeResults, testBuckets]);
 
   const topBadge = useMemo(() => {
-    return cumulativeResults.find((item) => item.badge && item.badge !== "No Badge")?.badge || "In Progress";
-  }, [cumulativeResults]);
+    if (candidate?.badge && candidate.badge.trim() && candidate.badge !== "No badge") {
+      return candidate.badge;
+    }
 
-  const startAssessment = () => {
-    if (!candidate?.assignedAssessmentName) {
+    return (
+      cumulativeResults.find((item) => item.badge && item.badge !== "No Badge")
+        ?.badge || "In Progress"
+    );
+  }, [candidate, cumulativeResults]);
+
+  const startAssessment = (assessmentName) => {
+    const selectedAssessment =
+      assessmentName ||
+      candidate?.assignedAssessmentName ||
+      testBuckets.unattended[0]?.name ||
+      testBuckets.attended[0]?.name;
+
+    if (!selectedAssessment) {
       return;
     }
+    localStorage.setItem(
+      "selectedAssessment",
+      selectedAssessment,
+    );
+    sessionStorage.setItem(
+      "selectedAssessment",
+      selectedAssessment,
+    );
     navigate("/courses");
   };
 
@@ -255,8 +383,9 @@ export default function CandidateWelcome() {
     if (!result?.updated) {
       await showAlert({
         title: "Response Already Submitted",
-        message: "You have already responded to this job. This action can only be submitted once.",
-        tone: "warning"
+        message:
+          "You have already responded to this job. This action can only be submitted once.",
+        tone: "warning",
       });
       return;
     }
@@ -265,7 +394,7 @@ export default function CandidateWelcome() {
       await showAlert({
         title: "Interest Submitted",
         message: "Your interest has been submitted successfully.",
-        tone: "success"
+        tone: "success",
       });
     }
   };
@@ -273,7 +402,9 @@ export default function CandidateWelcome() {
   const formatPostedDate = (value) => {
     if (!value) return "Not available";
     const parsedDate = new Date(value);
-    return Number.isNaN(parsedDate.getTime()) ? "Not available" : parsedDate.toLocaleDateString();
+    return Number.isNaN(parsedDate.getTime())
+      ? "Not available"
+      : parsedDate.toLocaleDateString();
   };
 
   const getCandidateJobAvailability = (status) => {
@@ -357,7 +488,11 @@ export default function CandidateWelcome() {
           </button>
         </nav>
 
-        <button type="button" className="candidate-sidebar-logout" onClick={handleLogout}>
+        <button
+          type="button"
+          className="candidate-sidebar-logout"
+          onClick={handleLogout}
+        >
           <LogOut size={18} />
           Logout
         </button>
@@ -369,23 +504,33 @@ export default function CandidateWelcome() {
             <p className="candidate-hero-eyebrow">Candidate Workspace</p>
             <h2>Welcome back, {candidate.fullName}!</h2>
             <p className="candidate-hero-copy">
-              Track your progress, manage upcoming assessments, and keep your profile ready for recruiters.
+              Track your progress, manage upcoming assessments, and keep your
+              profile ready for recruiters.
             </p>
           </div>
           <button
             type="button"
             className="candidate-primary-btn"
-            onClick={startAssessment}
-            disabled={!candidate.assignedAssessmentName}
+            onClick={() => startAssessment()}
+            disabled={
+              !candidate?.assignedAssessmentName &&
+              testBuckets.unattended.length === 0 &&
+              testBuckets.attended.length === 0
+            }
           >
             <PlayCircle size={18} />
-            {candidate.assignedAssessmentName ? "Start Assessment" : "Assessment Pending"}
+            {candidate.assignedAssessmentName || testBuckets.unattended.length > 0
+              ? "Start Assessment"
+              : "Assessment Pending"}
           </button>
         </section>
 
         {error && <div className="candidate-alert">{error}</div>}
-        {!candidate.assignedAssessmentName && candidate.assessmentAssignmentMessage ? (
-          <div className="candidate-alert">{candidate.assessmentAssignmentMessage}</div>
+        {!candidate.assignedAssessmentName &&
+        candidate.assessmentAssignmentMessage ? (
+          <div className="candidate-alert">
+            {candidate.assessmentAssignmentMessage}
+          </div>
         ) : null}
 
         {activeTab === "dashboard" && (
@@ -436,19 +581,45 @@ export default function CandidateWelcome() {
 
               {cumulativeResults.length === 0 ? (
                 <div className="candidate-empty-state">
-                  <p>No assessment results yet. Start your first assessment to see progress here.</p>
+                  <p>
+                    No assessment results yet. Start your first assessment to
+                    see progress here.
+                  </p>
                 </div>
               ) : (
                 <div className="candidate-results-grid">
                   {cumulativeResults.map((result) => (
-                    <article key={result.subject} className="candidate-result-card">
+                    <article
+                      key={result.subject}
+                      className="candidate-result-card"
+                    >
                       <div className="candidate-result-top">
-                        <h4>{result.subject}</h4>
-                        <span className={result.cumulativePercentage >= 60 ? "passed" : "failed"}>
+                        <h4>
+                          {result.subject}{" "}
+                          {result.offlineTaken ? (
+                            <span
+                              className="candidate-offline-verified"
+                              title="Taken in offline mode"
+                            >
+                              <BadgeCheck size={16} />
+                            </span>
+                          ) : null}
+                        </h4>
+                        <span
+                          className={
+                            result.cumulativePercentage >= 60
+                              ? "passed"
+                              : "failed"
+                          }
+                        >
                           {result.cumulativePercentage}%
                         </span>
                       </div>
-                      <p>{result.badge !== "No Badge" ? result.badge : "No badge yet"}</p>
+                      <p>
+                        {result.badge !== "No Badge"
+                          ? result.badge
+                          : "No badge yet"}
+                      </p>
                     </article>
                   ))}
                 </div>
@@ -463,7 +634,10 @@ export default function CandidateWelcome() {
               <div className="candidate-panel-header">
                 <div>
                   <h3>Attended Tests</h3>
-                  <p>Assessments where you have already started or completed sections.</p>
+                  <p>
+                    Assessments where you have already started or completed
+                    sections.
+                  </p>
                 </div>
               </div>
 
@@ -478,7 +652,8 @@ export default function CandidateWelcome() {
                       <div>
                         <h4>{test.name}</h4>
                         <p>
-                          {test.passedCount}/{test.totalSections || 0} sections cleared
+                          {test.passedCount}/{test.totalSections || 0} sections
+                          cleared
                         </p>
                       </div>
                       <div className="candidate-test-meta">
@@ -504,7 +679,10 @@ export default function CandidateWelcome() {
 
               {testBuckets.unattended.length === 0 ? (
                 <div className="candidate-empty-state">
-                  <p>{candidate.assessmentAssignmentMessage || "No pending tests right now."}</p>
+                  <p>
+                    {candidate.assessmentAssignmentMessage ||
+                      "No pending tests right now."}
+                  </p>
                 </div>
               ) : (
                 <div className="candidate-test-list">
@@ -519,7 +697,11 @@ export default function CandidateWelcome() {
                           <Clock3 size={14} />
                           Not Attended
                         </span>
-                        <button type="button" className="candidate-secondary-btn" onClick={startAssessment}>
+                        <button
+                          type="button"
+                          className="candidate-secondary-btn"
+                          onClick={() => startAssessment(test.name)}
+                        >
                           Start
                         </button>
                       </div>
@@ -587,7 +769,9 @@ export default function CandidateWelcome() {
                   <GraduationCap size={16} />
                   <div>
                     <span>Education</span>
-                    <strong>{candidate.collegeUniversity || "Not provided"}</strong>
+                    <strong>
+                      {candidate.collegeUniversity || "Not provided"}
+                    </strong>
                   </div>
                 </div>
                 <div className="candidate-profile-item">
@@ -624,7 +808,9 @@ export default function CandidateWelcome() {
                 <h3>View Jobs</h3>
                 <p>Explore the latest openings posted by HR partners.</p>
               </div>
-              <span className="jobs-summary-badge">{jobs.length} Open Role{jobs.length === 1 ? "" : "s"}</span>
+              <span className="jobs-summary-badge">
+                {jobs.length} Open Role{jobs.length === 1 ? "" : "s"}
+              </span>
             </div>
 
             {jobs.length === 0 ? (
@@ -649,23 +835,33 @@ export default function CandidateWelcome() {
                   </thead>
                   <tbody>
                     {jobs.map((job) => {
-                      const candidateJobStatus = getCandidateJobStatus(job, candidate);
+                      const candidateJobStatus = getCandidateJobStatus(
+                        job,
+                        candidate,
+                      );
                       const hasResponded = Boolean(candidateJobStatus);
-                      const isOpen = (job.status || JOB_STATUS.OPEN) === JOB_STATUS.OPEN;
+                      const isOpen =
+                        (job.status || JOB_STATUS.OPEN) === JOB_STATUS.OPEN;
 
                       return (
                         <tr key={job.id}>
                           <td className="jobs-row-title">
                             <strong>{job.title}</strong>
-                            <div className="jobs-row-company">{job.company || "Unknown company"}</div>
-                           </td>
+                            <div className="jobs-row-company">
+                              {job.company || "Unknown company"}
+                            </div>
+                          </td>
                           <td>
-                            <span className={`job-status-badge status-${job.status || JOB_STATUS.OPEN}`}>
+                            <span
+                              className={`job-status-badge status-${job.status || JOB_STATUS.OPEN}`}
+                            >
                               {getCandidateJobAvailability(job.status)}
                             </span>
                           </td>
                           <td>
-                            <span className="job-pill">{job.type || "Not specified"}</span>
+                            <span className="job-pill">
+                              {job.type || "Not specified"}
+                            </span>
                           </td>
                           <td>{job.location || "Not specified"}</td>
                           <td>{job.experience || "Not specified"}</td>
@@ -676,7 +872,9 @@ export default function CandidateWelcome() {
                                 <strong>Skills:</strong> {job.skills}
                               </p>
                             ) : null}
-                            <p className="jobs-description-text">{job.description || "No description provided."}</p>
+                            <p className="jobs-description-text">
+                              {job.description || "No description provided."}
+                            </p>
                           </td>
                           <td className="jobs-posted-cell">
                             <strong>{job.postedBy || "HR Team"}</strong>
@@ -687,7 +885,9 @@ export default function CandidateWelcome() {
                               <button
                                 type="button"
                                 className={`job-interest-btn interested ${candidateJobStatus === "interested" ? "active" : ""}`}
-                                onClick={() => updateJobInterest(job.id, "interested")}
+                                onClick={() =>
+                                  updateJobInterest(job.id, "interested")
+                                }
                                 disabled={hasResponded || !isOpen}
                               >
                                 <ThumbsUp size={15} />
@@ -696,7 +896,9 @@ export default function CandidateWelcome() {
                               <button
                                 type="button"
                                 className={`job-interest-btn not-interested ${candidateJobStatus === "not_interested" ? "active" : ""}`}
-                                onClick={() => updateJobInterest(job.id, "not_interested")}
+                                onClick={() =>
+                                  updateJobInterest(job.id, "not_interested")
+                                }
                                 disabled={hasResponded || !isOpen}
                               >
                                 <ThumbsDown size={15} />
@@ -704,9 +906,13 @@ export default function CandidateWelcome() {
                               </button>
                             </div>
                             {hasResponded ? (
-                              <div className="jobs-row-company">Response submitted.</div>
+                              <div className="jobs-row-company">
+                                Response submitted.
+                              </div>
                             ) : !isOpen ? (
-                              <div className="jobs-row-company">This job is not accepting responses right now.</div>
+                              <div className="jobs-row-company">
+                                This job is not accepting responses right now.
+                              </div>
                             ) : null}
                           </td>
                         </tr>

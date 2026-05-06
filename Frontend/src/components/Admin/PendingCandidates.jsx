@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
-import { WS_BASE_URL } from '../../config';
+import React, { useState, useEffect } from "react";
+import api from "../../services/api";
+import { WS_BASE_URL } from "../../config";
 
 const PendingCandidates = () => {
   const [candidates, setCandidates] = useState([]);
@@ -45,7 +45,10 @@ const PendingCandidates = () => {
   return (
     <div className="container my-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1><i className="fas fa-user-clock me-2"></i>Pending Candidate Verification</h1>
+        <h1>
+          <i className="fas fa-user-clock me-2"></i>Pending Candidate
+          Verification
+        </h1>
       </div>
 
       {candidates.length === 0 ? (
@@ -57,7 +60,8 @@ const PendingCandidates = () => {
         <div className="card">
           <div className="card-header bg-warning text-dark">
             <h5 className="mb-0">
-              Candidates Waiting for Verification <span className="badge bg-danger">{candidates.length}</span>
+              Candidates Waiting for Verification{" "}
+              <span className="badge bg-danger">{candidates.length}</span>
             </h5>
           </div>
           <div className="card-body table-responsive">
@@ -110,7 +114,9 @@ const PendingCandidates = () => {
                         <button
                           className="btn btn-danger"
                           onClick={() => {
-                            const reason = prompt(`Reject ${candidate.fullName}? Enter reason:`);
+                            const reason = prompt(
+                              `Reject ${candidate.fullName}? Enter reason:`,
+                            );
                             if (reason) handleReject(candidate.id, reason);
                           }}
                         >

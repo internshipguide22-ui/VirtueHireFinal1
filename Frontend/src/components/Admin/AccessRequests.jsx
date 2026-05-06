@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import api from "../../services/api";
-import { CheckCircle2, Clock3, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  RefreshCw,
+  ShieldAlert,
+  XCircle,
+} from "lucide-react";
 
 export default function AccessRequests() {
   const [requests, setRequests] = useState([]);
@@ -15,7 +21,7 @@ export default function AccessRequests() {
     setError("");
     try {
       const res = await api.get("/admin/candidate-access-requests", {
-        params: { status: nextFilter }
+        params: { status: nextFilter },
       });
       setRequests(res.data.requests || []);
     } catch (err) {
@@ -46,7 +52,10 @@ export default function AccessRequests() {
       title="Candidate Access Requests"
       description="Review HR requests for full candidate profile access and approve only when visibility is justified."
       actions={
-        <button onClick={() => fetchRequests(filter)} className="adm-refresh-btn">
+        <button
+          onClick={() => fetchRequests(filter)}
+          className="adm-refresh-btn"
+        >
           <RefreshCw size={18} /> Refresh
         </button>
       }
@@ -68,7 +77,14 @@ export default function AccessRequests() {
         </div>
 
         {error ? (
-          <div className="adm-card" style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}>
+          <div
+            className="adm-card"
+            style={{
+              color: "#b91c1c",
+              borderColor: "#fecaca",
+              background: "#fef2f2",
+            }}
+          >
             {error}
           </div>
         ) : null}
@@ -80,8 +96,17 @@ export default function AccessRequests() {
               <p>Loading access requests...</p>
             </div>
           ) : requests.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "56px 24px", color: "#64748b" }}>
-              <ShieldAlert size={48} style={{ opacity: 0.3, marginBottom: "12px" }} />
+            <div
+              style={{
+                textAlign: "center",
+                padding: "56px 24px",
+                color: "#64748b",
+              }}
+            >
+              <ShieldAlert
+                size={48}
+                style={{ opacity: 0.3, marginBottom: "12px" }}
+              />
               <p>No access requests found for this filter.</p>
             </div>
           ) : (
@@ -104,26 +129,49 @@ export default function AccessRequests() {
                         <div className="adm-t-email">{request.hrEmail}</div>
                       </td>
                       <td>
-                        <div className="adm-t-name">{request.candidateName}</div>
+                        <div className="adm-t-name">
+                          {request.candidateName}
+                        </div>
                         <div className="adm-t-email">
-                          {request.candidateRole} • {request.candidateExperience} yrs
+                          {request.candidateRole} •{" "}
+                          {request.candidateExperience} yrs
                         </div>
                       </td>
                       <td>
-                        <span className={`adm-status-chip ${request.status.toLowerCase()}`}>
-                          {request.status === "APPROVED" ? <CheckCircle2 size={14} /> :
-                            request.status === "PENDING" ? <Clock3 size={14} /> :
-                              <XCircle size={14} />}
+                        <span
+                          className={`adm-status-chip ${request.status.toLowerCase()}`}
+                        >
+                          {request.status === "APPROVED" ? (
+                            <CheckCircle2 size={14} />
+                          ) : request.status === "PENDING" ? (
+                            <Clock3 size={14} />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
                           {request.status}
                         </span>
                       </td>
-                      <td>{request.createdAt ? new Date(request.createdAt).toLocaleString() : "N/A"}</td>
+                      <td>
+                        {request.createdAt
+                          ? new Date(request.createdAt).toLocaleString()
+                          : "N/A"}
+                      </td>
                       <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            justifyContent: "flex-end",
+                            flexWrap: "wrap",
+                          }}
+                        >
                           <button
                             type="button"
                             className="adm-t-btn primary"
-                            disabled={busyId === request.id || request.status === "APPROVED"}
+                            disabled={
+                              busyId === request.id ||
+                              request.status === "APPROVED"
+                            }
                             onClick={() => handleReview(request.id, "approve")}
                           >
                             Approve
@@ -131,7 +179,10 @@ export default function AccessRequests() {
                           <button
                             type="button"
                             className="adm-t-btn danger"
-                            disabled={busyId === request.id || request.status === "REJECTED"}
+                            disabled={
+                              busyId === request.id ||
+                              request.status === "REJECTED"
+                            }
                             onClick={() => handleReview(request.id, "decline")}
                           >
                             Decline
@@ -146,8 +197,9 @@ export default function AccessRequests() {
           )}
         </div>
 
-        <style dangerouslySetInnerHTML={{
-          __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
             .adm-filter-pill {
               padding: 8px 16px;
               border-radius: 999px;
@@ -193,8 +245,9 @@ export default function AccessRequests() {
               color: #fff;
               border: none;
             }
-          `
-        }} />
+          `,
+          }}
+        />
       </div>
     </AdminLayout>
   );

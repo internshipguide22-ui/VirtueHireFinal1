@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import "./HrCandidateDetails.css";
 import { ensureHrSubscription } from "../../utils/hrSubscription";
-import { API_BASE_URL } from "../../config";
+import {
+  DEFAULT_PROFILE_IMAGE,
+  getCandidateFileUrl,
+  getResumeFileName,
+} from "../Candidate/profile/profileUtils";
 
 const STATUS_COPY = {
   NONE: "Contact Admin to view full details",
@@ -128,11 +132,16 @@ function HrCandidateDetails() {
 
   const canRequestAccess = requestStatus !== "PENDING" && requestStatus !== "APPROVED";
   const canUseHrModule = !subscription?.isExpired;
-  const resumeViewUrl = candidate?.id ? `${API_BASE_URL}/hrs/candidates/${candidate.id}/resume?disposition=inline` : "";
-  const resumeDownloadUrl = candidate?.id ? `${API_BASE_URL}/hrs/candidates/${candidate.id}/resume?disposition=attachment` : "";
+
   const canAccessResume = hasAccess && requestStatus === "APPROVED" && Boolean(candidate?.resumePath);
-  const resumeName = candidate?.resumePath
-    ? candidate.resumePath.split("_").slice(1).join("_") || candidate.resumePath
+  const canAccessProfileImage =
+    hasAccess && requestStatus === "APPROVED" && Boolean(candidate?.profilePic);
+  const resumeName = getResumeFileName(candidate?.resumePath);
+  const profileImageUrl = canAccessProfileImage
+    ? getCandidateFileUrl(candidate?.profilePic)
+    : DEFAULT_PROFILE_IMAGE;
+  const resumeUrl = canAccessResume
+    ? getCandidateFileUrl(candidate?.resumePath)
     : "";
 
   if (loading) {
@@ -196,11 +205,22 @@ function HrCandidateDetails() {
       {candidate && (
         <div className="hcd-card">
           <div className="hcd-summary-top">
-            <div>
-              <div className="hcd-summary-name">{candidate.fullName}</div>
-              <div className="hcd-summary-meta">
-                <span><Briefcase size={14} /> {candidate.role || "Candidate"}</span>
-                <span><User size={14} /> {candidate.experience ?? 0} years experience</span>
+            <div className="hcd-summary-profile">
+              <div className="hcd-summary-avatar">
+                <img
+                  src={profileImageUrl}
+                  alt={candidate.fullName}
+                  onError={(event) => {
+                    event.currentTarget.src = DEFAULT_PROFILE_IMAGE;
+                  }}
+                />
+              </div>
+              <div>
+                <div className="hcd-summary-name">{candidate.fullName}</div>
+                <div className="hcd-summary-meta">
+                  <span><Briefcase size={14} /> {candidate.role || "Candidate"}</span>
+                  <span><User size={14} /> {candidate.experience ?? 0} years experience</span>
+                </div>
               </div>
             </div>
             <span className={`hcd-status-pill ${accessTone}`}>
@@ -264,17 +284,17 @@ function HrCandidateDetails() {
               {canAccessResume ? (
                 <div className="hcd-resume-actions">
                   <a
-                    href={resumeViewUrl}
+                    className="hcd-back-btn"
+                    href={resumeUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="hcd-back-btn"
                   >
                     <Eye size={16} /> View Resume
                   </a>
                   <a
-                    href={resumeDownloadUrl}
-                    download={resumeName || true}
                     className="hcd-action-btn hcd-action-btn-primary"
+                    href={resumeUrl}
+                    download={resumeName || "resume"}
                   >
                     <Download size={16} /> Download Resume
                   </a>
@@ -286,6 +306,47 @@ function HrCandidateDetails() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="hcd-card">
+            <div className="hcd-section-title">Profile Picture</div>
+            {canAccessProfileImage ? (
+              <div className="hcd-photo-shell">
+                <div className="hcd-photo-preview">
+                  <img
+                    src={profileImageUrl}
+                    alt={candidate?.fullName || "Candidate"}
+                    onError={(event) => {
+                      event.currentTarget.src = DEFAULT_PROFILE_IMAGE;
+                    }}
+                  />
+                </div>
+                <div className="hcd-photo-copy">
+                  <span className="hcd-info-label">Uploaded Image</span>
+                  <strong className="hcd-resume-name">
+                    {candidate?.profilePic || "Profile picture"}
+                  </strong>
+                  <p className="hcd-muted-text">
+                    Open the uploaded profile image in a full-size view when needed.
+                  </p>
+                  <div className="hcd-resume-actions">
+                    <a
+                      className="hcd-action-btn hcd-action-btn-primary"
+                      href={profileImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Eye size={16} /> View Image
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="hcd-resume-empty">
+                <FileText size={18} />
+                <span>No profile picture available for viewing yet.</span>
+              </div>
+            )}
           </div>
 
           <div className="hcd-card">

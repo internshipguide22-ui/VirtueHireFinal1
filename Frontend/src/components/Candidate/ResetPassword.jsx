@@ -175,10 +175,10 @@ const ResetPassword = () => {
     setError("");
 
     try {
-      const response = await api.post("/candidates/reset-password", { 
-        email, 
-        code, 
-        newPassword: password 
+      const response = await api.post("/candidates/reset-password", {
+        email,
+        code,
+        newPassword: password,
       });
 
       if (response.status === 200) {
@@ -188,7 +188,9 @@ const ResetPassword = () => {
         setError("❌ Failed to reset password. Check your reset code.");
       }
     } catch (err) {
-      setError(err.response?.data?.error || "⚠️ Something went wrong. Try again.");
+      setError(
+        err.response?.data?.error || "⚠️ Something went wrong. Try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -199,14 +201,21 @@ const ResetPassword = () => {
       <style>{styles}</style>
       <div className="vh-auth-container">
         <div className="vh-auth-card">
-          <button className="vh-back-btn" onClick={() => navigate("/candidate/login")}>
+          <button
+            className="vh-back-btn"
+            onClick={() => navigate("/candidate/login")}
+          >
             <ArrowLeft size={18} /> Back to Login
           </button>
 
           <h1 className="vh-auth-title">Reset Password</h1>
-          <p className="vh-auth-subtitle">Create a new secure password for your account.</p>
+          <p className="vh-auth-subtitle">
+            Create a new secure password for your account.
+          </p>
 
-          {message && <div className="vh-alert vh-alert-success">{message}</div>}
+          {message && (
+            <div className="vh-alert vh-alert-success">{message}</div>
+          )}
           {error && <div className="vh-alert vh-alert-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
@@ -268,7 +277,11 @@ const ResetPassword = () => {
               </div>
             </div>
 
-            <button type="submit" className="vh-submit-btn" disabled={loading || !!error}>
+            <button
+              type="submit"
+              className="vh-submit-btn"
+              disabled={loading || !!error}
+            >
               {loading ? "Updating..." : "Update Password"}
             </button>
           </form>

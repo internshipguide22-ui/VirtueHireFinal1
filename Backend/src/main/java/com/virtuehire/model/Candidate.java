@@ -63,6 +63,9 @@ public class Candidate implements Serializable {
     private Boolean approved = false;
     private String rejectionReason;
     private Boolean assessmentTaken = false;
+    private String selectionStatus = "Under Review";
+    @Column(length = 1000)
+    private String selectionNote;
     private String assignedAssessmentName;
     private String assessmentAssignmentStatus;
 
@@ -71,6 +74,16 @@ public class Candidate implements Serializable {
     private String verificationCode;
     private LocalDateTime verificationCodeExpiry;
     private Boolean emailVerified = false;
+
+    // 🔹 Hiring Workflow Fields
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CandidateStatus applicationStatus = CandidateStatus.NEW;
+
+    @Column(length = 2000)
+    private String hrFeedback; // Feedback from HR on approval/rejection
+
+    private LocalDateTime statusUpdatedAt = LocalDateTime.now();
 
     @Transient
     private Map<Integer, Integer> levelMarks; // level -> score
@@ -292,6 +305,22 @@ public class Candidate implements Serializable {
         this.assessmentTaken = assessmentTaken;
     }
 
+    public String getSelectionStatus() {
+        return selectionStatus;
+    }
+
+    public void setSelectionStatus(String selectionStatus) {
+        this.selectionStatus = selectionStatus;
+    }
+
+    public String getSelectionNote() {
+        return selectionNote;
+    }
+
+    public void setSelectionNote(String selectionNote) {
+        this.selectionNote = selectionNote;
+    }
+
     public String getAssignedAssessmentName() {
         return assignedAssessmentName;
     }
@@ -338,5 +367,30 @@ public class Candidate implements Serializable {
 
     public void setEmailVerified(Boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public CandidateStatus getApplicationStatus() {
+        return applicationStatus;
+    }
+
+    public void setApplicationStatus(CandidateStatus applicationStatus) {
+        this.applicationStatus = applicationStatus;
+        this.statusUpdatedAt = LocalDateTime.now();
+    }
+
+    public String getHrFeedback() {
+        return hrFeedback;
+    }
+
+    public void setHrFeedback(String hrFeedback) {
+        this.hrFeedback = hrFeedback;
+    }
+
+    public LocalDateTime getStatusUpdatedAt() {
+        return statusUpdatedAt;
+    }
+
+    public void setStatusUpdatedAt(LocalDateTime statusUpdatedAt) {
+        this.statusUpdatedAt = statusUpdatedAt;
     }
 }

@@ -1,3 +1,5 @@
+// PATH: Frontend/src/components/Candidate/resume/resumeApi.js
+
 import api from "../../../services/api";
 import { API_BASE_URL } from "../../../config";
 
@@ -20,6 +22,15 @@ export async function deleteResume(resumeId) {
   await api.delete(`/candidates/resumes/${resumeId}`, { withCredentials: true });
 }
 
-export function getResumePdfUrl(resumeId, disposition = "inline") {
-  return `${API_BASE_URL}/candidates/resumes/${resumeId}/pdf?disposition=${encodeURIComponent(disposition)}`;
+// FIX: Instead of returning a bare URL (which <a href> would open without
+// the session cookie, causing a 401), we fetch the PDF as a binary blob
+// through axios which automatically sends withCredentials / the session cookie.
+// The caller receives a Blob they can turn into an object URL for viewing
+// or trigger a download from — all without any auth failure.
+export async function fetchResumePdfBlob(resumeId, disposition = "inline") {
+  const response = await api.get(
+    `/candidates/resumes/${resumeId}/pdf?disposition=${encodeURIComponent(disposition)}`,
+    { withCredentials: true, responseType: "blob" }
+  );
+  return response.data; // Blob
 }

@@ -162,7 +162,6 @@
 
 // export default PaymentHistory;
 
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -170,15 +169,16 @@ function PaymentHistory() {
   const [payments, setPayments] = useState([]);
 
   useEffect(() => {
-    axios.get("/api/payments/history", { withCredentials: true })
-      .then(res => setPayments(res.data));
+    axios
+      .get("/api/payments/history", { withCredentials: true })
+      .then((res) => setPayments(res.data));
   }, []);
 
   return (
     <div>
       <h2>Payment History</h2>
       <ul>
-        {payments.map(p => (
+        {payments.map((p) => (
           <li key={p.id}>
             {p.planType} - ₹{p.amount} - {p.status}
           </li>

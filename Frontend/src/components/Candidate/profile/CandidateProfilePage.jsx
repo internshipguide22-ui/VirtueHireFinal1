@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, FileText, Mail, PencilLine, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  FileText,
+  Mail,
+  PencilLine,
+  Phone,
+} from "lucide-react";
 import { fetchCandidateProfile } from "./profileApi";
 import {
   DEFAULT_PROFILE_IMAGE,
@@ -25,7 +32,9 @@ export default function CandidateProfilePage() {
         localStorage.setItem("candidate", JSON.stringify(profile));
         window.dispatchEvent(new Event("auth-change"));
       } catch (err) {
-        const message = err.response?.data?.error || "We could not load your profile summary.";
+        const message =
+          err.response?.data?.error ||
+          "We could not load your profile summary.";
         setError(message);
 
         if (err.response?.status === 401) {
@@ -56,7 +65,8 @@ export default function CandidateProfilePage() {
     );
   }
 
-  const profileImage = getCandidateFileUrl(candidate.profilePic) || DEFAULT_PROFILE_IMAGE;
+  const profileImage =
+    getCandidateFileUrl(candidate.profilePic) || DEFAULT_PROFILE_IMAGE;
   const skills = getSkillList(candidate.skills);
 
   return (
@@ -75,7 +85,8 @@ export default function CandidateProfilePage() {
             <p className="candidate-profile-eyebrow">Candidate Profile</p>
             <h1>Profile Overview</h1>
             <p className="candidate-profile-subtitle">
-              A concise snapshot of your account with quick access to full view and editing.
+              A concise snapshot of your account with quick access to full view
+              and editing.
             </p>
           </div>
 
@@ -99,7 +110,9 @@ export default function CandidateProfilePage() {
           </div>
         </div>
 
-        {error && <div className="candidate-profile-feedback error">{error}</div>}
+        {error && (
+          <div className="candidate-profile-feedback error">{error}</div>
+        )}
 
         <section className="candidate-profile-hero-card">
           <div className="candidate-profile-identity">
@@ -116,7 +129,9 @@ export default function CandidateProfilePage() {
               <h2>{formatDisplayValue(candidate.fullName)}</h2>
               <p>{formatDisplayValue(candidate.highestEducation)}</p>
               <span className="candidate-profile-highlight">
-                {candidate.experience !== "" ? `${candidate.experience} years experience` : "Experience not added"}
+                {candidate.experience !== ""
+                  ? `${candidate.experience} years experience`
+                  : "Experience not added"}
               </span>
             </div>
           </div>
@@ -132,7 +147,11 @@ export default function CandidateProfilePage() {
             </div>
             <div className="candidate-profile-summary-item">
               <FileText size={18} />
-              <span>{skills.length ? `${skills.length} listed skills` : "No skills listed yet"}</span>
+              <span>
+                {skills.length
+                  ? `${skills.length} listed skills`
+                  : "No skills listed yet"}
+              </span>
             </div>
           </div>
         </section>
@@ -149,8 +168,10 @@ export default function CandidateProfilePage() {
                 <strong>
                   {formatDisplayValue(
                     candidate.city || candidate.state
-                      ? [candidate.city, candidate.state].filter(Boolean).join(", ")
-                      : ""
+                      ? [candidate.city, candidate.state]
+                          .filter(Boolean)
+                          .join(", ")
+                      : "",
                   )}
                 </strong>
               </div>
@@ -159,21 +180,27 @@ export default function CandidateProfilePage() {
             <article className="candidate-profile-detail-card">
               <div>
                 <span>College / University</span>
-                <strong>{formatDisplayValue(candidate.collegeUniversity)}</strong>
+                <strong>
+                  {formatDisplayValue(candidate.collegeUniversity)}
+                </strong>
               </div>
             </article>
 
             <article className="candidate-profile-detail-card">
               <div>
                 <span>Graduation Year</span>
-                <strong>{formatDisplayValue(candidate.yearOfGraduation)}</strong>
+                <strong>
+                  {formatDisplayValue(candidate.yearOfGraduation)}
+                </strong>
               </div>
             </article>
 
             <article className="candidate-profile-detail-card">
               <div>
                 <span>Resume Status</span>
-                <strong>{candidate.resumePath ? "Uploaded" : "Not uploaded"}</strong>
+                <strong>
+                  {candidate.resumePath ? "Uploaded" : "Not uploaded"}
+                </strong>
               </div>
             </article>
           </div>

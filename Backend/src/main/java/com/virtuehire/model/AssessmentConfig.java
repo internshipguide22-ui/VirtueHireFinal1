@@ -11,7 +11,7 @@ public class AssessmentConfig {
     private Long id;
 
     @Column(nullable = false)
-    private String subject; // Test Name
+    private String subject;
 
     @Column(nullable = false)
     private int sectionNumber;
@@ -19,8 +19,8 @@ public class AssessmentConfig {
     @Column(nullable = false)
     private String sectionName;
 
-    @Column(nullable = false)
-    private int timeLimit; // In minutes
+    @Column
+    private Integer timeLimit;
 
     @Column(nullable = false)
     private int questionCount = 10;
@@ -28,7 +28,7 @@ public class AssessmentConfig {
     public AssessmentConfig() {
     }
 
-    public AssessmentConfig(String subject, int sectionNumber, String sectionName, int timeLimit, int questionCount) {
+    public AssessmentConfig(String subject, int sectionNumber, String sectionName, Integer timeLimit, int questionCount) {
         this.subject = subject;
         this.sectionNumber = sectionNumber;
         this.sectionName = sectionName;
@@ -65,11 +65,11 @@ public class AssessmentConfig {
         this.sectionName = sectionName;
     }
 
-    public int getTimeLimit() {
+    public Integer getTimeLimit() {
         return timeLimit;
     }
 
-    public void setTimeLimit(int timeLimit) {
+    public void setTimeLimit(Integer timeLimit) {
         this.timeLimit = timeLimit;
     }
 

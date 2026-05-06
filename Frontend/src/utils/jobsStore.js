@@ -5,7 +5,7 @@ const CONTACT_ACCESS_EVENT_NAME = "virtuehire_contact_access_updated";
 export const JOB_STATUS = {
   OPEN: "open",
   PAUSED: "paused",
-  CLOSED: "closed"
+  CLOSED: "closed",
 };
 
 const safeParse = (value) => {
@@ -18,14 +18,19 @@ const safeParse = (value) => {
 
 const normalizeJob = (job) => ({
   ...job,
-  status: Object.values(JOB_STATUS).includes(job?.status) ? job.status : JOB_STATUS.OPEN
+  status: Object.values(JOB_STATUS).includes(job?.status)
+    ? job.status
+    : JOB_STATUS.OPEN,
 });
 
 const normalizeJobs = (jobs) =>
   [...jobs]
     .filter((job) => job && job.id)
     .map(normalizeJob)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
 export const getJobs = () => {
   const jobs = safeParse(localStorage.getItem(JOBS_STORAGE_KEY) || "[]");
@@ -38,7 +43,9 @@ const persistJobs = (jobs) => {
 };
 
 const getContactAccessRequestsRaw = () => {
-  const requests = safeParse(localStorage.getItem(CONTACT_ACCESS_REQUESTS_KEY) || "[]");
+  const requests = safeParse(
+    localStorage.getItem(CONTACT_ACCESS_REQUESTS_KEY) || "[]",
+  );
   return Array.isArray(requests) ? requests : [];
 };
 
@@ -62,7 +69,7 @@ export const createJob = (payload) => {
     postedBy: payload.postedBy || "HR Team",
     createdAt: now,
     status: payload.status || JOB_STATUS.OPEN,
-    candidateResponses: []
+    candidateResponses: [],
   };
 
   const jobs = getJobs();
@@ -78,9 +85,9 @@ export const updateJob = (jobId, payload) => {
           ...job,
           ...payload,
           id: job.id,
-          createdAt: job.createdAt
+          createdAt: job.createdAt,
         }
-      : job
+      : job,
   );
 
   persistJobs(updatedJobs);
@@ -112,13 +119,17 @@ export const setCandidateJobInterest = (jobId, candidate, status) => {
   const updatedJobs = jobs.map((job) => {
     if (job.id !== jobId) return job;
 
-    const responses = Array.isArray(job.candidateResponses) ? [...job.candidateResponses] : [];
-    const index = responses.findIndex((item) => item.candidateId === candidateKey);
+    const responses = Array.isArray(job.candidateResponses)
+      ? [...job.candidateResponses]
+      : [];
+    const index = responses.findIndex(
+      (item) => item.candidateId === candidateKey,
+    );
     if (index >= 0) {
       result = {
         updated: false,
         reason: "already_responded",
-        status: responses[index]?.status || ""
+        status: responses[index]?.status || "",
       };
       return job;
     }
@@ -131,7 +142,7 @@ export const setCandidateJobInterest = (jobId, candidate, status) => {
       skills: candidate.skills || "",
       experience: candidate.experience ?? 0,
       status,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     responses.push(response);
@@ -139,7 +150,7 @@ export const setCandidateJobInterest = (jobId, candidate, status) => {
 
     return {
       ...job,
-      candidateResponses: responses
+      candidateResponses: responses,
     };
   });
 
@@ -151,16 +162,23 @@ export const getCandidateJobStatus = (job, candidate) => {
   const candidateKey = resolveCandidateKey(candidate);
   if (!candidateKey) return "";
 
-  const responses = Array.isArray(job?.candidateResponses) ? job.candidateResponses : [];
+  const responses = Array.isArray(job?.candidateResponses)
+    ? job.candidateResponses
+    : [];
   const response = responses.find((item) => item.candidateId === candidateKey);
   return response?.status || "";
 };
 
 export const getInterestedCandidates = (job) => {
-  const responses = Array.isArray(job?.candidateResponses) ? job.candidateResponses : [];
+  const responses = Array.isArray(job?.candidateResponses)
+    ? job.candidateResponses
+    : [];
   return responses
     .filter((item) => item.status === "interested")
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
 };
 
 export const getAllInterestedCandidates = () => {
@@ -181,12 +199,14 @@ export const getAllInterestedCandidates = () => {
         phoneNumber: candidate.phoneNumber,
         skills: candidate.skills,
         experience: candidate.experience,
-        markedAt: candidate.updatedAt
+        markedAt: candidate.updatedAt,
       });
     });
   });
 
-  return result.sort((a, b) => new Date(b.markedAt).getTime() - new Date(a.markedAt).getTime());
+  return result.sort(
+    (a, b) => new Date(b.markedAt).getTime() - new Date(a.markedAt).getTime(),
+  );
 };
 
 export const createContactAccessRequest = ({ hr, candidate, job }) => {
@@ -196,11 +216,14 @@ export const createContactAccessRequest = ({ hr, candidate, job }) => {
 
   const requests = getContactAccessRequestsRaw();
   const existingIndex = requests.findIndex(
-    (request) => request.hrKey === hrKey && request.candidateId === candidateId
+    (request) => request.hrKey === hrKey && request.candidateId === candidateId,
   );
 
   const nextRequest = {
-    id: existingIndex >= 0 ? requests[existingIndex].id : `car_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
+    id:
+      existingIndex >= 0
+        ? requests[existingIndex].id
+        : `car_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
     hrKey,
     hrName: hr.fullName || "HR Team",
     hrEmail: hr.email || "N/A",
@@ -213,8 +236,11 @@ export const createContactAccessRequest = ({ hr, candidate, job }) => {
     jobId: job?.jobId || job?.id || "",
     jobTitle: job?.jobTitle || job?.title || "",
     status: "PENDING",
-    createdAt: existingIndex >= 0 ? requests[existingIndex].createdAt : new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    createdAt:
+      existingIndex >= 0
+        ? requests[existingIndex].createdAt
+        : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   if (existingIndex >= 0) {
@@ -229,7 +255,9 @@ export const createContactAccessRequest = ({ hr, candidate, job }) => {
 
 export const getContactAccessRequests = () =>
   [...getContactAccessRequestsRaw()].sort(
-    (a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+    (a, b) =>
+      new Date(b.updatedAt || b.createdAt).getTime() -
+      new Date(a.updatedAt || a.createdAt).getTime(),
   );
 
 export const reviewContactAccessRequest = (requestId, status) => {
@@ -240,9 +268,9 @@ export const reviewContactAccessRequest = (requestId, status) => {
       ? {
           ...request,
           status,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         }
-      : request
+      : request,
   );
 
   persistContactAccessRequests(updatedRequests);
@@ -252,8 +280,15 @@ export const getHrCandidateAccessStatus = (hr, candidateId) => {
   const hrKey = resolveHrKey(hr);
   if (!hrKey || !candidateId) return "NONE";
   const requests = getContactAccessRequestsRaw()
-    .filter((request) => request.hrKey === hrKey && request.candidateId === candidateId)
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+    .filter(
+      (request) =>
+        request.hrKey === hrKey && request.candidateId === candidateId,
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt || b.createdAt).getTime() -
+        new Date(a.updatedAt || a.createdAt).getTime(),
+    );
   return requests[0]?.status || "NONE";
 };
 

@@ -1,9 +1,9 @@
 /* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap");
 
 /* Page Style */
 .features-page {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   background: linear-gradient(135deg, #f0f4ff, #e6f7ff);
   padding: 60px 20px;
 }
@@ -15,14 +15,14 @@
 }
 
 .features-hero h1 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 3rem;
   font-weight: 700;
   background: linear-gradient(90deg, #6a11cb, #2575fc);
-  background-clip: text;           
-  -webkit-background-clip: text;   
-  color: transparent;               
-  -webkit-text-fill-color: transparent; 
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
   margin-bottom: 20px;
   opacity: 0;
   transform: translateY(20px);
@@ -50,7 +50,7 @@
   padding: 25px 20px;
   border-radius: 20px;
   width: 280px;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
   text-align: center;
   transition: all 0.3s ease;
   opacity: 0;
@@ -59,7 +59,7 @@
 
 .feature-card:hover {
   transform: translateY(-10px) scale(1.05);
-  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
 }
 
 .feature-card span {
@@ -69,14 +69,14 @@
 }
 
 .feature-card h4 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 1.4rem;
   margin-bottom: 10px;
   background: linear-gradient(90deg, #ff512f, #dd2476);
-  background-clip: text;          
-  -webkit-background-clip: text;   
-  color: transparent;               
-  -webkit-text-fill-color: transparent; 
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .feature-card p {

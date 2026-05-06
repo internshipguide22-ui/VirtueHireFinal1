@@ -1,3 +1,5 @@
+// PATH: Backend/src/main/java/com/virtuehire/controller/ResumeRestController.java
+
 package com.virtuehire.controller;
 
 import com.virtuehire.model.Candidate;
@@ -97,6 +99,36 @@ public class ResumeRestController {
         String fileName = resumeService.getResumePdfName(candidate.getId(), resumeId);
         String headerValue = ("attachment".equalsIgnoreCase(disposition) ? "attachment" : "inline")
                 + "; filename=\"" + fileName + "\"";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+    }
+
+    // ─── Admin endpoint: serve file by filename ───────────────────────────────
+    @GetMapping("/admin/file/{filename}")
+    public ResponseEntity<Resource> adminViewFile(
+            @PathVariable String filename,
+            @RequestParam(defaultValue = "inline") String disposition,
+            HttpSession session) throws IOException {
+
+        Object admin = session.getAttribute("admin");
+        if (admin == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Path filePath = resumeService.resolveFileByName(filename);
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new UrlResource(filePath.toUri());
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) contentType = MediaType.APPLICATION_PDF_VALUE;
+
+        String headerValue = ("attachment".equalsIgnoreCase(disposition) ? "attachment" : "inline")
+                + "; filename=\"" + filename + "\"";
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)

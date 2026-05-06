@@ -79,8 +79,6 @@
 //   );
 // }
 
-
-
 // import React, { useState } from "react";
 // import api from "../../services/api";
 // import "./CandidateLogin.css";
@@ -168,8 +166,6 @@
 //   );
 // }
 
-
-
 // import React, { useState } from "react";
 // import api from "../../services/api";
 // import "./CandidateLogin.css";
@@ -256,8 +252,6 @@
 //   );
 // }
 
-
-
 // import React, { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 // import api from "../../services/api";
@@ -309,11 +303,9 @@
 
 // export default CandidateLogin;
 
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api"; // Axios instance with baseURL https://backend.virtuehire.in/api
-
 
 function CandidateLogin() {
   const [email, setEmail] = useState("");
@@ -346,7 +338,7 @@ function CandidateLogin() {
       const res = await api.post(
         "/auth/login",
         { email: trimmedEmail, password: trimmedPassword, role: "Candidate" },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       const { user } = res.data;
@@ -358,8 +350,7 @@ function CandidateLogin() {
       navigate("/candidates/welcome");
     } catch (err) {
       console.error("Login error:", err);
-      const msg =
-        err.response?.data?.error || "❌ Invalid email or password!";
+      const msg = err.response?.data?.error || "❌ Invalid email or password!";
       showToast(msg, "error");
     }
   };

@@ -79,10 +79,10 @@ public class HrService {
         if (canViewCandidateDetails(hr)) return true;
 
         // Free trial → within 3 months of registration
-        if (hr.getRegisteredAt() != null &&
-                hr.getRegisteredAt().plusMinutes(3).isAfter(LocalDateTime.now())) {
-            return true;
-        }
+     if (hr.getRegisteredAt() != null &&
+        hr.getRegisteredAt().plusMonths(3).isAfter(LocalDateTime.now())) {
+    return true;
+}
 
         return false;
     }

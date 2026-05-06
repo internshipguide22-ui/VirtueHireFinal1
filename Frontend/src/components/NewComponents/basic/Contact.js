@@ -1,5 +1,5 @@
 import React from "react";
-import "./Contact.css"; 
+import "./Contact.css";
 
 function Contact() {
   return (
@@ -12,12 +12,16 @@ function Contact() {
         {/* Left: Form */}
         <div className="contact-form-side">
           <h2>Get in Touch</h2>
-          <p>We’d love to hear from you! Fill the form and we’ll respond shortly.</p>
+          <p>
+            We’d love to hear from you! Fill the form and we’ll respond shortly.
+          </p>
           <form className="contact-form">
             <input type="text" placeholder="Your Name" required />
             <input type="email" placeholder="Your Email" required />
             <textarea placeholder="Your Message" rows="5" required></textarea>
-            <button type="submit" className="pulse-btn">Send Message</button>
+            <button type="submit" className="pulse-btn">
+              Send Message
+            </button>
           </form>
         </div>
 
@@ -36,7 +40,10 @@ function Contact() {
           <div className="info-card">
             <span>📍</span>
             <h4>Address</h4>
-            <p>65/1, Tatabad, 7th Street, Dr Rajendra Prasad Rd, near BEA, Coimbatore, Tamil Nadu 641012</p>
+            <p>
+              65/1, Tatabad, 7th Street, Dr Rajendra Prasad Rd, near BEA,
+              Coimbatore, Tamil Nadu 641012
+            </p>
           </div>
 
           {/* Google Map iframe */}

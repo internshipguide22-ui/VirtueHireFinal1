@@ -16,6 +16,7 @@ import { fetchCandidateProfile } from "./profileApi";
 import {
   DEFAULT_PROFILE_IMAGE,
   formatDisplayValue,
+  getApiUrl,
   getCandidateFileUrl,
   getResumeFileName,
   getSkillList,
@@ -40,7 +41,8 @@ export default function CandidateProfileView() {
         window.dispatchEvent(new Event("auth-change"));
       } catch (err) {
         const message =
-          err.response?.data?.error || "We could not load your full profile right now.";
+          err.response?.data?.error ||
+          "We could not load your full profile right now.";
         setError(message);
 
         if (err.response?.status === 401) {
@@ -58,7 +60,9 @@ export default function CandidateProfileView() {
   if (loading) {
     return (
       <div className="candidate-profile-shell">
-        <div className="candidate-profile-loading">Loading your full profile...</div>
+        <div className="candidate-profile-loading">
+          Loading your full profile...
+        </div>
       </div>
     );
   }
@@ -71,13 +75,21 @@ export default function CandidateProfileView() {
     );
   }
 
-  const profileImage = getCandidateFileUrl(candidate.profilePic) || DEFAULT_PROFILE_IMAGE;
-  const resumeUrl = getCandidateFileUrl(candidate.resumePath);
+  const profileImage =
+    getCandidateFileUrl(candidate.profilePic) || DEFAULT_PROFILE_IMAGE;
+  const resumeUrl =
+    getApiUrl(candidate.resumeUrl) || getCandidateFileUrl(candidate.resumePath);
+  const resumeDownloadUrl =
+    getApiUrl(candidate.resumeDownloadUrl) || resumeUrl;
   const resumeName = getResumeFileName(candidate.resumePath);
   const skills = getSkillList(candidate.skills);
 
   const detailItems = [
-    { label: "Full Name", value: candidate.fullName, icon: <UserRound size={18} /> },
+    {
+      label: "Full Name",
+      value: candidate.fullName,
+      icon: <UserRound size={18} />,
+    },
     { label: "Email", value: candidate.email, icon: <Mail size={18} /> },
     { label: "Phone", value: candidate.phoneNumber, icon: <Phone size={18} /> },
     {
@@ -155,7 +167,9 @@ export default function CandidateProfileView() {
           </div>
         </div>
 
-        {error && <div className="candidate-profile-feedback error">{error}</div>}
+        {error && (
+          <div className="candidate-profile-feedback error">{error}</div>
+        )}
 
         <section className="candidate-profile-hero-card">
           <div className="candidate-profile-identity">
@@ -172,7 +186,9 @@ export default function CandidateProfileView() {
               <h2>{formatDisplayValue(candidate.fullName)}</h2>
               <p>{formatDisplayValue(candidate.email)}</p>
               <span className="candidate-profile-highlight">
-                {skills.length ? `${skills.length} skill${skills.length > 1 ? "s" : ""}` : "Skills not added"}
+                {skills.length
+                  ? `${skills.length} skill${skills.length > 1 ? "s" : ""}`
+                  : "Skills not added"}
               </span>
             </div>
           </div>
@@ -193,13 +209,19 @@ export default function CandidateProfileView() {
                 >
                   View Resume
                 </a>
-                <a href={resumeUrl} download={resumeName} className="candidate-profile-link-btn secondary">
+                <a
+                  href={resumeDownloadUrl}
+                  download={resumeName}
+                  className="candidate-profile-link-btn secondary"
+                >
                   <Download size={16} />
                   Download
                 </a>
               </div>
             ) : (
-              <p className="candidate-profile-muted">Upload a resume from the edit page.</p>
+              <p className="candidate-profile-muted">
+                Upload a resume from the edit page.
+              </p>
             )}
           </div>
         </section>
@@ -211,7 +233,10 @@ export default function CandidateProfileView() {
 
           <div className="candidate-profile-detail-grid">
             {detailItems.map((item) => (
-              <article key={item.label} className="candidate-profile-detail-card">
+              <article
+                key={item.label}
+                className="candidate-profile-detail-card"
+              >
                 <div className="candidate-profile-detail-icon">{item.icon}</div>
                 <div>
                   <span>{item.label}</span>
@@ -235,7 +260,9 @@ export default function CandidateProfileView() {
                 </span>
               ))
             ) : (
-              <p className="candidate-profile-muted">No skills have been added yet.</p>
+              <p className="candidate-profile-muted">
+                No skills have been added yet.
+              </p>
             )}
           </div>
         </section>
@@ -254,7 +281,8 @@ export default function CandidateProfileView() {
               />
             ) : (
               <div className="candidate-profile-feedback">
-                This resume format does not support inline preview here. Use the View Resume button to open it.
+                This resume format does not support inline preview here. Use the
+                View Resume button to open it.
               </div>
             )}
           </section>

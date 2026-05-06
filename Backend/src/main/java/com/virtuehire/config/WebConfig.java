@@ -36,7 +36,12 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("https://admin.virtuehire.in", "http://localhost:3000") // React app URL
+                .allowedOrigins(
+                        "https://admin.virtuehire.in",
+                        "https://virtuehire.in",
+                        "https://www.virtuehire.in",
+                        "http://localhost:3000"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

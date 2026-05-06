@@ -1,51 +1,51 @@
 .hr-dashboard-wrapper {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .hr-sidebar {
-  width: 280px;
+  width: var(--sidebar-width);
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 28px 20px;
-  background: linear-gradient(180deg, #172033 0%, #1e293b 100%);
-  color: white;
+  gap: var(--space-2xl);
+  padding: var(--sidebar-padding);
+  background: var(--bg-sidebar);
+  color: var(--text-white);
   z-index: 100;
 }
 
 .hr-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .hr-sidebar-mark {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #60a5fa, #4f46e5);
+  background: var(--color-primary-gradient);
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-extrabold);
 }
 
 .hr-sidebar-brand h1 {
   margin: 0;
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-extrabold);
 }
 
 .hr-sidebar-brand p {
   margin: 2px 0 0;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 0.88rem;
 }
 
@@ -56,33 +56,33 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .hr-nav-item {
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #cbd5e1;
+  gap: var(--space-md);
+  color: var(--text-sidebar);
   font-size: 0.98rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   transition: all 0.2s ease;
 }
 
 .hr-nav-item:hover {
-  background: #3b82f6;
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22);
+  background: var(--bg-sidebar-item);
+  color: var(--text-white);
+  box-shadow: var(--shadow-md);
   transform: translateX(4px);
 }
 
 .hr-nav-item.active {
-  background: #3b82f6;
-  color: white;
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22);
+  background: var(--bg-sidebar-item);
+  color: var(--text-white);
+  box-shadow: var(--shadow-md);
 }
 
 .hr-nav-group {
@@ -105,7 +105,9 @@
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
-  transition: max-height 0.24s ease, opacity 0.24s ease;
+  transition:
+    max-height 0.24s ease,
+    opacity 0.24s ease;
   margin-top: 0;
 }
 
@@ -119,27 +121,27 @@
 }
 
 .hr-sub-nav-item {
-  margin-left: 12px;
+  margin-left: var(--space-md);
   padding: 11px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
-  width: calc(100% - 12px);
+  width: calc(100% - var(--space-md));
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #cbd5e1;
+  gap: var(--space-sm);
+  color: var(--text-tertiary);
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   transition: all 0.2s ease;
   text-align: left;
 }
 
 .hr-sub-nav-item:hover,
 .hr-sub-nav-item.active {
-  background: rgba(59, 130, 246, 0.9);
-  color: #fff;
+  background: var(--bg-sidebar-item);
+  color: var(--text-white);
   transform: translateX(4px);
 }
 
@@ -149,20 +151,20 @@
 
 .hr-content-main {
   flex: 1;
-  margin-left: 280px;
-  padding: 36px;
+  margin-left: calc(var(--sidebar-width) + var(--space-lg));
+  padding: var(--space-5xl);
 }
 
 .hr-hero {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
-  padding: 32px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
-  color: #fff;
-  box-shadow: 0 24px 50px rgba(79, 70, 229, 0.2);
+  gap: var(--space-2xl);
+  padding: var(--space-4xl);
+  border-radius: var(--radius-5xl);
+  background: var(--color-hero-gradient);
+  color: var(--text-white);
+  box-shadow: var(--shadow-xl);
 }
 
 .hr-hero-copy-block {
@@ -202,19 +204,19 @@
 .hr-hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   align-self: flex-start;
-  padding: 10px 14px;
-  border-radius: 999px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  color: var(--text-white);
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .hr-hero-user {
-  padding: 18px 20px;
-  border-radius: 20px;
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-3xl);
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
 }
@@ -222,74 +224,75 @@
 .hr-hero-user strong {
   display: block;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .hr-hero-user span {
   display: block;
-  margin-top: 6px;
+  margin-top: var(--space-sm);
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.88rem;
 }
 
 .hr-stats-grid {
-  margin-top: 28px;
+  margin-top: var(--space-3xl);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--space-xl);
 }
 
 .hr-stat-card {
-  background: white;
-  padding: 24px;
-  border-radius: 22px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  background: var(--bg-secondary);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-4xl);
+  box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 .hr-stat-icon {
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   display: grid;
   place-items: center;
 }
 
 .hr-stat-info h3 {
   margin: 0 0 6px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .hr-stat-info p {
   margin: 0;
   font-size: 1.8rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
 }
 
 .hr-panel,
 .hrm-alert,
 .hr-section-card {
-  background: white;
-  border-radius: 22px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-4xl);
+  box-shadow: var(--shadow-lg);
 }
 
 .hr-panel {
-  margin-top: 28px;
-  padding: 28px;
+  margin-top: var(--space-3xl);
+  padding: var(--space-3xl);
+  border: 1px solid var(--sidebar-border);
 }
 
 .hr-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
 .hr-panel-header h3 {
@@ -299,29 +302,41 @@
 
 .hr-panel-header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .hr-panel-icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 16px;
   display: grid;
   place-items: center;
-  background: #e0e7ff;
-  color: #4338ca;
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+  color: #2563eb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .hr-section-card {
   padding: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
 .hr-candidate-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 1fr) 180px 180px auto;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(
+      180px,
+      1fr
+    ) 180px 180px auto;
   gap: 14px;
   align-items: center;
   margin-bottom: 22px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #f8fbff;
+  border: 1px solid #e2e8f0;
 }
 
 .hr-filter-input-wrap {
@@ -342,12 +357,14 @@
   height: 46px;
   border: 1px solid #dbe4f0;
   border-radius: 14px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #0f172a;
   padding: 0 14px;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .hr-filter-input-wrap .hr-filter-input {
@@ -364,8 +381,8 @@
   height: 46px;
   border: none;
   border-radius: 14px;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -458,9 +475,10 @@
 
 .hr-table-shell {
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
   background: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .hr-table-container {
@@ -475,19 +493,25 @@
 .hr-data-table th {
   text-align: left;
   padding: 16px;
-  background: #f8fafc;
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
   color: #475569;
-  font-weight: 600;
-  font-size: 14px;
-  border-bottom: 2px solid #f1f5f9;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .hr-data-table td {
   padding: 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #eef2f7;
   color: #1e293b;
   font-size: 14px;
   vertical-align: middle;
+}
+
+.hr-data-table tbody tr:hover {
+  background: rgba(248, 250, 252, 0.84);
 }
 
 .hrm-user-info {
@@ -502,8 +526,8 @@
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: #e0e7ff;
-  color: #4338ca;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #2563eb;
   font-weight: 800;
 }
 
@@ -549,13 +573,14 @@
 }
 
 .hr-view-btn {
-  padding: 8px 14px;
+  padding: 10px 14px;
   border: none;
   border-radius: 12px;
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
 }
 
 .hr-job-form {
@@ -593,7 +618,9 @@
   padding: 12px 14px;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   font-family: inherit;
 }
 
@@ -611,8 +638,8 @@
 .hr-job-submit {
   align-self: flex-start;
   border: none;
-  border-radius: 12px;
-  background: #2563eb;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #fff;
   font-weight: 700;
   padding: 12px 18px;

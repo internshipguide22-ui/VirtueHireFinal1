@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -119,56 +120,54 @@ public class AssessmentService {
         return assessmentRepo.findAll();
     }
 
+    /**
+     * Looks up an assessment by name using exact match first, then
+     * case-insensitive match. Partial / prefix matching has been removed
+     * because it caused "Java" to resolve to "Java Assignment" (or vice-versa),
+     * hiding valid assessments from candidates.
+     */
     public Optional<Assessment> getAssessmentByName(String name) {
         if (name == null || name.isBlank()) {
             return Optional.empty();
         }
-        
+
         // 1. Try exact match first
         Optional<Assessment> exactMatch = assessmentRepo.findByAssessmentName(name);
         if (exactMatch.isPresent()) {
             return exactMatch;
         }
-        
+
         // 2. Try case-insensitive match
         Optional<Assessment> caseInsensitiveMatch = assessmentRepo.findAll().stream()
-            .filter(assessment -> assessment.getAssessmentName().equalsIgnoreCase(name))
-            .findFirst();
-        
+                .filter(assessment -> assessment.getAssessmentName().equalsIgnoreCase(name))
+                .findFirst();
+
         if (caseInsensitiveMatch.isPresent()) {
-            System.out.println("Found case-insensitive match: '" + name + "' -> '" + caseInsensitiveMatch.get().getAssessmentName() + "'");
+            System.out.println("Found case-insensitive match: '" + name + "' -> '"
+                    + caseInsensitiveMatch.get().getAssessmentName() + "'");
             return caseInsensitiveMatch;
         }
-        
-        // 3. Try partial match (for backward compatibility with "Python Assessment" vs "Python")
-        String normalizedName = name.toLowerCase().trim();
-        Optional<Assessment> partialMatch = assessmentRepo.findAll().stream()
-            .filter(assessment -> {
-                String assessmentName = assessment.getAssessmentName().toLowerCase();
-                return assessmentName.contains(normalizedName) || normalizedName.contains(assessmentName);
-            })
-            .findFirst();
-        
-        if (partialMatch.isPresent()) {
-            System.out.println("Found partial match: '" + name + "' -> '" + partialMatch.get().getAssessmentName() + "'");
-            return partialMatch;
-        }
-        
-        // Debug: Log all available assessments when not found
+
+        // 3. No match found — partial matching intentionally removed.
+        // Previously, a prefix-based partial match caused "Java" to match
+        // "Java Assignment" (space after prefix is not a letter/digit),
+        // which hid the real "Java" assessment from the candidate view.
         System.out.println("No assessment found for: '" + name + "'");
         System.out.println("Available assessments:");
-        assessmentRepo.findAll().forEach(a -> 
-            System.out.println("  - '" + a.getAssessmentName() + "' (ID: " + a.getId() + ")")
+        assessmentRepo.findAll().forEach(a ->
+                System.out.println("  - '" + a.getAssessmentName() + "' (ID: " + a.getId() + ")")
         );
-        
+
         return Optional.empty();
     }
 
+    // Removed .distinct() so assessments with the same name are all returned.
+    // Each assessment is identified by its ID, not its name; deduplication here
+    // was silently hiding valid assessments from callers.
     public List<String> getAllAssessmentNames() {
         return assessmentRepo.findAll().stream()
-                             .map(Assessment::getAssessmentName)
-                             .distinct()
-                             .toList();
+                .map(Assessment::getAssessmentName)
+                .toList();
     }
 
     public Optional<Assessment> findAssessmentBySkillSet(List<String> skills) {
@@ -184,6 +183,49 @@ public class AssessmentService {
                 .findFirst();
     }
 
+    public List<Assessment> findAssessmentsForSkills(List<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> candidateSkills = skills.stream()
+                .filter(skill -> skill != null && !skill.isBlank())
+                .map(this::buildSkillMatchKey)
+                .collect(Collectors.toSet());
+
+        return assessmentRepo.findAll().stream()
+                .sorted(Comparator.comparing(Assessment::getCreatedAt).reversed())
+                .filter(assessment -> {
+                    List<String> assessmentSkills = getAssessmentSubjects(assessment);
+                    // Changed allMatch → anyMatch.
+                    // Previously, every subject in the assessment had to appear in the
+                    // candidate's skill list — this wrongly excluded multi-skill assessments
+                    // where only one skill was relevant. Now at least one subject must match.
+                    return !assessmentSkills.isEmpty() && assessmentSkills.stream()
+                            .anyMatch(assessmentSkill -> matchesCandidateSkill(candidateSkills, assessmentSkill));
+                })
+                .toList();
+    }
+
+    public List<String> getAssessmentSubjects(Assessment assessment) {
+        if (assessment == null || assessment.getId() == null) {
+            return List.of();
+        }
+
+        return getAssessmentSections(assessment.getId()).stream()
+                .map(AssessmentSection::getSubject)
+                .filter(subject -> subject != null && !subject.isBlank())
+                .map(this::normalizeSkill)
+                .distinct()
+                .toList();
+    }
+
+    public boolean skillsMatch(String firstSkill, String secondSkill) {
+        String firstKey = buildSkillMatchKey(firstSkill);
+        String secondKey = buildSkillMatchKey(secondSkill);
+        return !firstKey.isBlank() && firstKey.equals(secondKey);
+    }
+
     @Transactional
     public Optional<Assessment> findOrCreateSingleSkillAssessment(String skill) {
         // AUTO-CREATION DISABLED - Only find existing assessments
@@ -194,15 +236,15 @@ public class AssessmentService {
 
         // Try to find existing assessment by skill set
         Optional<Assessment> existingAssessment = findAssessmentBySkillSet(List.of(skill));
-        
+
         if (existingAssessment.isPresent()) {
             return existingAssessment;
         }
-        
+
         // Log that no assessment exists instead of creating one
-        System.out.println("No assessment found for skill: '" + skill + 
-                         "'. Please create one manually in the admin panel.");
-        
+        System.out.println("No assessment found for skill: '" + skill +
+                "'. Please create one manually in the admin panel.");
+
         return Optional.empty();
     }
 
@@ -281,6 +323,32 @@ public class AssessmentService {
                 .replaceAll("[^a-z0-9]+", " ")
                 .trim()
                 .replaceAll("\\s+", " ");
+    }
+
+    private boolean matchesCandidateSkill(Set<String> candidateSkillKeys, String assessmentSkill) {
+        String assessmentKey = buildSkillMatchKey(assessmentSkill);
+        return !assessmentKey.isBlank() && candidateSkillKeys.contains(assessmentKey);
+    }
+
+    private String buildSkillMatchKey(String skill) {
+        String canonical = canonicalizeSkill(normalizeSkill(skill));
+        if (canonical.isBlank()) {
+            return "";
+        }
+
+        String simplified = Arrays.stream(canonical.split("\\s+"))
+                .filter(token -> !token.isBlank())
+                .filter(token -> !isGenericSkillWord(token))
+                .collect(Collectors.joining(" "));
+
+        return simplified.isBlank() ? canonical : simplified;
+    }
+
+    private boolean isGenericSkillWord(String token) {
+        return switch (token) {
+            case "programming", "developer", "development", "coding", "language", "basics", "advanced" -> true;
+            default -> false;
+        };
     }
 
     private List<Question> getQuestionsForMode(String subject, String sectionMode) {

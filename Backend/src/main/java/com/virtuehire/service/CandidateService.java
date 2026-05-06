@@ -76,6 +76,33 @@ public class CandidateService {
         return repo.save(candidate);
     }
 
+    public Candidate awardPriorityBadge(Long candidateId, String badgeLabel) {
+        if (candidateId == null) {
+            throw new RuntimeException("Candidate not found");
+        }
+        if (badgeLabel == null || badgeLabel.isBlank()) {
+            throw new RuntimeException("Badge label is required");
+        }
+
+        Candidate candidate = repo.findById(candidateId)
+                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+
+        List<String> orderedBadges = new ArrayList<>();
+        orderedBadges.add(badgeLabel.trim());
+
+        if (candidate.getBadge() != null && !candidate.getBadge().isBlank()) {
+            Arrays.stream(candidate.getBadge().split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .filter(value -> !"No badge".equalsIgnoreCase(value))
+                    .filter(value -> orderedBadges.stream().noneMatch(existing -> existing.equalsIgnoreCase(value)))
+                    .forEach(orderedBadges::add);
+        }
+
+        candidate.setBadge(String.join(", ", orderedBadges));
+        return repo.save(candidate);
+    }
+
     public List<Candidate> findAll() {
         return repo.findAll();
     }
@@ -254,7 +281,6 @@ public class CandidateService {
 
     private void applyAssessmentAssignment(Candidate candidate) {
         List<String> displaySkills = extractDisplaySkills(candidate.getSkills());
-        String skillSignature = assessmentService.buildSkillSignature(displaySkills);
 
         if (displaySkills.isEmpty()) {
             candidate.setAssignedAssessmentName(null);
@@ -263,36 +289,50 @@ public class CandidateService {
             return;
         }
 
-        if (displaySkills.size() == 1) {
-            assessmentService.findOrCreateSingleSkillAssessment(displaySkills.get(0))
-                    .ifPresentOrElse(assessment -> {
-                        candidate.setAssignedAssessmentName(assessment.getAssessmentName());
-                        candidate.setAssessmentAssignmentStatus("ASSIGNED");
-                        candidate.setAssessmentAssignmentMessage(
-                                "Assessment assigned for skill: " + displaySkills.get(0) + ".");
-                    }, () -> {
-                        candidate.setAssignedAssessmentName(null);
-                        candidate.setAssessmentAssignmentStatus("NO_RELEVANT_ASSESSMENT");
-                        candidate.setAssessmentAssignmentMessage(
-                                "No question bank is available yet for skill: " + displaySkills.get(0) + ".");
-                    });
+        List<com.virtuehire.model.Assessment> matchedAssessments = assessmentService.findAssessmentsForSkills(displaySkills);
+        if (!matchedAssessments.isEmpty()) {
+            List<String> coveredSkills = matchedAssessments.stream()
+                    .flatMap(assessment -> assessmentService.getAssessmentSubjects(assessment).stream())
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(skill -> !skill.isBlank())
+                    .distinct()
+                    .toList();
+
+            List<String> missingSkills = displaySkills.stream()
+                    .filter(skill -> coveredSkills.stream()
+                            .noneMatch(covered -> assessmentService.skillsMatch(covered, skill)))
+                    .toList();
+
+            candidate.setAssignedAssessmentName(matchedAssessments.get(0).getAssessmentName());
+            candidate.setAssessmentAssignmentStatus("ASSIGNED");
+
+            if (missingSkills.isEmpty()) {
+                candidate.setAssessmentAssignmentMessage(
+                        "Assessments are available for your skills: " + String.join(", ", coveredSkills) + ".");
+            } else {
+                candidate.setAssessmentAssignmentMessage(
+                        "Assessments are available for: " + String.join(", ", coveredSkills)
+                                + ". No assessment is available yet for: " + String.join(", ", missingSkills) + ".");
+            }
             return;
         }
 
-        assessmentService.findAssessmentBySkillSet(displaySkills)
-                .ifPresentOrElse(assessment -> {
-                    candidate.setAssignedAssessmentName(assessment.getAssessmentName());
-                    candidate.setAssessmentAssignmentStatus("ASSIGNED");
-                    candidate.setAssessmentAssignmentMessage(
-                            "Combined assessment assigned for skills: " + String.join(", ", displaySkills) + ".");
-                }, () -> {
-                    candidate.setAssignedAssessmentName(null);
-                    candidate.setAssessmentAssignmentStatus("PENDING_COMBINED_ASSESSMENT");
-                    candidate.setAssessmentAssignmentMessage(
-                            "A candidate has registered with skills: " + String.join(", ", displaySkills)
-                                    + ". A combined assessment needs to be created.");
-                    adminNotificationService.createCombinedAssessmentNotification(candidate, displaySkills, skillSignature);
-                });
+        String skillSignature = assessmentService.buildSkillSignature(displaySkills);
+        candidate.setAssignedAssessmentName(null);
+        candidate.setAssessmentAssignmentStatus(
+                displaySkills.size() == 1 ? "NO_RELEVANT_ASSESSMENT" : "PENDING_COMBINED_ASSESSMENT");
+
+        if (displaySkills.size() == 1) {
+            candidate.setAssessmentAssignmentMessage(
+                    "No question bank is available yet for skill: " + displaySkills.get(0) + ".");
+            return;
+        }
+
+        candidate.setAssessmentAssignmentMessage(
+                "A candidate has registered with skills: " + String.join(", ", displaySkills)
+                        + ". A combined assessment needs to be created.");
+        adminNotificationService.createCombinedAssessmentNotification(candidate, displaySkills, skillSignature);
     }
 
     private List<String> extractDisplaySkills(String skills) {

@@ -17,23 +17,22 @@ const HRLogin = () => {
       const res = await api.post("/auth/login", {
         email,
         password,
-        role: "HR"
+        role: "HR",
       });
       if (res.data.user) {
         setMessage("Login successful!");
         // Persist both identity and JWT for protected HR requests.
         if (res.data.token) {
-          localStorage.setItem('token', res.data.token);
+          localStorage.setItem("token", res.data.token);
         }
-        localStorage.setItem('current_hr_user', JSON.stringify(res.data.user));
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        localStorage.setItem('role', 'HR');
-        localStorage.setItem('user_role', 'hr');
-        window.dispatchEvent(new Event('auth-change'));
+        localStorage.setItem("current_hr_user", JSON.stringify(res.data.user));
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("role", "HR");
+        localStorage.setItem("user_role", "hr");
+        window.dispatchEvent(new Event("auth-change"));
 
         window.location.href = "/hr/dashboard";
-      }
-      else {
+      } else {
         setError(res.data.message || "Login failed. Please try again.");
       }
     } catch (err) {
@@ -43,15 +42,17 @@ const HRLogin = () => {
   };
 
   return (
-    <div style={{
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "#f4f7f8",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "100vh",
-      margin: 0,
-    }}>
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        backgroundColor: "#f4f7f8",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        margin: 0,
+      }}
+    >
       <form
         onSubmit={handleLogin}
         style={{
@@ -62,32 +63,44 @@ const HRLogin = () => {
           width: "350px",
         }}
       >
-        <h2 style={{ textAlign: "center", color: "#333333", marginBottom: "25px" }}>HR Login</h2>
+        <h2
+          style={{
+            textAlign: "center",
+            color: "#333333",
+            marginBottom: "25px",
+          }}
+        >
+          HR Login
+        </h2>
 
         {message && (
-          <div style={{
-            backgroundColor: "#d1ecf1",
-            border: "1px solid #bee5eb",
-            color: "#0c5460",
-            padding: "10px",
-            borderRadius: "5px",
-            marginBottom: "15px",
-            textAlign: "center"
-          }}>
+          <div
+            style={{
+              backgroundColor: "#d1ecf1",
+              border: "1px solid #bee5eb",
+              color: "#0c5460",
+              padding: "10px",
+              borderRadius: "5px",
+              marginBottom: "15px",
+              textAlign: "center",
+            }}
+          >
             {message}
           </div>
         )}
 
         {error && (
-          <div style={{
-            backgroundColor: "#f8d7da",
-            border: "1px solid #f5c6cb",
-            color: "#721c24",
-            padding: "10px",
-            borderRadius: "5px",
-            marginBottom: "15px",
-            textAlign: "center"
-          }}>
+          <div
+            style={{
+              backgroundColor: "#f8d7da",
+              border: "1px solid #f5c6cb",
+              color: "#721c24",
+              padding: "10px",
+              borderRadius: "5px",
+              marginBottom: "15px",
+              textAlign: "center",
+            }}
+          >
             {error}
           </div>
         )}
@@ -104,7 +117,7 @@ const HRLogin = () => {
             margin: "8px 0 15px 0",
             border: "1px solid #ccc",
             borderRadius: "5px",
-            boxSizing: "border-box"
+            boxSizing: "border-box",
           }}
         />
 
@@ -120,26 +133,36 @@ const HRLogin = () => {
             margin: "8px 0 15px 0",
             border: "1px solid #ccc",
             borderRadius: "5px",
-            boxSizing: "border-box"
+            boxSizing: "border-box",
           }}
         />
 
-        <button type="submit" style={{
-          width: "100%",
-          backgroundColor: "#4CAF50",
-          color: "white",
-          padding: "12px",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-          fontSize: "16px",
-          transition: "0.3s"
-        }}>
+        <button
+          type="submit"
+          style={{
+            width: "100%",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            padding: "12px",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            fontSize: "16px",
+            transition: "0.3s",
+          }}
+        >
           Login
         </button>
 
         <p style={{ textAlign: "center", marginTop: "20px" }}>
-          <a href="/hrs/register" style={{ color: "#4CAF50", fontWeight: "bold", textDecoration: "none" }}>
+          <a
+            href="/hrs/register"
+            style={{
+              color: "#4CAF50",
+              fontWeight: "bold",
+              textDecoration: "none",
+            }}
+          >
             Register as HR
           </a>
         </p>

@@ -305,6 +305,19 @@
 .candidate-result-top h4 {
   margin: 0;
   font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.2;
+}
+
+.candidate-offline-verified {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d9bf0;
+  flex-shrink: 0;
+  transform: translateY(1px);
 }
 
 .candidate-result-top span {

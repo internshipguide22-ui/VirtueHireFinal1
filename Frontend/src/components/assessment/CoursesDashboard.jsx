@@ -1,6 +1,13 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  PlayCircle,
+} from "lucide-react";
 import api from "../../services/api";
 
 function getAssessmentState(status = {}) {
@@ -11,24 +18,40 @@ function getAssessmentState(status = {}) {
   const configs = Array.isArray(status.configs) ? status.configs : [];
   const isLocked = Boolean(status.isLocked);
   const lockMessage =
-    typeof status.error === "string" && status.error.trim() ? status.error : "Test is locked";
+    typeof status.error === "string" && status.error.trim()
+      ? status.error
+      : "Test is locked";
   const passedLevels = new Set(
     results
       .filter((result) => {
         const currentConfig = configs.find(
-          (config) => Number(config.sectionNumber) === Number(result.level)
+          (config) => Number(config.sectionNumber) === Number(result.level),
         );
         const requiredScore = Number(currentConfig?.passPercentage) || 60;
         return Number(result.score) >= requiredScore;
       })
-      .map((result) => Number(result.level))
+      .map((result) => Number(result.level)),
   );
   const completed = totalSections > 0 && passedLevels.size >= totalSections;
   const hasStarted = attemptedCount > 0;
-  const actionLabel = isLocked ? "Test is Locked" : completed ? "Completed" : hasStarted ? "Continue" : "Start";
-  const progressValue = totalSections > 0 ? Math.round((passedLevels.size / totalSections) * 100) : 0;
-  const currentConfig = configs.find((config) => Number(config.sectionNumber) === nextLevel);
-  const currentPhaseName = currentConfig?.sectionName || currentConfig?.subject || `Section ${nextLevel}`;
+  const actionLabel = isLocked
+    ? "Test is Locked"
+    : completed
+      ? "Completed"
+      : hasStarted
+        ? "Continue"
+        : "Start";
+  const progressValue =
+    totalSections > 0
+      ? Math.round((passedLevels.size / totalSections) * 100)
+      : 0;
+  const currentConfig = configs.find(
+    (config) => Number(config.sectionNumber) === nextLevel,
+  );
+  const currentPhaseName =
+    currentConfig?.sectionName ||
+    currentConfig?.subject ||
+    `Section ${nextLevel}`;
 
   return {
     results,
@@ -44,12 +67,18 @@ function getAssessmentState(status = {}) {
     actionLabel,
     progressValue,
     currentPhaseName,
-    statusLabel: isLocked ? "Test is Locked" : completed ? "Completed" : hasStarted ? "In Progress" : "Not Started",
+    statusLabel: isLocked
+      ? "Test is Locked"
+      : completed
+        ? "Completed"
+        : hasStarted
+          ? "In Progress"
+          : "Not Started",
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// SectionReview — fetches per-question answers lazily on open
+// SectionReview
 // ─────────────────────────────────────────────────────────────
 function SectionReview({ result, config }) {
   const [open, setOpen] = useState(false);
@@ -60,13 +89,13 @@ function SectionReview({ result, config }) {
   const required = Number(config?.passPercentage) || 60;
   const score = Number(result.score);
   const passed = score >= required;
-  const sectionName = config?.sectionName || config?.subject || `Section ${result.level}`;
+  const sectionName =
+    config?.sectionName || config?.subject || `Section ${result.level}`;
 
   const correctCount = questions.filter((q) => q.isCorrect).length;
   const wrongCount = questions.length - correctCount;
 
   const handleToggle = async () => {
-    // Only fetch on first open
     if (!open && questions.length === 0) {
       setLoadingQ(true);
       setFetchError("");
@@ -86,14 +115,13 @@ function SectionReview({ result, config }) {
   };
 
   return (
-    <div style={styles.sectionReview}>
-      {/* ── Chip row — always visible ── */}
-      <div style={styles.chipRow}>
-        <div style={styles.chipLeft}>
-          <span style={styles.sectionReviewName}>{sectionName}</span>
+    <div style={s.sectionReview}>
+      <div style={s.chipRow}>
+        <div style={s.chipLeft}>
+          <span style={s.sectionReviewName}>{sectionName}</span>
           <span
             style={{
-              ...styles.scorePill,
+              ...s.scorePill,
               color: passed ? "#166534" : "#991b1b",
               background: passed ? "#dcfce7" : "#fee2e2",
             }}
@@ -101,127 +129,91 @@ function SectionReview({ result, config }) {
             {score}% {passed ? "✓" : "✗"}
           </span>
           {questions.length > 0 && (
-            <span style={styles.chipMeta}>
-              <span style={styles.correct}>{correctCount} correct</span>
-              <span style={styles.dot}>·</span>
-              <span style={styles.wrong}>{wrongCount} wrong</span>
-              <span style={styles.dot}>·</span>
-              <span style={styles.total}>{questions.length} total</span>
+            <span style={s.chipMeta}>
+              <span style={s.correct}>{correctCount} correct</span>
+              <span style={s.dot}>·</span>
+              <span style={s.wrong}>{wrongCount} wrong</span>
+              <span style={s.dot}>·</span>
+              <span style={s.total}>{questions.length} total</span>
             </span>
           )}
         </div>
-
-        {/* Always show the Review answers button */}
-        <button type="button" onClick={handleToggle} style={styles.reviewToggle}>
-          {loadingQ
-            ? "Loading…"
-            : open
-            ? "Hide answers"
-            : "Review answers"}
+        <button type="button" onClick={handleToggle} style={s.reviewToggle}>
+          {loadingQ ? "Loading…" : open ? "Hide answers" : "Review answers"}
           {!loadingQ && (open ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
         </button>
       </div>
 
-      {/* ── Error state ── */}
       {open && fetchError && (
         <div style={{ padding: "12px 24px", color: "#991b1b", fontSize: "0.85rem" }}>
           {fetchError}
         </div>
       )}
-
-      {/* ── Loading state ── */}
       {open && loadingQ && (
         <div style={{ padding: "12px 24px", color: "#64748b", fontSize: "0.85rem" }}>
           Loading answers…
         </div>
       )}
-
-      {/* ── No data (submitted before feature was added) ── */}
       {open && !loadingQ && !fetchError && questions.length === 0 && (
         <div style={{ padding: "12px 24px", color: "#64748b", fontSize: "0.85rem" }}>
           No answer data available for this attempt.
         </div>
       )}
-
-      {/* ── Expanded answer list ── */}
       {open && !loadingQ && questions.length > 0 && (
-        <div style={styles.questionList}>
+        <div style={s.questionList}>
           {questions.map((q, idx) => (
             <div
               key={idx}
               style={{
-                ...styles.questionCard,
+                ...s.questionCard,
                 borderLeft: `4px solid ${q.isCorrect ? "#22c55e" : "#ef4444"}`,
               }}
             >
-              <div style={styles.questionHeader}>
+              <div style={s.questionHeader}>
                 <span
                   style={{
-                    ...styles.questionBadge,
+                    ...s.questionBadge,
                     background: q.isCorrect ? "#dcfce7" : "#fee2e2",
                     color: q.isCorrect ? "#166534" : "#991b1b",
                   }}
                 >
                   {q.isCorrect ? "✓ Correct" : "✗ Wrong"}
                 </span>
-                <span style={styles.questionNumber}>Q{idx + 1}</span>
+                <span style={s.questionNumber}>Q{idx + 1}</span>
               </div>
-
-              <p style={styles.questionText}>{q.question}</p>
-
-              {/* Options list */}
-              {Array.isArray(q.options) && q.options.length > 0 && (
-                <div style={styles.optionsList}>
+              <p style={s.questionText}>{q.question}</p>
+              {Array.isArray(q.options) && q.options.length > 0 ? (
+                <div style={s.optionsList}>
                   {q.options.map((option, oIdx) => {
                     const isUserPick = option === q.userAnswer;
                     const isCorrectAnswer = option === q.correctAnswer;
-                    let optionStyle = { ...styles.optionItem };
-                    if (isCorrectAnswer) {
-                      optionStyle = { ...optionStyle, ...styles.optionCorrect };
-                    } else if (isUserPick && !isCorrectAnswer) {
-                      optionStyle = { ...optionStyle, ...styles.optionWrong };
-                    }
+                    let optionStyle = { ...s.optionItem };
+                    if (isCorrectAnswer) optionStyle = { ...optionStyle, ...s.optionCorrect };
+                    else if (isUserPick && !isCorrectAnswer) optionStyle = { ...optionStyle, ...s.optionWrong };
                     return (
                       <div key={oIdx} style={optionStyle}>
-                        <span style={styles.optionText}>{option}</span>
-                        {isCorrectAnswer && isUserPick && (
-                          <span style={styles.optionTag}>Your answer ✓</span>
-                        )}
-                        {isCorrectAnswer && !isUserPick && (
-                          <span style={styles.optionTag}>Correct answer</span>
-                        )}
+                        <span style={s.optionText}>{option}</span>
+                        {isCorrectAnswer && isUserPick && <span style={s.optionTag}>Your answer ✓</span>}
+                        {isCorrectAnswer && !isUserPick && <span style={s.optionTag}>Correct answer</span>}
                         {isUserPick && !isCorrectAnswer && (
-                          <span style={{ ...styles.optionTag, ...styles.optionTagWrong }}>
-                            Your answer
-                          </span>
+                          <span style={{ ...s.optionTag, ...s.optionTagWrong }}>Your answer</span>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              )}
-
-              {/* Fallback: no options array */}
-              {(!Array.isArray(q.options) || q.options.length === 0) && (
-                <div style={styles.answerFallback}>
-                  <div style={styles.answerRow}>
-                    <span style={styles.answerRowLabel}>Your answer:</span>
-                    <span
-                      style={{
-                        ...styles.answerValue,
-                        color: q.isCorrect ? "#166534" : "#991b1b",
-                        background: q.isCorrect ? "#dcfce7" : "#fee2e2",
-                      }}
-                    >
+              ) : (
+                <div style={s.answerFallback}>
+                  <div style={s.answerRow}>
+                    <span style={s.answerRowLabel}>Your answer:</span>
+                    <span style={{ ...s.answerValue, color: q.isCorrect ? "#166534" : "#991b1b", background: q.isCorrect ? "#dcfce7" : "#fee2e2" }}>
                       {q.userAnswer || "—"}
                     </span>
                   </div>
                   {!q.isCorrect && (
-                    <div style={styles.answerRow}>
-                      <span style={styles.answerRowLabel}>Correct answer:</span>
-                      <span
-                        style={{ ...styles.answerValue, color: "#166534", background: "#dcfce7" }}
-                      >
+                    <div style={s.answerRow}>
+                      <span style={s.answerRowLabel}>Correct answer:</span>
+                      <span style={{ ...s.answerValue, color: "#166534", background: "#dcfce7" }}>
                         {q.correctAnswer || "—"}
                       </span>
                     </div>
@@ -250,60 +242,50 @@ export default function CoursesDashboard() {
   useEffect(() => {
     const fetchAssessments = async () => {
       try {
-        const [assessmentsRes, profileRes] = await Promise.all([
-          api.get("/assessment/subjects", { withCredentials: true }),
+        const [profileRes, assessmentsRes] = await Promise.all([
           api.get("/candidates/me", { withCredentials: true }),
+          api.get("/candidates/my-assessments", { withCredentials: true }),
         ]);
-        setAssessmentNames(assessmentsRes.data || []);
+        const visibleAssessments = Array.isArray(assessmentsRes.data?.assessments)
+          ? assessmentsRes.data.assessments
+          : [];
+        setAssessmentNames(visibleAssessments);
         setAssignmentMessage(profileRes.data?.candidate?.assessmentAssignmentMessage || "");
       } catch (err) {
         console.error("Error fetching assessments:", err);
         setError("We could not load the available assessments.");
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchAssessments();
   }, []);
 
   useEffect(() => {
     const fetchStatuses = async () => {
-      if (assessmentNames.length === 0) {
-        setLoading(false);
-        return;
-      }
-
+      if (assessmentNames.length === 0) return;
       try {
+        setLoading(true);
         const statusEntries = await Promise.all(
           assessmentNames.map(async (name) => {
             try {
               const res = await api.get(`/assessment/status/${encodeURIComponent(name)}`, {
                 withCredentials: true,
               });
-
-              return [
-                name,
-                {
-                  results: res.data?.results || [],
-                  nextLevel: res.data?.nextLevel || 1,
-                  totalSections: res.data?.totalSections || 0,
-                  configs: res.data?.configs || [],
-                },
-              ];
+              return [name, {
+                results: res.data?.results || [],
+                nextLevel: res.data?.nextLevel || 1,
+                totalSections: res.data?.totalSections || 0,
+                configs: res.data?.configs || [],
+                isLocked: Boolean(res.data?.isLocked),
+                error: res.data?.error || "",
+              }];
             } catch (err) {
               console.error(`Error fetching status for ${name}:`, err);
-              return [
-                name,
-                {
-                  results: [],
-                  nextLevel: 1,
-                  totalSections: 0,
-                  configs: [],
-                },
-              ];
+              return [name, { results: [], nextLevel: 1, totalSections: 0, configs: [], isLocked: false, error: "" }];
             }
-          })
+          }),
         );
-
         setStatusData(Object.fromEntries(statusEntries));
       } catch (err) {
         console.error("Error loading test statuses:", err);
@@ -312,7 +294,6 @@ export default function CoursesDashboard() {
         setLoading(false);
       }
     };
-
     fetchStatuses();
   }, [assessmentNames]);
 
@@ -325,315 +306,376 @@ export default function CoursesDashboard() {
 
   const handleAction = (assessmentName, assessmentState) => {
     if (!assessmentState.canLaunch) return;
+    localStorage.setItem("selectedAssessment", assessmentName);
+    sessionStorage.setItem("selectedAssessment", assessmentName);
     navigate(`/assessment/instructions/${encodeURIComponent(assessmentName)}/${assessmentState.nextLevel}`);
   };
 
-  const getStatusTone = (assessmentState) => {
-    if (assessmentState.completed) return "success";
-    if (assessmentState.isLocked) return "danger";
-    if (assessmentState.hasStarted) return "info";
+  const getStatusTone = (state) => {
+    if (state.completed) return "success";
+    if (state.isLocked) return "danger";
+    if (state.hasStarted) return "info";
     return "neutral";
   };
 
-  const getActionTone = (assessmentState) => {
-    if (assessmentState.completed) return "completed";
-    if (assessmentState.isLocked) return "completed";
-    if (assessmentState.hasStarted) return "continue";
+  const getActionTone = (state) => {
+    if (state.completed) return "completed";
+    if (state.isLocked) return "completed";
+    if (state.hasStarted) return "continue";
     return "start";
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <header style={styles.topbar}>
-          <button type="button" onClick={() => navigate(-1)} style={styles.backButton}>
-            <ArrowLeft size={18} />
-            Back
-          </button>
-          <div style={styles.brand}>
-            <div style={styles.brandMark}>V</div>
-            <span style={styles.brandText}>VirtueHire</span>
-          </div>
-        </header>
+    <>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .action-btn:hover:not(:disabled) {
+          filter: brightness(1.08);
+          transform: translateY(-1px);
+        }
+        .action-btn:disabled {
+          cursor: default;
+        }
+        .review-toggle:hover {
+          background: #f1f5f9 !important;
+        }
+      `}</style>
 
-        <section style={styles.hero}>
-          <div>
-            <p style={styles.eyebrow}>Manage Tests</p>
-            <h1 style={styles.title}>Your assessment progress</h1>
-            <p style={styles.subtitle}>
+      <div style={s.page}>
+        <div style={s.container}>
+
+          {/* ── Topbar ── */}
+          <header style={s.topbar}>
+            <button type="button" onClick={() => navigate(-1)} style={s.backBtn}>
+              <ArrowLeft size={16} />
+              Back
+            </button>
+            <div style={s.brand}>
+              <div style={s.brandMark}>V</div>
+              <span style={s.brandText}>VirtueHire</span>
+            </div>
+          </header>
+
+          {/* ── Hero ── */}
+          <section style={s.hero}>
+            <p style={s.eyebrow}>Manage Tests</p>
+            <h1 style={s.heroTitle}>Your assessment progress</h1>
+            <p style={s.heroSub}>
               Start a new test, continue where you left off, or review what you have already completed.
             </p>
-          </div>
-        </section>
+          </section>
 
-        {error ? <div style={styles.errorBanner}>{error}</div> : null}
+          {error && <div style={s.errorBanner}>{error}</div>}
 
-        <section style={styles.card}>
-          {loading ? (
-            <div style={styles.emptyState}>Loading assessments...</div>
-          ) : assessments.length === 0 ? (
-            <div style={styles.emptyState}>
-              {assignmentMessage || "No assessments are available right now."}
-            </div>
-          ) : (
-            <div style={styles.list}>
-              {assessments.map(({ name, state }) => (
-                <article key={name} style={styles.listItem}>
-                  {/* Top row: name + progress + action */}
-                  <div style={styles.listItemTop}>
-                    <div style={styles.listMain}>
-                      <div style={styles.iconWrap}>
-                        {state.completed ? <CheckCircle2 size={20} /> : <PlayCircle size={20} />}
-                      </div>
-                      <div style={styles.testInfo}>
-                        <h3 style={styles.testName}>{name}</h3>
-                        <p style={styles.testMeta}>
-                          {state.isLocked
-                            ? state.lockMessage
-                            : state.completed
-                            ? `All ${state.totalSections || 0} sections finished`
-                            : state.hasStarted
-                            ? `Next section: ${state.currentPhaseName}`
-                            : `Ready to begin from ${state.currentPhaseName}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={styles.listSide}>
-                      <span style={{ ...styles.statusBadge, ...statusToneStyles[getStatusTone(state)] }}>
-                        {state.statusLabel}
-                      </span>
-
-                      <div style={styles.progressWrap}>
-                        <span style={styles.progressText}>
-                          {state.passedCount}/{state.totalSections || 0} sections cleared
-                        </span>
-                        <div style={styles.progressTrack}>
-                          <div
-                            style={{
-                              ...styles.progressFill,
-                              width: `${state.progressValue}%`,
-                            }}
-                          />
+          {/* ── List card ── */}
+          <section style={s.card}>
+            {loading ? (
+              <div style={s.emptyState}>Loading assessments…</div>
+            ) : assessments.length === 0 ? (
+              <div style={s.emptyState}>
+                {assignmentMessage || "No assessments are available right now."}
+              </div>
+            ) : (
+              <div style={s.list}>
+                {assessments.map(({ name, state }, i) => (
+                  <article
+                    key={name}
+                    style={{ ...s.listItem, animationDelay: `${i * 60}ms` }}
+                    className="fade-up-item"
+                  >
+                    {/* ── Top row ── */}
+                    <div style={s.listItemTop}>
+                      {/* Left: icon + name */}
+                      <div style={s.listMain}>
+                        <div style={{
+                          ...s.iconWrap,
+                          background: state.completed ? "#f0fdf4" : "#eff6ff",
+                          color: state.completed ? "#16a34a" : "#2563eb",
+                        }}>
+                          {state.completed
+                            ? <CheckCircle2 size={20} />
+                            : <PlayCircle size={20} />}
+                        </div>
+                        <div>
+                          <h3 style={s.testName}>{name}</h3>
+                          <p style={s.testMeta}>
+                            {state.isLocked
+                              ? state.lockMessage
+                              : state.completed
+                                ? `All ${state.totalSections || 0} sections finished`
+                                : state.hasStarted
+                                  ? `Next section: ${state.currentPhaseName}`
+                                  : `Ready to begin from ${state.currentPhaseName}`}
+                          </p>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleAction(name, state)}
-                        disabled={!state.canLaunch}
-                        style={{
-                          ...styles.actionButton,
-                          ...actionToneStyles[getActionTone(state)],
-                          ...(state.canLaunch ? null : styles.disabledButton),
-                        }}
-                      >
-                        {state.actionLabel}
-                        {state.canLaunch ? <ChevronRight size={16} /> : null}
-                      </button>
-                    </div>
-                  </div>
+                      {/* Right: badge + progress + button */}
+                      <div style={s.listSide}>
+                        <span style={{ ...s.statusBadge, ...statusTones[getStatusTone(state)] }}>
+                          {state.statusLabel}
+                        </span>
 
-                  {/* Results: one expandable SectionReview per attempted level */}
-                  {state.results && state.results.length > 0 && (
-                    <div style={styles.resultsArea}>
-                      {state.results.map((result, idx) => {
-                        const config = statusData[name]?.configs?.find(
-                          (c) => Number(c.sectionNumber) === Number(result.level)
-                        );
-                        return (
-                          <SectionReview key={idx} result={result} config={config} />
-                        );
-                      })}
+                        <div style={s.progressWrap}>
+                          <span style={s.progressText}>
+                            {state.passedCount}/{state.totalSections || 0} sections cleared
+                          </span>
+                          <div style={s.progressTrack}>
+                            <div style={{
+                              ...s.progressFill,
+                              width: `${state.progressValue}%`,
+                              background: state.completed
+                                ? "linear-gradient(90deg,#16a34a,#22c55e)"
+                                : "linear-gradient(90deg,#2563eb,#4338ca)",
+                            }} />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="action-btn"
+                          onClick={() => handleAction(name, state)}
+                          disabled={!state.canLaunch}
+                          style={{
+                            ...s.actionBtn,
+                            ...actionTones[getActionTone(state)],
+                            transition: "transform 0.15s ease, filter 0.15s ease",
+                          }}
+                        >
+                          {state.actionLabel}
+                          {state.canLaunch && <ChevronRight size={15} />}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+
+                    {/* ── Section reviews ── */}
+                    {state.results && state.results.length > 0 && (
+                      <div style={s.resultsArea}>
+                        {state.results.map((result, idx) => {
+                          const config = statusData[name]?.configs?.find(
+                            (c) => Number(c.sectionNumber) === Number(result.level),
+                          );
+                          return <SectionReview key={idx} result={result} config={config} />;
+                        })}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────
-const styles = {
+const s = {
   page: {
     minHeight: "100vh",
-    background: "linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%)",
-    padding: "28px 16px 40px",
+    width: "100%",
+    background: "linear-gradient(160deg,#f0f4ff 0%,#faf5ff 100%)",
+    padding: "32px 20px 60px",
     boxSizing: "border-box",
+    fontFamily: "Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   container: {
-    maxWidth: "1100px",
+    maxWidth: "900px",
     margin: "0 auto",
     display: "flex",
     flexDirection: "column",
     gap: "20px",
   },
+
+  // Topbar
   topbar: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: "16px",
     flexWrap: "wrap",
+    gap: "12px",
   },
-  backButton: {
+  backBtn: {
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
-    border: "1px solid #cbd5e1",
+    padding: "10px 18px",
     background: "#ffffff",
-    color: "#0f172a",
+    border: "1px solid #cbd5e1",
     borderRadius: "12px",
-    padding: "10px 16px",
+    fontWeight: 700,
+    fontSize: "0.9rem",
+    color: "#0f172a",
     cursor: "pointer",
-    fontWeight: "700",
+    fontFamily: "inherit",
   },
   brand: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "10px",
   },
   brandMark: {
-    width: "38px",
-    height: "38px",
-    borderRadius: "12px",
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    background: "linear-gradient(135deg,#2563eb,#4338ca)",
+    color: "#fff",
+    fontWeight: 800,
+    fontSize: "1rem",
     display: "grid",
     placeItems: "center",
-    background: "linear-gradient(135deg, #2563eb 0%, #4338ca 100%)",
-    color: "#ffffff",
-    fontWeight: "800",
   },
   brandText: {
-    fontSize: "1.25rem",
-    fontWeight: "800",
+    fontWeight: 800,
+    fontSize: "1.15rem",
     color: "#0f172a",
   },
+
+  // Hero
   hero: {
     background: "#ffffff",
-    borderRadius: "24px",
     border: "1px solid #dbeafe",
-    padding: "28px",
-    boxShadow: "0 16px 40px rgba(15, 23, 42, 0.06)",
+    borderRadius: "20px",
+    padding: "28px 32px",
+    boxShadow: "0 8px 32px rgba(37,99,235,0.07)",
   },
   eyebrow: {
-    margin: "0 0 8px",
-    fontSize: "0.8rem",
-    fontWeight: "800",
+    margin: "0 0 6px",
+    fontSize: "0.75rem",
+    fontWeight: 800,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     color: "#4338ca",
   },
-  title: {
-    margin: 0,
+  heroTitle: {
+    margin: "0 0 10px",
+    fontSize: "1.9rem",
+    fontWeight: 800,
     color: "#0f172a",
-    fontSize: "2.1rem",
-    fontWeight: "800",
   },
-  subtitle: {
-    margin: "12px 0 0",
+  heroSub: {
+    margin: 0,
     color: "#475569",
     lineHeight: 1.6,
-    maxWidth: "720px",
+    fontSize: "0.95rem",
   },
+
+  // Error
   errorBanner: {
     background: "#fef2f2",
     border: "1px solid #fecaca",
     color: "#991b1b",
-    borderRadius: "18px",
-    padding: "16px 18px",
+    borderRadius: "14px",
+    padding: "14px 18px",
+    fontWeight: 600,
+    fontSize: "0.9rem",
   },
+
+  // Card
   card: {
     background: "#ffffff",
-    borderRadius: "24px",
-    border: "1px solid #dbeafe",
-    boxShadow: "0 16px 40px rgba(15, 23, 42, 0.06)",
+    border: "1px solid #e2e8f0",
+    borderRadius: "20px",
+    boxShadow: "0 8px 32px rgba(15,23,42,0.06)",
     overflow: "hidden",
   },
   list: {
     display: "flex",
     flexDirection: "column",
   },
+  emptyState: {
+    padding: "40px 28px",
+    textAlign: "center",
+    color: "#64748b",
+    fontWeight: 600,
+    fontSize: "0.95rem",
+  },
+
+  // List item
   listItem: {
     display: "flex",
     flexDirection: "column",
     borderBottom: "1px solid #e2e8f0",
+    animation: "fadeUp 0.4s ease both",
   },
   listItemTop: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: "20px",
-    padding: "22px 24px",
+    gap: "16px",
+    padding: "20px 24px",
     flexWrap: "wrap",
   },
+
+  // Left side
   listMain: {
     display: "flex",
-    alignItems: "flex-start",
-    gap: "16px",
-    flex: "1 1 360px",
+    alignItems: "center",
+    gap: "14px",
+    flex: "1 1 240px",
     minWidth: 0,
   },
   iconWrap: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "14px",
+    width: "44px",
+    height: "44px",
+    borderRadius: "12px",
     display: "grid",
     placeItems: "center",
-    background: "#eff6ff",
-    color: "#2563eb",
     flexShrink: 0,
   },
-  testInfo: {
-    minWidth: 0,
-  },
   testName: {
-    margin: 0,
-    fontSize: "1.1rem",
-    fontWeight: "800",
+    margin: "0 0 4px",
+    fontSize: "1rem",
+    fontWeight: 800,
     color: "#0f172a",
     overflowWrap: "anywhere",
   },
   testMeta: {
-    margin: "8px 0 0",
+    margin: 0,
     color: "#64748b",
-    lineHeight: 1.5,
+    fontSize: "0.85rem",
+    lineHeight: 1.4,
   },
+
+  // Right side
   listSide: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: "16px",
-    flex: "1 1 360px",
+    gap: "14px",
     flexWrap: "wrap",
+    justifyContent: "flex-end",
+    flex: "1 1 300px",
   },
   statusBadge: {
     display: "inline-flex",
     alignItems: "center",
-    justifyContent: "center",
-    padding: "8px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    fontWeight: "700",
-    fontSize: "0.85rem",
+    fontWeight: 700,
+    fontSize: "0.8rem",
     whiteSpace: "nowrap",
   },
   progressWrap: {
-    minWidth: "190px",
-    flex: "0 1 220px",
+    minWidth: "160px",
+    flex: "0 1 200px",
   },
   progressText: {
     display: "block",
-    marginBottom: "8px",
+    marginBottom: "6px",
     color: "#64748b",
-    fontSize: "0.85rem",
-    fontWeight: "700",
+    fontSize: "0.8rem",
+    fontWeight: 700,
   },
   progressTrack: {
     width: "100%",
-    height: "8px",
+    height: "7px",
     borderRadius: "999px",
     background: "#e2e8f0",
     overflow: "hidden",
@@ -641,39 +683,29 @@ const styles = {
   progressFill: {
     height: "100%",
     borderRadius: "999px",
-    background: "linear-gradient(90deg, #2563eb 0%, #4338ca 100%)",
+    transition: "width 0.6s ease",
   },
-  actionButton: {
+  actionBtn: {
     display: "inline-flex",
     alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
+    gap: "6px",
     border: "none",
-    borderRadius: "12px",
-    padding: "12px 18px",
+    borderRadius: "10px",
+    padding: "10px 18px",
+    fontWeight: 800,
+    fontSize: "0.88rem",
     cursor: "pointer",
-    fontWeight: "800",
-    minWidth: "120px",
-  },
-  disabledButton: {
-    cursor: "default",
-  },
-  emptyState: {
-    padding: "28px",
-    textAlign: "center",
-    color: "#64748b",
-    fontWeight: "600",
+    whiteSpace: "nowrap",
+    fontFamily: "inherit",
   },
 
-  // Results area
+  // Results
   resultsArea: {
     borderTop: "1px dashed #e2e8f0",
     background: "#f8fafc",
     display: "flex",
     flexDirection: "column",
   },
-
-  // Per-section review
   sectionReview: {
     borderBottom: "1px solid #edf0f4",
   },
@@ -683,7 +715,7 @@ const styles = {
     justifyContent: "space-between",
     flexWrap: "wrap",
     gap: "10px",
-    padding: "14px 24px",
+    padding: "12px 24px",
   },
   chipLeft: {
     display: "flex",
@@ -693,12 +725,12 @@ const styles = {
   },
   sectionReviewName: {
     fontSize: "0.88rem",
-    fontWeight: "800",
+    fontWeight: 800,
     color: "#1e293b",
   },
   scorePill: {
-    fontSize: "0.82rem",
-    fontWeight: "800",
+    fontSize: "0.8rem",
+    fontWeight: 800,
     padding: "3px 10px",
     borderRadius: "999px",
   },
@@ -706,8 +738,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    fontSize: "0.82rem",
-    fontWeight: "600",
+    fontSize: "0.8rem",
+    fontWeight: 600,
   },
   correct: { color: "#166534" },
   wrong: { color: "#991b1b" },
@@ -722,24 +754,24 @@ const styles = {
     borderRadius: "10px",
     padding: "7px 14px",
     cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "0.82rem",
+    fontWeight: 700,
+    fontSize: "0.8rem",
     color: "#334155",
     whiteSpace: "nowrap",
+    fontFamily: "inherit",
+    transition: "background 0.15s ease",
   },
-
-  // Question list
   questionList: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
-    padding: "4px 24px 18px",
+    gap: "10px",
+    padding: "4px 24px 16px",
   },
   questionCard: {
     background: "#ffffff",
-    borderRadius: "14px",
+    borderRadius: "12px",
     border: "1px solid #e2e8f0",
-    padding: "16px 18px",
+    padding: "14px 16px",
     display: "flex",
     flexDirection: "column",
     gap: "10px",
@@ -750,37 +782,35 @@ const styles = {
     justifyContent: "space-between",
   },
   questionBadge: {
-    fontSize: "0.78rem",
-    fontWeight: "800",
+    fontSize: "0.75rem",
+    fontWeight: 800,
     padding: "3px 10px",
     borderRadius: "999px",
   },
   questionNumber: {
-    fontSize: "0.78rem",
-    fontWeight: "700",
+    fontSize: "0.75rem",
+    fontWeight: 700,
     color: "#94a3b8",
   },
   questionText: {
     margin: 0,
-    fontSize: "0.92rem",
-    fontWeight: "600",
+    fontSize: "0.9rem",
+    fontWeight: 600,
     color: "#0f172a",
     lineHeight: 1.55,
   },
-
-  // Options
   optionsList: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "7px",
   },
   optionItem: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "10px",
-    padding: "9px 14px",
-    borderRadius: "10px",
+    padding: "8px 12px",
+    borderRadius: "9px",
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
   },
@@ -793,14 +823,14 @@ const styles = {
     border: "1px solid #fecaca",
   },
   optionText: {
-    fontSize: "0.88rem",
-    fontWeight: "600",
+    fontSize: "0.86rem",
+    fontWeight: 600,
     color: "#1e293b",
     flex: 1,
   },
   optionTag: {
-    fontSize: "0.75rem",
-    fontWeight: "700",
+    fontSize: "0.72rem",
+    fontWeight: 700,
     color: "#166534",
     background: "#dcfce7",
     padding: "2px 8px",
@@ -811,8 +841,6 @@ const styles = {
     color: "#991b1b",
     background: "#fee2e2",
   },
-
-  // Fallback (no options array)
   answerFallback: {
     display: "flex",
     flexDirection: "column",
@@ -824,40 +852,28 @@ const styles = {
     gap: "10px",
   },
   answerRowLabel: {
-    fontSize: "0.82rem",
-    fontWeight: "700",
+    fontSize: "0.8rem",
+    fontWeight: 700,
     color: "#64748b",
     minWidth: "110px",
   },
   answerValue: {
-    fontSize: "0.82rem",
-    fontWeight: "800",
+    fontSize: "0.8rem",
+    fontWeight: 800,
     padding: "3px 10px",
     borderRadius: "8px",
   },
 };
 
-const statusToneStyles = {
+const statusTones = {
   success: { background: "#dcfce7", color: "#166534" },
   info:    { background: "#dbeafe", color: "#1d4ed8" },
   neutral: { background: "#f1f5f9", color: "#475569" },
   danger:  { background: "#fee2e2", color: "#991b1b" },
 };
 
-const actionToneStyles = {
-  start: {
-    background: "#2563eb",
-    color: "#ffffff",
-    boxShadow: "0 12px 28px rgba(37, 99, 235, 0.22)",
-  },
-  continue: {
-    background: "#4338ca",
-    color: "#ffffff",
-    boxShadow: "0 12px 28px rgba(67, 56, 202, 0.22)",
-  },
-  completed: {
-    background: "#e2e8f0",
-    color: "#64748b",
-    boxShadow: "none",
-  },
+const actionTones = {
+  start:     { background: "#2563eb", color: "#ffffff", boxShadow: "0 4px 14px rgba(37,99,235,0.25)" },
+  continue:  { background: "#4338ca", color: "#ffffff", boxShadow: "0 4px 14px rgba(67,56,202,0.25)" },
+  completed: { background: "#e2e8f0", color: "#64748b", boxShadow: "none" },
 };

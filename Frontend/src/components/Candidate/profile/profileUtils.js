@@ -1,3 +1,5 @@
+// PATH: Frontend/src/components/Candidate/profile/profileUtils.js
+
 import { API_BASE_URL } from "../../../config";
 
 export const DEFAULT_PROFILE_IMAGE =
@@ -41,8 +43,15 @@ export function normalizeCandidate(candidate = {}) {
   };
 }
 
-export function getCandidateFileUrl(filename) {
-  return filename ? `${API_BASE_URL}/candidates/file/${filename}` : "";
+export function getCandidateFileUrl(filename, disposition = "inline") {
+  if (!filename) return "";
+  return `${API_BASE_URL}/candidates/resumes/admin/file/${encodeURIComponent(filename)}?disposition=${disposition}`;
+}
+
+export function getApiUrl(pathOrUrl) {
+  if (!pathOrUrl) return "";
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `${API_BASE_URL}${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
 }
 
 export function getSkillList(skills) {
@@ -59,7 +68,6 @@ export function formatDisplayValue(value) {
   if (value === null || value === undefined || value === "") {
     return "Not provided";
   }
-
   return value;
 }
 

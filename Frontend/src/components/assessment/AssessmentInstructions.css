@@ -2,12 +2,16 @@
    Assessment Instructions Page Styles
    ========================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 .ai-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f4ff 0%, #fafbff 50%, #f0f9ff 100%);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   padding-bottom: 40px;
 }
 
@@ -22,7 +26,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .ai-topbar-brand {
@@ -93,7 +97,9 @@
 }
 
 @keyframes ai-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Exam Info Card */
@@ -102,7 +108,7 @@
   border-radius: 16px;
   padding: 28px 32px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   border: 1px solid #e2e8f0;
   border-top: 4px solid #4f46e5;
 }
@@ -181,6 +187,10 @@
   .ai-content-grid {
     grid-template-columns: 1fr;
   }
+
+  .ai-mode-toggle {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ai-col {
@@ -194,7 +204,7 @@
   background: white;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
 }
 
@@ -217,10 +227,18 @@
   font-size: 1rem;
 }
 
-.ai-header-blue   { background: #3b82f6; }
-.ai-header-orange { background: #f59e0b; }
-.ai-header-red    { background: #ef4444; }
-.ai-header-purple { background: #7c3aed; }
+.ai-header-blue {
+  background: #3b82f6;
+}
+.ai-header-orange {
+  background: #f59e0b;
+}
+.ai-header-red {
+  background: #ef4444;
+}
+.ai-header-purple {
+  background: #7c3aed;
+}
 
 /* Instruction List */
 .ai-instruction-list {
@@ -247,9 +265,15 @@
   flex-shrink: 0;
 }
 
-.ai-icon-green  { color: #10b981; }
-.ai-icon-red    { color: #ef4444; }
-.ai-icon-purple { color: #7c3aed; }
+.ai-icon-green {
+  color: #10b981;
+}
+.ai-icon-red {
+  color: #ef4444;
+}
+.ai-icon-purple {
+  color: #7c3aed;
+}
 
 /* Security Card */
 .ai-security-text {
@@ -292,12 +316,71 @@
   gap: 8px;
 }
 
+.ai-mode-panel {
+  padding: 18px 20px 20px;
+}
+
+.ai-mode-copy {
+  margin: 0 0 16px;
+  color: #475569;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.ai-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-mode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid #dbe3f0;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.ai-mode-option:hover {
+  transform: translateY(-1px);
+  border-color: #bfdbfe;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08);
+}
+
+.ai-mode-option.active {
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.12);
+}
+
+.ai-mode-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ai-mode-subtitle {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
 /* Agreement Card */
 .ai-agreement-card {
   background: white;
   border-radius: 14px;
   padding: 28px 32px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   border: 1px solid #e2e8f0;
   border-top: 4px solid #10b981;
 }
@@ -334,7 +417,7 @@
 }
 
 .ai-checkbox:checked + .ai-checkbox-custom::after {
-  content: '✓';
+  content: "✓";
   color: white;
   font-size: 13px;
   font-weight: 700;

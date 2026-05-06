@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import "./App.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 // Public Pages
-import Header from './components/Header';
-import Footer from './components/Footer';
-import ScrollTop from './components/ScrollTop';
-import HomePage from './pages/HomePage';
-import AboutUs from './pages/AboutUs';
-import Features from './pages/Features';
-import Contact from './pages/Contact';
-import WhatsappButton from './components/WhatsappButton';
-
-
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import ScrollTop from "./components/ScrollTop";
+import HomePage from "./pages/HomePage";
+import AboutUs from "./pages/AboutUs";
+import Features from "./pages/Features";
+import Contact from "./pages/Contact";
+import WhatsappButton from "./components/WhatsappButton";
 
 // Candidate Pages
 import CandidateRegistration from "./components/Candidate/CandidateRegister";
@@ -20,8 +18,8 @@ import CandidateOtpVerification from "./components/Candidate/CandidateOtpVerific
 import CandidateProfilePage from "./components/Candidate/profile/CandidateProfilePage";
 import CandidateProfileView from "./components/Candidate/profile/CandidateProfileView";
 import CandidateProfileEdit from "./components/Candidate/profile/CandidateProfileEdit";
-//import CandidateLogin from "./components/Candidate/CandidateLogin";
 import CandidateWelcome from "./components/Candidate/CandidateWelcome";
+import CandidateTests from "./components/Candidate/CandidateTests";
 import Portfolio from "./components/NewComponents/candi/Portfolio";
 import ForgotPassword from "./components/Candidate/ForgotPassword";
 import ResetPassword from "./components/Candidate/ResetPassword";
@@ -43,34 +41,31 @@ import AdminManageTests from "./components/Admin/AdminManageTests";
 import AdminLiveMonitoring from "./components/Admin/AdminLiveMonitoring";
 import AdminViewJobs from "./components/Admin/AdminViewJobs";
 import AdminInterestedCandidates from "./components/Admin/AdminInterestedCandidates";
+// import FeedbackDashboard from "./components/Admin/FeedbackDashboard";
 // import PaymentsList from "./components/Admin/PaymentsList";
 import PaymentDashboard from "./components/Admin/PaymentDashboard";
 import PaymentDetails from "./components/Admin/PaymentDetails";
 import PendingCandidates from "./components/Admin/PendingCandidates";
-// import AdminLogin from "./components/Admin/AdminLogin";
 
 // HR Pages
-import HRRegistration from './components/HR/HRRegistration';
-// import HRLogin from './components/HR/HRLogin';
+import HRRegistration from "./components/HR/HRRegistration";
 import HRDashboard from "./components/HR/HRDashboard";
 import HRManagement from "./components/HR/HRManagement";
 import HRWelcome from "./components/HR/HRWelcome";
 import HRCandidateList from "./components/HR/HRCandidateList";
 import HrCandidateDetails from "./components/HR/HrCandidateDetails";
 import HRInterestedCandidates from "./components/HR/HRInterestedCandidates";
+import HiringDashboard from "./components/HR/HiringDashboard";
 
 // Payment Pages
 import PaymentPlans from "./components/Payment/PaymentPlans";
 import PaymentSuccess from "./components/Payment/PaymentSuccess";
 import PaymentFailed from "./components/Payment/PaymentFailed";
 import PaymentHistory from "./components/Payment/PaymentHistory";
-// import Login from "./components/NewComponents/candi/login";
 
 import LandingPage from "./components/newland/LandingPage";
-import Login from './components/Login';
-import VerifyEmail from './components/VerifyEmail';
-
-
+import Login from "./components/Login";
+import VerifyEmail from "./components/VerifyEmail";
 
 // Candidate Dashboard
 function CandidateHome() {
@@ -86,94 +81,86 @@ function CandidateHome() {
 function LayoutWrapper({ children }) {
   const location = useLocation();
 
-  // Paths where header/footer should not show
   const hideLayoutPaths = [
-    '/landing',
-    '/candidate-registration',
-    '/forgot-password',
-    '/reset-password',
-    '/candidate/verify-otp',
-    '/login',
-    '/register',
-    '/hrs/register',
-    '/hrs/login',
-    '/hr-home',
-    '/ranklist',
-    '/search-candidate',
-    '/candidate-home',
-    '/admin/dashboard',
-    '/admin/candidates',
-    '/admin/hr',
-    '/admin/requests',
-    '/admin/payments',
-    '/admin/manage-tests',
-    '/admin/live-monitoring',
-    '/admin/login',
-    '/verify-email'
+    "/landing",
+    "/candidate-registration",
+    "/forgot-password",
+    "/reset-password",
+    "/candidate/verify-otp",
+    "/login",
+    "/register",
+    "/hrs/register",
+    "/hrs/login",
+    "/hr-home",
+    "/ranklist",
+    "/search-candidate",
+    "/candidate-home",
+    "/admin/dashboard",
+    "/admin/candidates",
+    "/admin/hr",
+    "/admin/requests",
+    "/admin/payments",
+    "/admin/manage-tests",
+    "/admin/live-monitoring",
+    "/admin/login",
+    "/verify-email",
   ];
 
-  // Paths where scroll should be disabled (only login/register)
-  const disableScrollPaths = [
-    '/login',
-    '/register'
-  ];
+  const disableScrollPaths = ["/login", "/register"];
 
   const shouldHideLayout =
     hideLayoutPaths.includes(location.pathname) ||
-    location.pathname.startsWith('/admin/') ||
-    location.pathname.startsWith('/candidate/profile') ||
-    location.pathname.startsWith('/courses') ||
-    location.pathname.startsWith('/assessment') ||
-    location.pathname.startsWith('/hr/') ||
-    location.pathname.startsWith('/candidates/') ||
-    location.pathname.startsWith('/payments/');
+    location.pathname.startsWith("/admin/") ||
+    location.pathname.startsWith("/candidate/profile") ||
+    location.pathname.startsWith("/courses") ||
+    location.pathname.startsWith("/assessment") ||
+    location.pathname.startsWith("/hr/") ||
+    location.pathname.startsWith("/candidates/") ||
+    location.pathname.startsWith("/payments/") ||
+    location.pathname.startsWith("/candidate/tests");
   const shouldDisableScroll = disableScrollPaths.includes(location.pathname);
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const header = document.querySelector('header');
+      const header = document.querySelector("header");
       const scrollTop = window.pageYOffset;
 
       if (header) {
         header.style.boxShadow =
           scrollTop > 100
-            ? '0 4px 20px rgba(0, 0, 0, 0.1)'
-            : '0 2px 10px rgba(0, 0, 0, 0.1)';
+            ? "0 4px 20px rgba(0, 0, 0, 0.1)"
+            : "0 2px 10px rgba(0, 0, 0, 0.1)";
       }
 
       setShowScrollTop(scrollTop > 300);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Disable scroll only when on login/register page
   useEffect(() => {
     if (shouldDisableScroll) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }
 
-    // Cleanup function to reset overflow when component unmounts
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     };
   }, [shouldDisableScroll]);
 
   return (
     <div className="App">
       {!shouldHideLayout && <Header />}
-
       <main>{children}</main>
-
       {!shouldHideLayout && <Footer />}
       {!shouldHideLayout && (
         <ScrollTop showScrollTop={showScrollTop} scrollToTop={scrollToTop} />
@@ -182,6 +169,7 @@ function LayoutWrapper({ children }) {
     </div>
   );
 }
+
 // App Component
 function App() {
   return (
@@ -192,7 +180,6 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
-
 
         {/* Default Landing Page */}
         <Route path="/landing" element={<LandingPage />} />
@@ -205,6 +192,7 @@ function App() {
         <Route path="/candidate/profile/view" element={<CandidateProfileView />} />
         <Route path="/candidate/profile/edit" element={<CandidateProfileEdit />} />
         <Route path="/candidates/welcome" element={<CandidateWelcome />} />
+        <Route path="/candidate/tests" element={<CandidateTests />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -229,6 +217,7 @@ function App() {
         <Route path="/admin/live-monitoring" element={<AdminLiveMonitoring />} />
         <Route path="/admin/view-jobs" element={<AdminViewJobs />} />
         <Route path="/admin/interested-candidates" element={<AdminInterestedCandidates />} />
+        {/* <Route path="/admin/feedback" element={<FeedbackDashboard />} /> */}
         <Route path="/admin/questions/*" element={<Navigate to="/admin/manage-tests" replace />} />
         <Route path="/candidate/login" element={<Login />} />
         <Route path="/hrs/login" element={<Login />} />
@@ -241,6 +230,7 @@ function App() {
         <Route path="/hr/candidates" element={<HRCandidateList />} />
         <Route path="/hr/candidate/:id" element={<HrCandidateDetails />} />
         <Route path="/hr/interested-candidates" element={<HRInterestedCandidates />} />
+        <Route path="/hr/hiring" element={<HiringDashboard />} />
 
         {/* Payment Pages */}
         <Route path="/payments/plans" element={<PaymentPlans />} />
@@ -250,18 +240,11 @@ function App() {
 
         <Route path="/verify-email" element={<VerifyEmail />} />
 
-
-
         {/* Fallback */}
         <Route path="*" element={<HomePage />} />
       </Routes>
     </LayoutWrapper>
-
   );
 }
 
 export default App;
-
-
-
-

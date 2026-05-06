@@ -72,9 +72,7 @@ public class AdminRestController {
                 .count();
 
         long totalCandidates = allCandidates.size();
-        long candidatesWithTest = allCandidates.stream()
-                .filter(c -> Boolean.TRUE.equals(c.getAssessmentTaken()))
-                .count();
+        long candidatesWithTest = assessmentResultService.getTotalAssessmentTracksTaken();
 
         long pendingCandidates = allCandidates.stream()
                 .filter(c -> Boolean.FALSE.equals(c.getApproved()))
@@ -316,7 +314,8 @@ public class AdminRestController {
 
         return ResponseEntity.ok(Map.of(
                 "candidate", candidate,
-                "results", results));
+                "results", results,
+                "statusSummary", assessmentResultService.getCandidateStatusSummary(id)));
     }
 
     @GetMapping("/candidates")
@@ -365,6 +364,8 @@ public class AdminRestController {
         candidate.setBadge(payload.getBadge());
         candidate.setApproved(payload.getApproved());
         candidate.setAssessmentTaken(payload.getAssessmentTaken());
+        candidate.setSelectionStatus(payload.getSelectionStatus());
+        candidate.setSelectionNote(payload.getSelectionNote());
         candidate.setRejectionReason(payload.getRejectionReason());
 
         Candidate savedCandidate = candidateService.save(candidate);

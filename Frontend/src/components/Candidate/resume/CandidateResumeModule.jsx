@@ -1,3 +1,5 @@
+// PATH: Frontend/src/components/Candidate/resume/CandidateResumeModule.jsx
+
 import React, { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -14,7 +16,7 @@ import {
   createResume,
   deleteResume,
   fetchResumes,
-  getResumePdfUrl,
+  fetchResumePdfBlob,
   updateResume,
 } from "./resumeApi";
 import { updateCandidateProfile } from "../profile/profileApi";
@@ -215,6 +217,9 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
   const [profileResumeFile, setProfileResumeFile] = useState(null);
   const [uploadingProfileResume, setUploadingProfileResume] = useState(false);
 
+  // FIX: Track per-resume loading states so buttons show feedback during blob fetch.
+  const [pdfLoading, setPdfLoading] = useState({});
+
   const loadResumes = async () => {
     try {
       setLoading(true);
@@ -392,6 +397,43 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
     }
   };
 
+  // FIX: View PDF — fetch blob with session cookie, open in new tab via object URL.
+  // Plain <a href> without credentials was causing a 401 from the backend.
+  const handleViewPdf = async (resumeId) => {
+    setPdfLoading((prev) => ({ ...prev, [`view-${resumeId}`]: true }));
+    try {
+      const blob = await fetchResumePdfBlob(resumeId, "inline");
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank");
+      // Revoke after a short delay to allow the tab to load the content
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+      setError("Unable to open the resume PDF. Please try again.");
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, [`view-${resumeId}`]: false }));
+    }
+  };
+
+  // FIX: Download PDF — fetch blob with session cookie, trigger download via <a> click.
+  const handleDownloadPdf = async (resumeId, title) => {
+    setPdfLoading((prev) => ({ ...prev, [`dl-${resumeId}`]: true }));
+    try {
+      const blob = await fetchResumePdfBlob(resumeId, "attachment");
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${title || "resume"}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      setError("Unable to download the resume PDF. Please try again.");
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, [`dl-${resumeId}`]: false }));
+    }
+  };
+
   const profileResumeUrl = getCandidateFileUrl(candidate?.resumePath);
   const profileResumeName = getResumeFileName(candidate?.resumePath);
 
@@ -457,6 +499,8 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
               </p>
             </div>
 
+            {/* Profile resume uses a normal <a> tag because getCandidateFileUrl
+                now encodes the filename — no auth cookie needed for this endpoint. */}
             <div className="resume-card-actions">
               {profileResumeUrl ? (
                 <>
@@ -543,21 +587,34 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                     <span>{(resume.resumeData?.skills || []).length} skills</span>
                   </div>
 
+                  {/* FIX: Replaced <a href> with buttons that fetch the PDF blob
+                      through axios (with session cookie). The old anchor approach
+                      hit the backend without auth and received a 401. */}
                   <div className="resume-card-actions">
-                    <a href={getResumePdfUrl(resume.id, "inline")} target="_blank" rel="noreferrer" className="resume-action-btn">
+                    <button
+                      type="button"
+                      className="resume-action-btn"
+                      onClick={() => handleViewPdf(resume.id)}
+                      disabled={pdfLoading[`view-${resume.id}`]}
+                    >
                       <Eye size={15} />
-                      View Resume
-                    </a>
-                    <a href={getResumePdfUrl(resume.id, "attachment")} className="resume-action-btn" download>
+                      {pdfLoading[`view-${resume.id}`] ? "Opening..." : "View Resume"}
+                    </button>
+                    <button
+                      type="button"
+                      className="resume-action-btn"
+                      onClick={() => handleDownloadPdf(resume.id, resume.title)}
+                      disabled={pdfLoading[`dl-${resume.id}`]}
+                    >
                       <Download size={15} />
-                      Download Resume
-                    </a>
+                      {pdfLoading[`dl-${resume.id}`] ? "Downloading..." : "Download Resume"}
+                    </button>
                     <button type="button" className="resume-action-btn" onClick={() => openBuilderForEdit(resume)}>
                       <PencilLine size={15} />
                       Edit Resume
                     </button>
                     <button type="button" className="resume-action-btn danger" onClick={() => handleDelete(resume)}>
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                       Delete Resume
                     </button>
                   </div>
@@ -784,11 +841,18 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                   <Sparkles size={16} />
                   {saving ? "Saving..." : editingResumeId ? "Update existing resume" : "Save Resume"}
                 </button>
+                {/* FIX: Replaced <a href download> with a button using handleDownloadPdf
+                    so the PDF is fetched with the session cookie attached. */}
                 {editingResumeId ? (
-                  <a href={getResumePdfUrl(editingResumeId, "attachment")} className="candidate-secondary-btn">
+                  <button
+                    type="button"
+                    className="candidate-secondary-btn"
+                    onClick={() => handleDownloadPdf(editingResumeId, formState.title)}
+                    disabled={pdfLoading[`dl-${editingResumeId}`]}
+                  >
                     <Download size={16} />
-                    Download as PDF
-                  </a>
+                    {pdfLoading[`dl-${editingResumeId}`] ? "Downloading..." : "Download as PDF"}
+                  </button>
                 ) : null}
               </div>
             </div>

@@ -1,5 +1,4 @@
-Global page
-.login-page {
+Global page .login-page {
   display: flex;
   height: 100vh;
   width: 100%;
@@ -28,7 +27,9 @@ Global page
 }
 .brand span {
   color: #00f0ff;
-  text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
+  text-shadow:
+    0 0 10px #00f0ff,
+    0 0 25px #00f0ff;
 }
 
 .tagline {
@@ -43,25 +44,30 @@ Global page
   position: absolute;
   width: 200%;
   height: 200%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 240, 255, 0.1) 0,
-    rgba(0, 240, 255, 0.1) 2px,
-    transparent 2px,
-    transparent 40px
-  ),
-  repeating-linear-gradient(
-    90deg,
-    rgba(0, 240, 255, 0.1) 0,
-    rgba(0, 240, 255, 0.1) 2px,
-    transparent 2px,
-    transparent 40px
-  );
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 240, 255, 0.1) 0,
+      rgba(0, 240, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 240, 255, 0.1) 0,
+      rgba(0, 240, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 40px
+    );
   animation: moveGrid 20s linear infinite;
 }
 @keyframes moveGrid {
-  from { transform: translate(0,0); }
-  to { transform: translate(-100px,-100px); }
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-100px, -100px);
+  }
 }
 
 /* Right Panel */
@@ -128,8 +134,8 @@ form input {
   padding: 12px;
   margin: 10px 0;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
   color: #fff;
   outline: none;
   transition: 0.3s;
@@ -191,12 +197,24 @@ form input:focus {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 /* Forgot Password Button */
 .forgot-btn-container {
@@ -212,7 +230,9 @@ form input:focus {
   border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .forgot-btn:hover {

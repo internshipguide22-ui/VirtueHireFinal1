@@ -29,11 +29,18 @@ function validateProfile(values) {
     nextErrors.phoneNumber = "Phone number must be exactly 10 digits.";
   }
 
-  if (values.alternatePhoneNumber && !/^\d{10}$/.test(values.alternatePhoneNumber.trim())) {
-    nextErrors.alternatePhoneNumber = "Alternate phone must be exactly 10 digits.";
+  if (
+    values.alternatePhoneNumber &&
+    !/^\d{10}$/.test(values.alternatePhoneNumber.trim())
+  ) {
+    nextErrors.alternatePhoneNumber =
+      "Alternate phone must be exactly 10 digits.";
   }
 
-  if (values.yearOfGraduation && !/^\d{4}$/.test(String(values.yearOfGraduation).trim())) {
+  if (
+    values.yearOfGraduation &&
+    !/^\d{4}$/.test(String(values.yearOfGraduation).trim())
+  ) {
     nextErrors.yearOfGraduation = "Graduation year must be a 4-digit year.";
   }
 
@@ -64,7 +71,8 @@ export default function CandidateProfileEdit() {
         localStorage.setItem("candidate", JSON.stringify(candidate));
         window.dispatchEvent(new Event("auth-change"));
       } catch (err) {
-        const message = err.response?.data?.error || "We could not load the profile form.";
+        const message =
+          err.response?.data?.error || "We could not load the profile form.";
         setApiError(message);
 
         if (err.response?.status === 401) {
@@ -81,7 +89,7 @@ export default function CandidateProfileEdit() {
 
   const currentResumeName = useMemo(
     () => getResumeFileName(formValues.resumePath),
-    [formValues.resumePath]
+    [formValues.resumePath],
   );
 
   const handleChange = (event) => {
@@ -121,7 +129,9 @@ export default function CandidateProfileEdit() {
         navigate(-1);
       }, 700);
     } catch (err) {
-      setApiError(err.response?.data?.error || "Profile update failed. Please try again.");
+      setApiError(
+        err.response?.data?.error || "Profile update failed. Please try again.",
+      );
     } finally {
       setSaving(false);
     }
@@ -130,7 +140,9 @@ export default function CandidateProfileEdit() {
   if (loading) {
     return (
       <div className="candidate-profile-shell">
-        <div className="candidate-profile-loading">Loading your editable profile...</div>
+        <div className="candidate-profile-loading">
+          Loading your editable profile...
+        </div>
       </div>
     );
   }
@@ -151,7 +163,8 @@ export default function CandidateProfileEdit() {
             <p className="candidate-profile-eyebrow">Candidate Profile</p>
             <h1>Edit Profile</h1>
             <p className="candidate-profile-subtitle">
-              Update your details, replace your resume, and keep your profile recruiter-ready.
+              Update your details, replace your resume, and keep your profile
+              recruiter-ready.
             </p>
           </div>
 
@@ -166,8 +179,14 @@ export default function CandidateProfileEdit() {
           </div>
         </div>
 
-        {apiError && <div className="candidate-profile-feedback error">{apiError}</div>}
-        {successMessage && <div className="candidate-profile-feedback success">{successMessage}</div>}
+        {apiError && (
+          <div className="candidate-profile-feedback error">{apiError}</div>
+        )}
+        {successMessage && (
+          <div className="candidate-profile-feedback success">
+            {successMessage}
+          </div>
+        )}
 
         <form className="candidate-profile-form" onSubmit={handleSubmit}>
           <section className="candidate-profile-section">
@@ -218,12 +237,18 @@ export default function CandidateProfileEdit() {
                   onChange={handleChange}
                   placeholder="Optional alternate phone"
                 />
-                {errors.alternatePhoneNumber && <small>{errors.alternatePhoneNumber}</small>}
+                {errors.alternatePhoneNumber && (
+                  <small>{errors.alternatePhoneNumber}</small>
+                )}
               </label>
 
               <label className="candidate-profile-field">
                 <span>Gender</span>
-                <select name="gender" value={formValues.gender} onChange={handleChange}>
+                <select
+                  name="gender"
+                  value={formValues.gender}
+                  onChange={handleChange}
+                >
                   <option value="">Select gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -250,12 +275,22 @@ export default function CandidateProfileEdit() {
             <div className="candidate-profile-form-grid">
               <label className="candidate-profile-field">
                 <span>City</span>
-                <input name="city" value={formValues.city} onChange={handleChange} placeholder="City" />
+                <input
+                  name="city"
+                  value={formValues.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                />
               </label>
 
               <label className="candidate-profile-field">
                 <span>State</span>
-                <input name="state" value={formValues.state} onChange={handleChange} placeholder="State" />
+                <input
+                  name="state"
+                  value={formValues.state}
+                  onChange={handleChange}
+                  placeholder="State"
+                />
               </label>
 
               <label className="candidate-profile-field">
@@ -287,7 +322,9 @@ export default function CandidateProfileEdit() {
                   onChange={handleChange}
                   placeholder="e.g. 2025"
                 />
-                {errors.yearOfGraduation && <small>{errors.yearOfGraduation}</small>}
+                {errors.yearOfGraduation && (
+                  <small>{errors.yearOfGraduation}</small>
+                )}
               </label>
             </div>
           </section>
@@ -337,7 +374,9 @@ export default function CandidateProfileEdit() {
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx"
-                  onChange={(event) => setResumeFile(event.target.files?.[0] || null)}
+                  onChange={(event) =>
+                    setResumeFile(event.target.files?.[0] || null)
+                  }
                 />
               </label>
 
@@ -346,15 +385,25 @@ export default function CandidateProfileEdit() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(event) => setProfilePicFile(event.target.files?.[0] || null)}
+                  onChange={(event) =>
+                    setProfilePicFile(event.target.files?.[0] || null)
+                  }
                 />
               </label>
             </div>
           </section>
 
           <div className="candidate-profile-form-actions">
-            <button type="submit" className="candidate-profile-link-btn primary" disabled={saving}>
-              {saving ? <LoaderCircle size={18} className="candidate-profile-spin" /> : <Save size={18} />}
+            <button
+              type="submit"
+              className="candidate-profile-link-btn primary"
+              disabled={saving}
+            >
+              {saving ? (
+                <LoaderCircle size={18} className="candidate-profile-spin" />
+              ) : (
+                <Save size={18} />
+              )}
               {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>

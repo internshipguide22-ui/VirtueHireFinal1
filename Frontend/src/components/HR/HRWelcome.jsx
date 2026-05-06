@@ -98,8 +98,6 @@
 
 // export default HRWelcome;
 
-
-
 // import React, { useEffect, useState } from "react";
 // import axios from "axios";
 // import { useNavigate } from "react-router-dom";
@@ -200,8 +198,6 @@
 // };
 
 // export default HRWelcome;
-
-
 
 // import React, { useEffect, useState } from "react";
 // import axios from "axios";
@@ -354,11 +350,9 @@ const HRWelcome = () => {
   };
 
   const handleLogout = () => {
-    api
-      .get("/hrs/logout")
-      .finally(() => {
-        navigate("/login");
-      });
+    api.get("/hrs/logout").finally(() => {
+      navigate("/login");
+    });
   };
 
   if (!hr) return null;
@@ -387,7 +381,8 @@ const HRWelcome = () => {
         <h2>Welcome HR</h2>
 
         <p>
-          Welcome, <span style={{ color: "#0d6efd" }}>{hr.fullName || hr.email}</span>!
+          Welcome,{" "}
+          <span style={{ color: "#0d6efd" }}>{hr.fullName || hr.email}</span>!
         </p>
 
         {hr.verified ? (

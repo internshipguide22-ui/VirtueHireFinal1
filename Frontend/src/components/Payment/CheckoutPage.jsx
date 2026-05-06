@@ -162,7 +162,6 @@
 
 // export default CheckoutPage;
 
-
 // src/pages/CheckoutPage.jsx
 import React, { useState } from "react";
 import { useAppDialog } from "../common/AppDialog";
@@ -182,7 +181,7 @@ const CheckoutPage = ({ payment }) => {
       await showAlert({
         title: "Accept Terms",
         message: "Please accept the terms and conditions.",
-        tone: "warning"
+        tone: "warning",
       });
       return;
     }
@@ -316,10 +315,15 @@ const CheckoutPage = ({ payment }) => {
                           className="form-check-label d-flex align-items-center"
                           htmlFor={method.id}
                         >
-                          <i className={`${method.icon} payment-icon me-3`} style={{ fontSize: "2rem" }}></i>
+                          <i
+                            className={`${method.icon} payment-icon me-3`}
+                            style={{ fontSize: "2rem" }}
+                          ></i>
                           <div>
                             <h6 className="mb-1">{method.title}</h6>
-                            <small className="text-muted">{method.description}</small>
+                            <small className="text-muted">
+                              {method.description}
+                            </small>
                           </div>
                         </label>
                       </div>
@@ -337,8 +341,7 @@ const CheckoutPage = ({ payment }) => {
                         required
                       />
                       <label className="form-check-label" htmlFor="terms">
-                        I agree to the{" "}
-                        <a href="#">Terms of Service</a> and{" "}
+                        I agree to the <a href="#">Terms of Service</a> and{" "}
                         <a href="#">Privacy Policy</a>
                       </label>
                     </div>
@@ -348,7 +351,10 @@ const CheckoutPage = ({ payment }) => {
                         <i className="fas fa-lock me-2"></i>Pay ₹
                         {Number(payment?.amount || 0).toFixed(2)}
                       </button>
-                      <a href="/payments/plans" className="btn btn-outline-secondary">
+                      <a
+                        href="/payments/plans"
+                        className="btn btn-outline-secondary"
+                      >
                         Cancel
                       </a>
                     </div>
@@ -360,8 +366,8 @@ const CheckoutPage = ({ payment }) => {
             {/* Security Notice */}
             <div className="alert alert-info mt-3">
               <i className="fas fa-shield-alt me-2"></i>
-              <strong>Secure Payment:</strong> Your payment information is encrypted
-              and secure.
+              <strong>Secure Payment:</strong> Your payment information is
+              encrypted and secure.
             </div>
           </div>
         </div>

@@ -1,11 +1,13 @@
+@import url("./theme.css");
+
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: var(--font-weight-normal);
 
   color-scheme: light;
-  color: #1e293b;
-  background-color: #f8fafc;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -187,8 +187,6 @@
 
 // export default EditQuestion;
 
-
-
 // src/pages/admin/EditQuestion.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -263,8 +261,13 @@ const EditQuestion = () => {
   return (
     <div className="container my-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1><i className="fas fa-edit me-2"></i>Edit Question</h1>
-        <button className="btn btn-secondary" onClick={() => navigate("/admin/questions")}>
+        <h1>
+          <i className="fas fa-edit me-2"></i>Edit Question
+        </h1>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate("/admin/questions")}
+        >
           <i className="fas fa-arrow-left me-2"></i>Back to Questions
         </button>
       </div>
@@ -345,7 +348,9 @@ const EditQuestion = () => {
                 placeholder="Must match one of the options exactly"
                 required
               />
-              <div className="form-text">Make sure this exactly matches one of the options above</div>
+              <div className="form-text">
+                Make sure this exactly matches one of the options above
+              </div>
             </div>
 
             <div className="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -356,7 +361,9 @@ const EditQuestion = () => {
               >
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">Update Question</button>
+              <button type="submit" className="btn btn-primary">
+                Update Question
+              </button>
             </div>
           </form>
         </div>

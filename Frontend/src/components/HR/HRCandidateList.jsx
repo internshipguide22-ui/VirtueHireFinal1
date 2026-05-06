@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import api from '../../services/api';
-import { Search, Filter, Briefcase, Eye, User, ShieldAlert, Clock3, CheckCircle2 } from 'lucide-react';
-import './HRCandidateList.css';
-import { ensureHrSubscription, syncStoredHrUser } from '../../utils/hrSubscription';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import api from "../../services/api";
+import {
+  Search,
+  Filter,
+  Briefcase,
+  Eye,
+  User,
+  ShieldAlert,
+  Clock3,
+  CheckCircle2,
+} from "lucide-react";
+import "./HRCandidateList.css";
+import {
+  ensureHrSubscription,
+  syncStoredHrUser,
+} from "../../utils/hrSubscription";
 
 export default function HRCandidateList() {
   const navigate = useNavigate();
@@ -15,21 +27,21 @@ export default function HRCandidateList() {
 
   // Filters
   const [filters, setFilters] = useState({
-    skills: '',
-    experienceLevel: 'All',
-    minScore: ''
+    skills: "",
+    experienceLevel: "All",
+    minScore: "",
   });
 
-  const API_BASE = '/hrs';
+  const API_BASE = "/hrs";
 
   useEffect(() => {
     // Basic authentication check
-    const storedUser = localStorage.getItem('user');
-    const role = localStorage.getItem('role');
+    const storedUser = localStorage.getItem("user");
+    const role = localStorage.getItem("role");
 
-    if (!storedUser || role !== 'HR') {
+    if (!storedUser || role !== "HR") {
       // For demo purposes/if no login, we might want to stay, but usually:
-      // navigate('/hrs/login'); 
+      // navigate('/hrs/login');
     } else {
       const parsedUser = JSON.parse(storedUser);
       setHrInfo(parsedUser);
@@ -42,7 +54,9 @@ export default function HRCandidateList() {
   const fetchCandidates = async (searchParams = {}) => {
     setLoading(true);
     try {
-      const response = await api.get(`${API_BASE}/candidates`, { params: searchParams });
+      const response = await api.get(`${API_BASE}/candidates`, {
+        params: searchParams,
+      });
       // The backend returns a map with 'candidates' and 'hr'
       setCandidates(response.data.candidates || []);
       if (response.data.hr) {
@@ -51,7 +65,7 @@ export default function HRCandidateList() {
         setSubscription(ensureHrSubscription(hydratedHr || response.data.hr));
       }
     } catch (err) {
-      console.error('Error fetching candidates:', err);
+      console.error("Error fetching candidates:", err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +77,7 @@ export default function HRCandidateList() {
   };
 
   const handleClear = () => {
-    const defaultFilters = { skills: '', experienceLevel: 'All', minScore: '' };
+    const defaultFilters = { skills: "", experienceLevel: "All", minScore: "" };
     setFilters(defaultFilters);
     fetchCandidates(defaultFilters);
   };
@@ -72,8 +86,8 @@ export default function HRCandidateList() {
     navigate(`/hr/candidate/${candidate.id}`, {
       state: {
         candidate,
-        from: location.pathname
-      }
+        from: location.pathname,
+      },
     });
   };
 
@@ -89,10 +103,14 @@ export default function HRCandidateList() {
           <div className="hcl-hr-meta">
             {hrInfo && (
               <div className="hcl-plan-badge">
-                {subscription?.planLabel || hrInfo.planType || 'Free for 3 Months'}
+                {subscription?.planLabel ||
+                  hrInfo.planType ||
+                  "Free for 3 Months"}
               </div>
             )}
-            <Link to="/hr/dashboard" className="hcl-nav-link">Dashboard</Link>
+            <Link to="/hr/dashboard" className="hcl-nav-link">
+              Dashboard
+            </Link>
           </div>
         </div>
       </nav>
@@ -112,17 +130,23 @@ export default function HRCandidateList() {
         </header>
 
         {subscription ? (
-          <section className={`hcl-subscription-banner ${subscription.isExpired ? 'expired' : ''}`}>
+          <section
+            className={`hcl-subscription-banner ${subscription.isExpired ? "expired" : ""}`}
+          >
             <div>
               <strong>{subscription.planLabel}</strong>
               <p>
                 {subscription.isExpired
-                  ? 'Your HR module subscription has expired. Renew to continue using the HR module.'
-                  : `${subscription.remainingDays} day${subscription.remainingDays === 1 ? '' : 's'} remaining for HR module access.`}
+                  ? "Your HR module subscription has expired. Renew to continue using the HR module."
+                  : `${subscription.remainingDays} day${subscription.remainingDays === 1 ? "" : "s"} remaining for HR module access.`}
               </p>
             </div>
-            <button type="button" className="hcl-btn-primary" onClick={() => navigate('/payments/plans?audience=hr')}>
-              {subscription.isExpired ? 'Renew Now' : 'View Plans'}
+            <button
+              type="button"
+              className="hcl-btn-primary"
+              onClick={() => navigate("/payments/plans?audience=hr")}
+            >
+              {subscription.isExpired ? "Renew Now" : "View Plans"}
             </button>
           </section>
         ) : null}
@@ -136,7 +160,9 @@ export default function HRCandidateList() {
                 type="text"
                 placeholder="Search by candidate name"
                 value={filters.skills}
-                onChange={(e) => setFilters({ ...filters, skills: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, skills: e.target.value })
+                }
               />
             </div>
 
@@ -145,7 +171,9 @@ export default function HRCandidateList() {
                 <Filter size={16} />
                 <select
                   value={filters.experienceLevel}
-                  onChange={(e) => setFilters({ ...filters, experienceLevel: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, experienceLevel: e.target.value })
+                  }
                 >
                   <option value="All">All Experience</option>
                   <option value="Fresher">Fresher (0-1 yr)</option>
@@ -161,13 +189,23 @@ export default function HRCandidateList() {
                   max="100"
                   placeholder="75%"
                   value={filters.minScore}
-                  onChange={(e) => setFilters({ ...filters, minScore: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minScore: e.target.value })
+                  }
                 />
               </div>
 
               <div className="hcl-filter-actions">
-                <button type="submit" className="hcl-btn-primary">Search</button>
-                <button type="button" className="hcl-btn-secondary" onClick={handleClear}>Clear</button>
+                <button type="submit" className="hcl-btn-primary">
+                  Search
+                </button>
+                <button
+                  type="button"
+                  className="hcl-btn-secondary"
+                  onClick={handleClear}
+                >
+                  Clear
+                </button>
               </div>
             </div>
           </form>
@@ -182,13 +220,15 @@ export default function HRCandidateList() {
             </div>
           ) : candidates.length > 0 ? (
             <div className="hcl-grid">
-              {candidates.map(candidate => (
+              {candidates.map((candidate) => (
                 <div key={candidate.id} className="hcl-card">
                   <div className="hcl-card-header">
                     <div className="hcl-candi-avatar">
                       {candidate.fullName.charAt(0)}
                     </div>
-                    <div className="hcl-badge-tag">{candidate.role || 'Candidate'}</div>
+                    <div className="hcl-badge-tag">
+                      {candidate.role || "Candidate"}
+                    </div>
                   </div>
 
                   <div className="hcl-card-body">
@@ -197,7 +237,9 @@ export default function HRCandidateList() {
                     <div className="hcl-candi-stats">
                       <div className="hcl-candi-stat">
                         <Briefcase size={16} />
-                        <span>Role: <strong>{candidate.role || 'Candidate'}</strong></span>
+                        <span>
+                          Role: <strong>{candidate.role || "Candidate"}</strong>
+                        </span>
                       </div>
                       <div className="hcl-candi-stat">
                         <User size={16} />
@@ -206,23 +248,32 @@ export default function HRCandidateList() {
                     </div>
 
                     <div className="hcl-skills-tags">
-                      <span className={`hcl-access-pill status-${(candidate.requestStatus || 'NONE').toLowerCase()}`}>
-                        {candidate.requestStatus === 'APPROVED' ? <CheckCircle2 size={14} /> :
-                          candidate.requestStatus === 'PENDING' ? <Clock3 size={14} /> :
-                          <ShieldAlert size={14} />}
-                        {candidate.requestStatus === 'APPROVED'
-                          ? 'Full access granted'
-                          : candidate.requestStatus === 'PENDING'
-                            ? 'Access pending admin approval'
-                            : candidate.requestStatus === 'REJECTED'
-                              ? 'Access denied'
-                              : 'Basic access only'}
+                      <span
+                        className={`hcl-access-pill status-${(candidate.requestStatus || "NONE").toLowerCase()}`}
+                      >
+                        {candidate.requestStatus === "APPROVED" ? (
+                          <CheckCircle2 size={14} />
+                        ) : candidate.requestStatus === "PENDING" ? (
+                          <Clock3 size={14} />
+                        ) : (
+                          <ShieldAlert size={14} />
+                        )}
+                        {candidate.requestStatus === "APPROVED"
+                          ? "Full access granted"
+                          : candidate.requestStatus === "PENDING"
+                            ? "Access pending admin approval"
+                            : candidate.requestStatus === "REJECTED"
+                              ? "Access denied"
+                              : "Basic access only"}
                       </span>
                     </div>
                   </div>
 
                   <div className="hcl-card-footer">
-                    <button className="hcl-btn-view" onClick={() => viewDetails(candidate)}>
+                    <button
+                      className="hcl-btn-view"
+                      onClick={() => viewDetails(candidate)}
+                    >
                       <Eye size={18} />
                       Open Details
                     </button>
@@ -235,7 +286,9 @@ export default function HRCandidateList() {
               <User size={64} />
               <h3>No candidates matches</h3>
               <p>Try adjusting your filters or search terms.</p>
-              <button onClick={handleClear} className="hcl-btn-secondary">Clear All Filters</button>
+              <button onClick={handleClear} className="hcl-btn-secondary">
+                Clear All Filters
+              </button>
             </div>
           )}
         </div>
