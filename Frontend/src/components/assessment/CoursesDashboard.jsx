@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   PlayCircle,
+  RotateCw,
 } from "lucide-react";
 import api from "../../services/api";
 
@@ -102,6 +103,10 @@ function SectionReview({ result, config }) {
       try {
         const res = await api.get(`/assessment/results/${result.id}/answers`, {
           withCredentials: true,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
         });
         setQuestions(res.data || []);
       } catch (e) {
@@ -238,7 +243,12 @@ export default function CoursesDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [assignmentMessage, setAssignmentMessage] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(null);
 
+  // ─────────────────────────────────────────────────────────────
+  // Fetch assessment names on mount
+  // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchAssessments = async () => {
       try {
@@ -246,9 +256,26 @@ export default function CoursesDashboard() {
           api.get("/candidates/me", { withCredentials: true }),
           api.get("/candidates/my-assessments", { withCredentials: true }),
         ]);
-        const visibleAssessments = Array.isArray(assessmentsRes.data?.assessments)
-          ? assessmentsRes.data.assessments
-          : [];
+
+        const raw = assessmentsRes.data?.assessments;
+
+        // FIX: The backend may return assessments as a comma-separated string
+        // like "Java Assessment,Java,Java Assignment" instead of a proper array.
+        // We normalise it here so each individual assessment name is its own entry.
+        let visibleAssessments = [];
+        if (Array.isArray(raw)) {
+          // Could be ["Java Assessment,Java,Java Assignment"] (array with one joined string)
+          // or already ["Java Assessment", "Java", "Java Assignment"] (correct array)
+          visibleAssessments = raw.flatMap((entry) =>
+            typeof entry === "string"
+              ? entry.split(",").map((n) => n.trim()).filter(Boolean)
+              : [],
+          );
+        } else if (typeof raw === "string") {
+          // Plain string fallback
+          visibleAssessments = raw.split(",").map((n) => n.trim()).filter(Boolean);
+        }
+
         setAssessmentNames(visibleAssessments);
         setAssignmentMessage(profileRes.data?.candidate?.assessmentAssignmentMessage || "");
       } catch (err) {
@@ -261,41 +288,77 @@ export default function CoursesDashboard() {
     fetchAssessments();
   }, []);
 
+  // ─────────────────────────────────────────────────────────────
+  // Fetch assessment statuses with cache-busting
+  // ─────────────────────────────────────────────────────────────
+  const fetchStatusData = async () => {
+    if (assessmentNames.length === 0) return;
+    try {
+      setLoading(true);
+      const statusEntries = await Promise.all(
+        assessmentNames.map(async (name) => {
+          try {
+            // FIX: Add cache-busting query parameter and headers
+            const res = await api.get(`/assessment/status`, {
+              params: { 
+                name,
+                t: Date.now(), // Timestamp to bust cache
+              },
+              withCredentials: true,
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+              }
+            });
+            return [name, {
+              results: res.data?.results || [],
+              nextLevel: res.data?.nextLevel || 1,
+              totalSections: res.data?.totalSections || 0,
+              configs: res.data?.configs || [],
+              isLocked: Boolean(res.data?.isLocked),
+              error: res.data?.error || "",
+            }];
+          } catch (err) {
+            console.error(`Error fetching status for ${name}:`, err);
+            return [name, { results: [], nextLevel: 1, totalSections: 0, configs: [], isLocked: false, error: "" }];
+          }
+        }),
+      );
+      setStatusData(Object.fromEntries(statusEntries));
+      setLastRefreshTime(new Date());
+    } catch (err) {
+      console.error("Error loading test statuses:", err);
+      setError("We could not load your assessment progress.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch status on mount and when assessmentNames changes
   useEffect(() => {
-    const fetchStatuses = async () => {
-      if (assessmentNames.length === 0) return;
-      try {
-        setLoading(true);
-        const statusEntries = await Promise.all(
-          assessmentNames.map(async (name) => {
-            try {
-              const res = await api.get(`/assessment/status/${encodeURIComponent(name)}`, {
-                withCredentials: true,
-              });
-              return [name, {
-                results: res.data?.results || [],
-                nextLevel: res.data?.nextLevel || 1,
-                totalSections: res.data?.totalSections || 0,
-                configs: res.data?.configs || [],
-                isLocked: Boolean(res.data?.isLocked),
-                error: res.data?.error || "",
-              }];
-            } catch (err) {
-              console.error(`Error fetching status for ${name}:`, err);
-              return [name, { results: [], nextLevel: 1, totalSections: 0, configs: [], isLocked: false, error: "" }];
-            }
-          }),
-        );
-        setStatusData(Object.fromEntries(statusEntries));
-      } catch (err) {
-        console.error("Error loading test statuses:", err);
-        setError("We could not load your assessment progress.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStatuses();
+    fetchStatusData();
   }, [assessmentNames]);
+
+  // ─────────────────────────────────────────────────────────────
+  // Auto-refresh every 30 seconds
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStatusData();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [assessmentNames]);
+
+  // ─────────────────────────────────────────────────────────────
+  // Manual refresh handler
+  // ─────────────────────────────────────────────────────────────
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await fetchStatusData();
+    setRefreshing(false);
+  };
 
   const assessments = useMemo(() => {
     return assessmentNames.map((name) => ({
@@ -332,6 +395,10 @@ export default function CoursesDashboard() {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
         .action-btn:hover:not(:disabled) {
           filter: brightness(1.08);
           transform: translateY(-1px);
@@ -341,6 +408,17 @@ export default function CoursesDashboard() {
         }
         .review-toggle:hover {
           background: #f1f5f9 !important;
+        }
+        .refresh-btn:hover:not(:disabled) {
+          background: #f1f5f9 !important;
+          transform: translateY(-1px);
+        }
+        .refresh-btn:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+        .refresh-btn.spinning {
+          animation: spin 1s linear infinite;
         }
       `}</style>
 
@@ -357,6 +435,18 @@ export default function CoursesDashboard() {
               <div style={s.brandMark}>V</div>
               <span style={s.brandText}>VirtueHire</span>
             </div>
+            <button 
+              type="button" 
+              onClick={handleManualRefresh}
+              disabled={refreshing || loading}
+              style={{
+                ...s.refreshBtn,
+              }}
+              className={refreshing ? "refresh-btn spinning" : "refresh-btn"}
+              title="Refresh assessment status"
+            >
+              <RotateCw size={16} />
+            </button>
           </header>
 
           {/* ── Hero ── */}
@@ -366,6 +456,11 @@ export default function CoursesDashboard() {
             <p style={s.heroSub}>
               Start a new test, continue where you left off, or review what you have already completed.
             </p>
+            {lastRefreshTime && (
+              <p style={s.lastRefresh}>
+                Last updated: {lastRefreshTime.toLocaleTimeString()}
+              </p>
+            )}
           </section>
 
           {error && <div style={s.errorBanner}>{error}</div>}
@@ -516,6 +611,22 @@ const s = {
     cursor: "pointer",
     fontFamily: "inherit",
   },
+  refreshBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    padding: "10px 14px",
+    background: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: "12px",
+    fontWeight: 700,
+    fontSize: "0.9rem",
+    color: "#0f172a",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "background 0.15s ease, transform 0.15s ease",
+  },
   brand: {
     display: "flex",
     alignItems: "center",
@@ -561,10 +672,17 @@ const s = {
     color: "#0f172a",
   },
   heroSub: {
-    margin: 0,
+    margin: "0 0 8px",
     color: "#475569",
     lineHeight: 1.6,
     fontSize: "0.95rem",
+  },
+  lastRefresh: {
+    margin: "8px 0 0 0",
+    color: "#94a3b8",
+    lineHeight: 1.4,
+    fontSize: "0.8rem",
+    fontWeight: 500,
   },
 
   // Error

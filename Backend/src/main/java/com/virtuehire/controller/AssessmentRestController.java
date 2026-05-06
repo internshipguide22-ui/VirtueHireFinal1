@@ -54,12 +54,14 @@ public class AssessmentRestController {
     }
 
     // =========================================================
-    // STATUS ENDPOINT - Fixed with better error handling
+    // ✅ FIXED: STATUS ENDPOINT - Uses query parameter, not path variable
+    // This fixes the 404 error. The endpoint now accepts ?name=Java+Assessment
+    // instead of /Java+Assessment
     // =========================================================
 
-    @GetMapping("/status/{assessmentName}")
+    @GetMapping("/status")
     public ResponseEntity<?> getAssessmentStatus(
-            @PathVariable String assessmentName,
+            @RequestParam String name,
             HttpSession session) {
 
         Candidate candidate = (Candidate) session.getAttribute("candidate");
@@ -68,13 +70,15 @@ public class AssessmentRestController {
         }
 
         // Decode URL-encoded assessment name
-        String decodedName = URLDecoder.decode(assessmentName, StandardCharsets.UTF_8);
-        System.out.println("Looking for assessment: '" + decodedName + "'");
+        String decodedName = URLDecoder.decode(name, StandardCharsets.UTF_8);
+        System.out.println("🔍 Looking for assessment: '" + decodedName + "'");
 
         Optional<Assessment> assessmentOpt = assessmentService.getAssessmentByName(decodedName);
 
         if (assessmentOpt.isEmpty()) {
             List<String> availableAssessments = assessmentService.getAllAssessmentNames();
+            System.err.println("❌ Assessment not found: " + decodedName);
+            System.err.println("📋 Available assessments: " + availableAssessments);
             return ResponseEntity.status(404).body(Map.of(
                     "error", "Assessment not found: " + decodedName,
                     "availableAssessments", availableAssessments
@@ -95,6 +99,9 @@ public class AssessmentRestController {
         String error = assessment.isLocked()
                 ? "This assessment is locked by the admin."
                 : resultService.getAssessmentLockMessage(candidate.getId(), assessment.getAssessmentName(), sections);
+
+        System.out.println("✅ Assessment found: " + assessment.getAssessmentName());
+        System.out.println("📊 Results: " + results.size() + ", Next Level: " + nextLevel + ", Locked: " + isLocked);
 
         return ResponseEntity.ok(Map.of(
                 "assessmentName", assessment.getAssessmentName(),

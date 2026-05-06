@@ -9,6 +9,7 @@ import com.virtuehire.service.AssessmentResultService;
 import com.virtuehire.service.CandidateService;
 import com.virtuehire.service.HiringWorkflowService;
 import com.virtuehire.service.TestAllocationService;
+import com.virtuehire.util.StoragePathResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -50,7 +51,7 @@ public class CandidateRestController {
         this.assessmentResultService = assessmentResultService;
         this.hiringWorkflowService = hiringWorkflowService;
         this.testAllocationService = testAllocationService;
-        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize();
+        this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
     }
 
     // ---------------------------
@@ -195,8 +196,11 @@ public class CandidateRestController {
 
     // ---------------------------
     // Get My Assessments
-    // FIX: Now returns both the assigned assessment AND all assessments
-    // the candidate has attempted results for, merged and deduplicated.
+    // FIX: assignedAssessmentName is stored as a comma-separated string
+    // (e.g. "Java Assessment,Java,Java Assignment"). We must split it into
+    // individual names before adding to the set — never add the whole joined
+    // string as a single entry, otherwise the frontend receives one string
+    // and either displays it joined or splits it causing duplicates.
     // ---------------------------
     @GetMapping("/my-assessments")
     public ResponseEntity<?> getMyAssessments(HttpSession session) {
@@ -216,19 +220,24 @@ public class CandidateRestController {
             session.setAttribute("candidate", candidate);
 
             // Use LinkedHashSet to deduplicate while preserving insertion order.
-            // Assigned assessment goes first, then any others the candidate has attempted.
+            // Assigned assessments go first, then any others the candidate has attempted.
             LinkedHashSet<String> assessmentSet = new LinkedHashSet<>();
 
+            // FIX: Split the comma-separated assignedAssessmentName into individual
+            // names before adding — never add the whole joined string as one entry.
             if (candidate.getAssignedAssessmentName() != null
                     && !candidate.getAssignedAssessmentName().isBlank()) {
-                assessmentSet.add(candidate.getAssignedAssessmentName());
+                Arrays.stream(candidate.getAssignedAssessmentName().split(","))
+                        .map(String::trim)
+                        .filter(name -> !name.isBlank())
+                        .forEach(assessmentSet::add);
             }
 
             // Pull all assessment names from the candidate's actual result history
             List<AssessmentResult> results = assessmentResultService.getCandidateResults(candidate.getId());
             for (AssessmentResult result : results) {
                 if (result.getSubject() != null && !result.getSubject().isBlank()) {
-                    assessmentSet.add(result.getSubject());
+                    assessmentSet.add(result.getSubject().trim());
                 }
             }
 
@@ -517,7 +526,6 @@ public class CandidateRestController {
         }
 
         try {
-            // Get candidate from DB to ensure fresh data
             var candidateOpt = candidateService.findById(candidate.getId());
             if (candidateOpt.isEmpty()) {
                 return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
@@ -543,7 +551,6 @@ public class CandidateRestController {
         }
 
         try {
-            // Verify candidate has access to this test
             var assignedTests = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId());
             boolean hasAccess = assignedTests.stream()
                     .anyMatch(t -> t.getTestName().equalsIgnoreCase(testName));
@@ -570,7 +577,7 @@ public class CandidateRestController {
         try {
             var unsubmitted = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId());
             var submitted = hiringWorkflowService.getSubmittedTestsForCandidate(candidate.getId());
-            
+
             return ResponseEntity.ok(Map.of(
                     "candidateId", candidate.getId(),
                     "pendingTests", unsubmitted,

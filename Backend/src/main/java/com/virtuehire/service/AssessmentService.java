@@ -176,11 +176,18 @@ public class AssessmentService {
             return Optional.empty();
         }
 
-        return assessmentRepo.findAll().stream()
-                .sorted(Comparator.comparing(Assessment::getCreatedAt).reversed())
-                .filter(assessment -> requestedSignature.equals(
-                        buildSkillSignatureFromSections(getAssessmentSections(assessment.getId()))))
-                .findFirst();
+        // Find ALL matching assessments, not just the first one
+        List<Assessment> matchedAssessments = new ArrayList<>();
+        for (Assessment assessment : assessmentRepo.findAll()) {
+            String assessmentSignature = buildSkillSignatureFromSections(getAssessmentSections(assessment.getId()));
+            if (requestedSignature.equals(assessmentSignature)) {
+                matchedAssessments.add(assessment);
+            }
+        }
+        
+        // Sort by creation date (newest first) and return the first one
+        matchedAssessments.sort(Comparator.comparing(Assessment::getCreatedAt).reversed());
+        return matchedAssessments.isEmpty() ? Optional.empty() : Optional.of(matchedAssessments.get(0));
     }
 
     public List<Assessment> findAssessmentsForSkills(List<String> skills) {
@@ -188,23 +195,37 @@ public class AssessmentService {
             return List.of();
         }
 
+        // Build candidate skill keys once for consistent matching
         Set<String> candidateSkills = skills.stream()
                 .filter(skill -> skill != null && !skill.isBlank())
                 .map(this::buildSkillMatchKey)
+                .filter(key -> !key.isBlank())
                 .collect(Collectors.toSet());
 
-        return assessmentRepo.findAll().stream()
-                .sorted(Comparator.comparing(Assessment::getCreatedAt).reversed())
-                .filter(assessment -> {
-                    List<String> assessmentSkills = getAssessmentSubjects(assessment);
-                    // Changed allMatch → anyMatch.
-                    // Previously, every subject in the assessment had to appear in the
-                    // candidate's skill list — this wrongly excluded multi-skill assessments
-                    // where only one skill was relevant. Now at least one subject must match.
-                    return !assessmentSkills.isEmpty() && assessmentSkills.stream()
-                            .anyMatch(assessmentSkill -> matchesCandidateSkill(candidateSkills, assessmentSkill));
-                })
-                .toList();
+        if (candidateSkills.isEmpty()) {
+            return List.of();
+        }
+
+        // Get all assessments and filter those matching candidate skills
+        List<Assessment> allAssessments = assessmentRepo.findAll();
+        
+        List<Assessment> matchedAssessments = new ArrayList<>();
+        for (Assessment assessment : allAssessments) {
+            List<String> assessmentSkills = getAssessmentSubjects(assessment);
+            
+            // Check if any assessment skill matches any candidate skill
+            boolean hasMatch = assessmentSkills.stream()
+                    .anyMatch(assessmentSkill -> matchesCandidateSkill(candidateSkills, assessmentSkill));
+            
+            if (hasMatch) {
+                matchedAssessments.add(assessment);
+            }
+        }
+        
+        // Sort by creation date (newest first) after collecting all matches
+        matchedAssessments.sort(Comparator.comparing(Assessment::getCreatedAt).reversed());
+        
+        return matchedAssessments;
     }
 
     public List<String> getAssessmentSubjects(Assessment assessment) {
@@ -212,12 +233,24 @@ public class AssessmentService {
             return List.of();
         }
 
-        return getAssessmentSections(assessment.getId()).stream()
-                .map(AssessmentSection::getSubject)
-                .filter(subject -> subject != null && !subject.isBlank())
-                .map(this::normalizeSkill)
-                .distinct()
-                .toList();
+        List<AssessmentSection> sections = getAssessmentSections(assessment.getId());
+        if (sections == null || sections.isEmpty()) {
+            return List.of();
+        }
+
+        // Collect all unique subjects without early termination
+        Set<String> uniqueSubjects = new LinkedHashSet<>();
+        for (AssessmentSection section : sections) {
+            String subject = section.getSubject();
+            if (subject != null && !subject.isBlank()) {
+                String normalized = normalizeSkill(subject);
+                if (!normalized.isBlank()) {
+                    uniqueSubjects.add(normalized);
+                }
+            }
+        }
+        
+        return new ArrayList<>(uniqueSubjects);
     }
 
     public boolean skillsMatch(String firstSkill, String secondSkill) {
@@ -326,6 +359,9 @@ public class AssessmentService {
     }
 
     private boolean matchesCandidateSkill(Set<String> candidateSkillKeys, String assessmentSkill) {
+        if (assessmentSkill == null || assessmentSkill.isBlank()) {
+            return false;
+        }
         String assessmentKey = buildSkillMatchKey(assessmentSkill);
         return !assessmentKey.isBlank() && candidateSkillKeys.contains(assessmentKey);
     }

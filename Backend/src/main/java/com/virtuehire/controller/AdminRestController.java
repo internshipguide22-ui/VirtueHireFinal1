@@ -2,6 +2,7 @@ package com.virtuehire.controller;
 
 import com.virtuehire.model.*;
 import com.virtuehire.service.*;
+import com.virtuehire.util.StoragePathResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +13,6 @@ import jakarta.servlet.http.HttpSession;
 
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +46,7 @@ public class AdminRestController {
         this.assessmentResultService = assessmentResultService;
         this.assessmentService = assessmentService;
         this.adminNotificationService = adminNotificationService;
-        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize();
+        this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
     }
 
     private ResponseEntity<Map<String, String>> requireAdmin(HttpSession session) {

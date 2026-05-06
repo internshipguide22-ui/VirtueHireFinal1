@@ -604,16 +604,16 @@
   color: #64748b;
 }
 
-.template-minimal-grid .resume-preview-header-band,
-.template-bold-edge .resume-preview-header-band {
+.template-clean-structured .resume-preview-header-band,
+.template-two-column-executive .resume-preview-header-band {
   width: 120px;
 }
 
-.template-executive-line {
+.template-modern-minimal {
   background: linear-gradient(180deg, #ffffff 0%, #f6f3ff 100%);
 }
 
-.template-compact-ats {
+.template-simple-elegant {
   background: linear-gradient(180deg, #fffdf7 0%, #ffffff 100%);
 }
 

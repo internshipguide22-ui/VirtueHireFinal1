@@ -157,18 +157,37 @@ export default function CandidateWelcome() {
         }
 
         // Null-guarded: handles 404 or any failed response from my-assessments gracefully
-        const visibleAssessmentNames =
-          assessmentsRes?.data && Array.isArray(assessmentsRes.data.assessments)
-            ? assessmentsRes.data.assessments
-            : [];
+        const rawAssessments = assessmentsRes?.data?.assessments;
+        let visibleAssessmentNames = [];
+
+        if (Array.isArray(rawAssessments)) {
+          visibleAssessmentNames = rawAssessments.flatMap((entry) =>
+            typeof entry === "string"
+              ? entry
+                  .split(",")
+                  .map((name) => name.trim())
+                  .filter(Boolean)
+              : [],
+          );
+        } else if (typeof rawAssessments === "string") {
+          visibleAssessmentNames = rawAssessments
+            .split(",")
+            .map((name) => name.trim())
+            .filter(Boolean);
+        }
 
         const statusResponses = await Promise.all(
           visibleAssessmentNames.map(async (name) => {
             try {
-              const res = await api.get(
-                `/assessment/status/${encodeURIComponent(name)}`,
-                { withCredentials: true },
-              );
+              const res = await api.get("/assessment/status", {
+                params: { name, t: Date.now() },
+                withCredentials: true,
+                headers: {
+                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                  Pragma: "no-cache",
+                  Expires: "0",
+                },
+              });
               return { name, ...res.data };
             } catch (err) {
               return {

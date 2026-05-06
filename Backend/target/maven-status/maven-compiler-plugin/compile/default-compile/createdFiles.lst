@@ -27,6 +27,7 @@ com\virtuehire\model\AssessmentResult.class
 com\virtuehire\model\CandidateTestMapping.class
 com\virtuehire\controller\AssessmentRestController$1.class
 com\virtuehire\model\AssessmentSection.class
+com\virtuehire\util\StoragePathResolver.class
 com\virtuehire\repository\AssessmentResultRepository.class
 com\virtuehire\controller\AssessmentRestController$CodingAnswerRequest.class
 com\virtuehire\model\Payment.class

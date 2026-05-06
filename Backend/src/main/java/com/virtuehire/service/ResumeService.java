@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.virtuehire.model.Candidate;
 import com.virtuehire.model.ResumeDocument;
 import com.virtuehire.repository.ResumeDocumentRepository;
+import com.virtuehire.util.StoragePathResolver;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -44,8 +44,8 @@ public class ResumeService {
             @Value("${file.upload-dir}") String uploadDirPath) {
         this.resumeDocumentRepository = resumeDocumentRepository;
         this.objectMapper = objectMapper;
-        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize(); // ← ADDED
-        this.resumeDir = this.uploadDir.resolve("generated-resumes"); // ← CHANGED to use uploadDir
+        this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
+        this.resumeDir = this.uploadDir.resolve("generated-resumes");
     }
 
     public List<Map<String, Object>> listCandidateResumes(Long candidateId) {
@@ -126,7 +126,7 @@ public class ResumeService {
         }
 
         String title = firstNonBlank(asString(payload.get("title")), buildDefaultTitle(resumeData));
-        String templateId = firstNonBlank(asString(payload.get("templateId")), "modern-slate");
+        String templateId = firstNonBlank(asString(payload.get("templateId")), "classic-professional");
         String pdfName = buildPdfName(title);
 
         resumeDocument.setTitle(title);
@@ -300,55 +300,187 @@ public class ResumeService {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
-            float margin = 48f;
-            float y = page.getMediaBox().getHeight() - margin;
-            float width = page.getMediaBox().getWidth() - (margin * 2);
-            float leading = 15f;
-
-            Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
-
-            contentStream.setNonStrokingColor(28, 52, 84);
-            contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 20);
-            contentStream.newLineAtOffset(margin, y);
-            contentStream.showText(trimForPdf(firstNonBlank(asString(personalInfo.get("name")), title)));
-            contentStream.endText();
-            y -= 24;
-
-            String contactLine = String.join(" | ", sanitizeStringList(List.of(
-                    asString(personalInfo.get("email")),
-                    asString(personalInfo.get("phone")),
-                    asString(personalInfo.get("location")),
-                    asString(personalInfo.get("linkedin")),
-                    asString(personalInfo.get("portfolio"))
-            )));
-
-            y = writeWrappedText(contentStream, trimForPdf(contactLine), margin, y, width, 10, leading, PDType1Font.HELVETICA);
-            y -= 10;
-
-            y = writeSection(contentStream, "Professional Summary", List.of(asString(resumeData.get("professionalSummary"))), margin, y, width);
-            y = writeSection(contentStream, "Skills", List.of(String.join(", ", sanitizeStringList(resumeData.get("skills")))), margin, y, width);
-            y = writeObjectSection(contentStream, "Experience", sanitizeObjectList(resumeData.get("experience"), List.of("company", "role", "duration", "description")), margin, y, width);
-            y = writeObjectSection(contentStream, "Education", sanitizeObjectList(resumeData.get("education"), List.of("institution", "degree", "duration", "description")), margin, y, width);
-            y = writeObjectSection(contentStream, "Projects", sanitizeObjectList(resumeData.get("projects"), List.of("name", "role", "duration", "description")), margin, y, width);
-            y = writeObjectSection(contentStream, "Certifications", sanitizeObjectList(resumeData.get("certifications"), List.of("name", "issuer", "year", "description")), margin, y, width);
-            y = writeSection(contentStream, "Achievements", sanitizeStringList(resumeData.get("achievements")), margin, y, width);
-            y = writeSection(contentStream, "ATS Keywords", List.of(String.join(", ", sanitizeStringList(resumeData.get("keywords")))), margin, y, width);
-
-            contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_OBLIQUE, 8);
-            contentStream.newLineAtOffset(margin, 24);
-            contentStream.showText(trimForPdf("Generated with template: " + templateId));
-            contentStream.endText();
-            contentStream.close();
-
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                switch (templateId) {
+                    case "modern-minimal" -> renderModernMinimalPdf(contentStream, page, resumeData, title, templateId);
+                    case "clean-structured" -> renderCleanStructuredPdf(contentStream, page, resumeData, title, templateId);
+                    case "simple-elegant" -> renderSimpleElegantPdf(contentStream, page, resumeData, title, templateId);
+                    case "two-column-executive" -> renderTwoColumnExecutivePdf(contentStream, page, resumeData, title, templateId);
+                    default -> renderClassicProfessionalPdf(contentStream, page, resumeData, title, templateId);
+                }
+            }
             document.save(filePath.toFile());
         }
     }
 
+    private void renderClassicProfessionalPdf(PDPageContentStream contentStream, PDPage page,
+                                              Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float margin = 48f;
+        float y = page.getMediaBox().getHeight() - margin;
+        float width = page.getMediaBox().getWidth() - (margin * 2);
+        Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
+
+        contentStream.setNonStrokingColor(15, 23, 42);
+        y = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), margin, y, 20, PDType1Font.HELVETICA_BOLD);
+        String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
+        if (!titleLine.isBlank()) {
+            y = writeText(contentStream, titleLine, margin, y - 4, 11, PDType1Font.HELVETICA_OBLIQUE);
+        }
+        y = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, " | ")), margin, y - 6, width, 10, 14, PDType1Font.HELVETICA);
+        drawRule(contentStream, margin, y - 2, width, 15, 23, 42);
+        y -= 16;
+        writeStandardSections(contentStream, resumeData, margin, y, width, 37, 99, 235);
+        writeFooter(contentStream, margin, templateId);
+    }
+
+    private void renderModernMinimalPdf(PDPageContentStream contentStream, PDPage page,
+                                        Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float margin = 52f;
+        float y = page.getMediaBox().getHeight() - margin;
+        float width = page.getMediaBox().getWidth() - (margin * 2);
+        Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
+
+        contentStream.setNonStrokingColor(17, 24, 39);
+        y = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), margin, y, 24, PDType1Font.HELVETICA_BOLD);
+        String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
+        if (!titleLine.isBlank()) {
+            y = writeText(contentStream, titleLine, margin, y - 2, 11, PDType1Font.HELVETICA);
+        }
+        y = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, "   ")), margin, y - 8, width, 9.5f, 13f, PDType1Font.HELVETICA);
+        drawRule(contentStream, margin, y - 2, 4f, 17, 24, 39, 60f);
+        y = writeWrappedText(contentStream, trimForPdf(asString(resumeData.get("professionalSummary"))), margin + 16, y - 18, width - 16, 10, 14, PDType1Font.HELVETICA);
+        y -= 10;
+        writeStandardSections(contentStream, resumeData, margin, y, width, 17, 24, 39, false, false);
+        writeFooter(contentStream, margin, templateId);
+    }
+
+    private void renderCleanStructuredPdf(PDPageContentStream contentStream, PDPage page,
+                                          Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float margin = 42f;
+        float pageWidth = page.getMediaBox().getWidth();
+        float y = page.getMediaBox().getHeight() - 38f;
+        float width = pageWidth - (margin * 2);
+        Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
+
+        contentStream.setNonStrokingColor(29, 78, 216);
+        contentStream.addRect(0, page.getMediaBox().getHeight() - 118, pageWidth, 118);
+        contentStream.fill();
+
+        contentStream.setNonStrokingColor(255, 255, 255);
+        y = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), margin, y, 22, PDType1Font.HELVETICA_BOLD);
+        String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
+        if (!titleLine.isBlank()) {
+            y = writeText(contentStream, titleLine, margin, y - 4, 11, PDType1Font.HELVETICA);
+        }
+        y = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, " | ")), margin, y - 10, width, 9.5f, 13f, PDType1Font.HELVETICA);
+        y = page.getMediaBox().getHeight() - 142f;
+        writeStandardSections(contentStream, resumeData, margin, y, width, 29, 78, 216);
+        writeFooter(contentStream, margin, templateId);
+    }
+
+    private void renderSimpleElegantPdf(PDPageContentStream contentStream, PDPage page,
+                                        Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float margin = 56f;
+        float y = page.getMediaBox().getHeight() - margin;
+        float width = page.getMediaBox().getWidth() - (margin * 2);
+        float centerX = page.getMediaBox().getWidth() / 2f;
+        Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
+
+        String name = firstNonBlank(asString(personalInfo.get("name")), title).toUpperCase(Locale.ROOT);
+        y = writeCenteredText(contentStream, name, centerX, y, 20, PDType1Font.HELVETICA_BOLD);
+        String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
+        if (!titleLine.isBlank()) {
+            y = writeCenteredText(contentStream, titleLine, centerX, y - 4, 11, PDType1Font.HELVETICA);
+        }
+        drawRule(contentStream, margin + 40, y - 4, width - 80, 148, 163, 184);
+        y = writeCenteredWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, " | ")), centerX, y - 16, width, 9.5f, 13f, PDType1Font.HELVETICA);
+        drawRule(contentStream, margin + 40, y - 4, width - 80, 148, 163, 184);
+        y = writeCenteredWrappedText(contentStream, trimForPdf(asString(resumeData.get("professionalSummary"))), centerX, y - 20, width - 40, 10, 14, PDType1Font.HELVETICA_OBLIQUE);
+        y -= 12;
+        writeStandardSections(contentStream, resumeData, margin, y, width, 100, 116, 139, false, false);
+        writeFooter(contentStream, margin, templateId);
+    }
+
+    private void renderTwoColumnExecutivePdf(PDPageContentStream contentStream, PDPage page,
+                                             Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float pageHeight = page.getMediaBox().getHeight();
+        float pageWidth = page.getMediaBox().getWidth();
+        float sidebarWidth = 165f;
+        float margin = 24f;
+        Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
+
+        contentStream.setNonStrokingColor(31, 41, 55);
+        contentStream.addRect(0, 0, sidebarWidth, pageHeight);
+        contentStream.fill();
+
+        float leftX = 18f;
+        float leftY = pageHeight - 36f;
+        contentStream.setNonStrokingColor(255, 255, 255);
+        leftY = writeText(contentStream, "CONTACT", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
+        leftY = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, "\n")), leftX, leftY - 8, sidebarWidth - 34, 9, 12, PDType1Font.HELVETICA);
+
+        leftY -= 10;
+        leftY = writeText(contentStream, "SKILLS", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
+        for (String skill : sanitizeStringList(resumeData.get("skills"))) {
+            leftY = writeWrappedText(contentStream, "• " + trimForPdf(skill), leftX, leftY - 6, sidebarWidth - 34, 9, 11, PDType1Font.HELVETICA);
+        }
+
+        leftY -= 10;
+        leftY = writeText(contentStream, "EDUCATION", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
+        for (Map<String, String> item : sanitizeObjectList(resumeData.get("education"), List.of("institution", "degree", "duration", "description"))) {
+            leftY = writeWrappedText(contentStream,
+                    trimForPdf(firstNonBlank(item.get("degree"), item.get("institution"))), leftX, leftY - 6, sidebarWidth - 34, 9, 11, PDType1Font.HELVETICA_BOLD);
+            leftY = writeWrappedText(contentStream,
+                    trimForPdf(String.join(" | ", sanitizeStringList(List.of(item.get("institution"), item.get("duration"))))),
+                    leftX, leftY, sidebarWidth - 34, 8.5f, 10.5f, PDType1Font.HELVETICA);
+            leftY -= 6;
+        }
+
+        float mainX = sidebarWidth + margin;
+        float mainY = pageHeight - 48f;
+        float mainWidth = pageWidth - mainX - margin;
+        contentStream.setNonStrokingColor(15, 23, 42);
+        mainY = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), mainX, mainY, 22, PDType1Font.HELVETICA_BOLD);
+        String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
+        if (!titleLine.isBlank()) {
+            mainY = writeText(contentStream, titleLine, mainX, mainY - 4, 11, PDType1Font.HELVETICA);
+        }
+        mainY = writeSection(contentStream, "Profile", List.of(asString(resumeData.get("professionalSummary"))), mainX, mainY - 14, mainWidth);
+        writeStandardSections(contentStream, resumeData, mainX, mainY, mainWidth, 55, 65, 81, false, true);
+        writeFooter(contentStream, mainX, templateId);
+    }
+
+    private float writeStandardSections(PDPageContentStream contentStream, Map<String, Object> resumeData,
+                                        float margin, float y, float width, int r, int g, int b) throws IOException {
+        return writeStandardSections(contentStream, resumeData, margin, y, width, r, g, b, true, false);
+    }
+
+    private float writeStandardSections(PDPageContentStream contentStream, Map<String, Object> resumeData,
+                                        float margin, float y, float width, int r, int g, int b,
+                                        boolean includeSummary, boolean skipEducationAndSkills) throws IOException {
+        if (includeSummary) {
+            y = writeSection(contentStream, "Professional Summary", List.of(asString(resumeData.get("professionalSummary"))), margin, y, width, r, g, b);
+        }
+        if (!skipEducationAndSkills) {
+            y = writeSection(contentStream, "Skills", List.of(String.join(", ", sanitizeStringList(resumeData.get("skills")))), margin, y, width, r, g, b);
+        }
+        y = writeObjectSection(contentStream, "Experience", sanitizeObjectList(resumeData.get("experience"), List.of("company", "role", "duration", "description")), margin, y, width, r, g, b);
+        if (!skipEducationAndSkills) {
+            y = writeObjectSection(contentStream, "Education", sanitizeObjectList(resumeData.get("education"), List.of("institution", "degree", "duration", "description")), margin, y, width, r, g, b);
+        }
+        y = writeObjectSection(contentStream, "Projects", sanitizeObjectList(resumeData.get("projects"), List.of("name", "role", "duration", "description")), margin, y, width, r, g, b);
+        y = writeObjectSection(contentStream, "Certifications", sanitizeObjectList(resumeData.get("certifications"), List.of("name", "issuer", "year", "description")), margin, y, width, r, g, b);
+        y = writeSection(contentStream, "Achievements", sanitizeStringList(resumeData.get("achievements")), margin, y, width, r, g, b);
+        return writeSection(contentStream, "ATS Keywords", List.of(String.join(", ", sanitizeStringList(resumeData.get("keywords")))), margin, y, width, r, g, b);
+    }
+
     private float writeSection(PDPageContentStream contentStream, String heading, List<String> lines,
                                float margin, float y, float width) throws IOException {
+        return writeSection(contentStream, heading, lines, margin, y, width, 37, 99, 235);
+    }
+
+    private float writeSection(PDPageContentStream contentStream, String heading, List<String> lines,
+                               float margin, float y, float width, int r, int g, int b) throws IOException {
         List<String> filteredLines = lines.stream()
                 .map(this::asString)
                 .map(String::trim)
@@ -359,7 +491,7 @@ public class ResumeService {
             return y;
         }
 
-        contentStream.setNonStrokingColor(37, 99, 235);
+        contentStream.setNonStrokingColor(r, g, b);
         contentStream.beginText();
         contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
         contentStream.newLineAtOffset(margin, y);
@@ -377,11 +509,16 @@ public class ResumeService {
 
     private float writeObjectSection(PDPageContentStream contentStream, String heading, List<Map<String, String>> items,
                                      float margin, float y, float width) throws IOException {
+        return writeObjectSection(contentStream, heading, items, margin, y, width, 37, 99, 235);
+    }
+
+    private float writeObjectSection(PDPageContentStream contentStream, String heading, List<Map<String, String>> items,
+                                     float margin, float y, float width, int r, int g, int b) throws IOException {
         if (items.isEmpty()) {
             return y;
         }
 
-        contentStream.setNonStrokingColor(37, 99, 235);
+        contentStream.setNonStrokingColor(r, g, b);
         contentStream.beginText();
         contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
         contentStream.newLineAtOffset(margin, y);
@@ -409,6 +546,73 @@ public class ResumeService {
         }
 
         return y - 8;
+    }
+
+    private float writeText(PDPageContentStream contentStream, String text, float x, float y,
+                            float fontSize, PDType1Font font) throws IOException {
+        if (text == null || text.isBlank()) {
+            return y;
+        }
+        contentStream.beginText();
+        contentStream.setFont(font, fontSize);
+        contentStream.newLineAtOffset(x, y);
+        contentStream.showText(trimForPdf(text));
+        contentStream.endText();
+        return y - (fontSize + 4);
+    }
+
+    private float writeCenteredText(PDPageContentStream contentStream, String text, float centerX, float y,
+                                    float fontSize, PDType1Font font) throws IOException {
+        if (text == null || text.isBlank()) {
+            return y;
+        }
+        float textWidth = font.getStringWidth(trimForPdf(text)) / 1000 * fontSize;
+        return writeText(contentStream, text, centerX - (textWidth / 2f), y, fontSize, font);
+    }
+
+    private float writeCenteredWrappedText(PDPageContentStream contentStream, String text, float centerX, float y,
+                                           float width, float fontSize, float leading, PDType1Font font) throws IOException {
+        List<String> lines = wrapText(text, width, font, fontSize);
+        for (String line : lines) {
+            float textWidth = font.getStringWidth(trimForPdf(line)) / 1000 * fontSize;
+            y = writeText(contentStream, line, centerX - (textWidth / 2f), y, fontSize, font);
+            y += 4 - leading + fontSize;
+        }
+        return y - 4;
+    }
+
+    private void drawRule(PDPageContentStream contentStream, float x, float y, float width,
+                          int r, int g, int b) throws IOException {
+        drawRule(contentStream, x, y, width, r, g, b, 1f);
+    }
+
+    private void drawRule(PDPageContentStream contentStream, float x, float y, float width,
+                          int r, int g, int b, float lineWidth) throws IOException {
+        contentStream.setStrokingColor(r, g, b);
+        contentStream.setLineWidth(lineWidth);
+        contentStream.moveTo(x, y);
+        contentStream.lineTo(x + width, y);
+        contentStream.stroke();
+    }
+
+    private String buildContactLine(Map<String, Object> personalInfo, String separator) {
+        return String.join(separator, sanitizeStringList(List.of(
+                asString(personalInfo.get("email")),
+                asString(personalInfo.get("phone")),
+                asString(personalInfo.get("location")),
+                asString(personalInfo.get("linkedin")),
+                asString(personalInfo.get("portfolio")),
+                asString(personalInfo.get("title"))
+        )));
+    }
+
+    private void writeFooter(PDPageContentStream contentStream, float x, String templateId) throws IOException {
+        contentStream.setNonStrokingColor(100, 116, 139);
+        contentStream.beginText();
+        contentStream.setFont(PDType1Font.HELVETICA_OBLIQUE, 8);
+        contentStream.newLineAtOffset(x, 24);
+        contentStream.showText(trimForPdf("Generated with template: " + templateId));
+        contentStream.endText();
     }
 
     private float writeWrappedText(PDPageContentStream contentStream, String text, float x, float y, float width,

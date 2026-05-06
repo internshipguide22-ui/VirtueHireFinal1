@@ -11,6 +11,7 @@ import com.virtuehire.service.AssessmentResultService;
 import com.virtuehire.service.AssessmentService;
 import com.virtuehire.service.HiringWorkflowService;
 import com.virtuehire.service.TestAllocationService;
+import com.virtuehire.util.StoragePathResolver;
 import com.virtuehire.model.Assessment;
 import com.virtuehire.model.AssessmentSection;
 import com.virtuehire.repository.AssessmentSectionRepository;
@@ -27,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +67,7 @@ public class HrRestController {
         this.hiringWorkflowService = hiringWorkflowService;
         this.testAllocationService = testAllocationService;
         this.assessmentSectionRepository = assessmentSectionRepository;
-        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize();
+        this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
     }
 
     // ------------------ REGISTER HR ------------------

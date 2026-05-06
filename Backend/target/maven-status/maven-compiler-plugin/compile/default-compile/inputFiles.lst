@@ -16,6 +16,7 @@ C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtueh
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\controller\CandidateRestController.java
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\repository\PaymentRepository.java
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\repository\AssessmentRepository.java
+C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\util\StoragePathResolver.java
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\service\HiringWorkflowService.java
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\config\WebSocketConfig.java
 C:\Users\User\Desktop\FINAL-MOCK\FINAL-MOCK v3\Backend\src\main\java\com\virtuehire\model\CandidateAnswer.java

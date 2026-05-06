@@ -6,6 +6,7 @@ import com.virtuehire.repository.AssessmentResultRepository;
 import com.virtuehire.repository.CandidateRepository;
 import com.virtuehire.repository.ExamActivityRepository;
 import com.virtuehire.repository.PaymentRepository;
+import com.virtuehire.util.StoragePathResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.*;
@@ -55,25 +55,57 @@ public class CandidateService {
         this.assessmentService = assessmentService;
         this.adminNotificationService = adminNotificationService;
         this.resumeService = resumeService;
-        this.uploadDir = Paths.get(uploadDirPath).toAbsolutePath().normalize();
+        this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
     }
 
+    // FIX 1: Previously applyAssessmentAssignment() was called before the first
+    // repo.save(), so new candidates had no DB-assigned ID yet. Any internal
+    // logic using candidate.getId() returned null, producing wrong or missing
+    // assignments for every new candidate after the first.
+    // Now: save first → get ID → apply assignment → save again.
     public Candidate save(Candidate c) {
         if (c.getEmail() != null) {
             c.setEmail(normalizeEmail(c.getEmail()));
         }
+        // Step 1: persist first so the entity gets its DB-assigned ID
         Candidate savedCandidate = repo.save(c);
+        // Step 2: apply assignment now that getId() returns a real value
         applyAssessmentAssignment(savedCandidate);
+        // Step 3: persist the assignment fields
         return repo.save(savedCandidate);
     }
 
+    // FIX 2: Previously this received a stale serialized session snapshot and
+    // called repo.save() on it, silently OVERWRITING newer DB data. This caused
+    // the second candidate's assignment (written by save()) to be immediately
+    // erased by the next refreshAssessmentAssignment() call that used the first
+    // candidate's stale session object.
+    // Now: always load a fresh copy from DB before mutating and saving.
     public Candidate refreshAssessmentAssignment(Candidate candidate) {
-        if (candidate == null) {
-            return null;
+        if (candidate == null || candidate.getId() == null) {
+            return candidate;
         }
+        // Always load fresh from DB — never trust the serialized session snapshot
+        Candidate fresh = repo.findById(candidate.getId()).orElse(candidate);
+        applyAssessmentAssignment(fresh);
+        return repo.save(fresh);
+    }
 
-        applyAssessmentAssignment(candidate);
-        return repo.save(candidate);
+    /**
+     * Returns all assigned assessment names for a candidate as a List.
+     * The assignedAssessmentName field stores them comma-separated when
+     * multiple assessments match the candidate's skills.
+     */
+    public List<String> getAssignedAssessmentNames(Candidate candidate) {
+        if (candidate == null || candidate.getAssignedAssessmentName() == null
+                || candidate.getAssignedAssessmentName().isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(candidate.getAssignedAssessmentName().split(","))
+                .map(String::trim)
+                .filter(name -> !name.isBlank())
+                .distinct()
+                .toList();
     }
 
     public Candidate awardPriorityBadge(Long candidateId, String badgeLabel) {
@@ -137,7 +169,7 @@ public class CandidateService {
         Candidate candidate = repo.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
-        String code = String.valueOf(new Random().nextInt(900000) + 100000); // 6 digit numeric code
+        String code = String.valueOf(new Random().nextInt(900000) + 100000);
         resetCodes.put(normalizedEmail, code);
 
         sendEmail(normalizedEmail, "VirtueHire Password Reset",
@@ -285,12 +317,23 @@ public class CandidateService {
         if (displaySkills.isEmpty()) {
             candidate.setAssignedAssessmentName(null);
             candidate.setAssessmentAssignmentStatus("NO_SKILLS_SELECTED");
-            candidate.setAssessmentAssignmentMessage("No skills selected yet. Add skills to get a relevant assessment.");
+            candidate.setAssessmentAssignmentMessage(
+                    "No skills selected yet. Add skills to get a relevant assessment.");
             return;
         }
 
-        List<com.virtuehire.model.Assessment> matchedAssessments = assessmentService.findAssessmentsForSkills(displaySkills);
+        List<com.virtuehire.model.Assessment> matchedAssessments =
+                assessmentService.findAssessmentsForSkills(displaySkills);
+
         if (!matchedAssessments.isEmpty()) {
+            // Collect ALL matched assessment names, not just the first one
+            List<String> allMatchedNames = matchedAssessments.stream()
+                    .map(com.virtuehire.model.Assessment::getAssessmentName)
+                    .filter(Objects::nonNull)
+                    .filter(name -> !name.isBlank())
+                    .distinct()
+                    .toList();
+
             List<String> coveredSkills = matchedAssessments.stream()
                     .flatMap(assessment -> assessmentService.getAssessmentSubjects(assessment).stream())
                     .filter(Objects::nonNull)
@@ -304,16 +347,19 @@ public class CandidateService {
                             .noneMatch(covered -> assessmentService.skillsMatch(covered, skill)))
                     .toList();
 
-            candidate.setAssignedAssessmentName(matchedAssessments.get(0).getAssessmentName());
+            // Store all names comma-separated — getAssignedAssessmentNames() splits them back
+            candidate.setAssignedAssessmentName(String.join(",", allMatchedNames));
             candidate.setAssessmentAssignmentStatus("ASSIGNED");
 
             if (missingSkills.isEmpty()) {
                 candidate.setAssessmentAssignmentMessage(
-                        "Assessments are available for your skills: " + String.join(", ", coveredSkills) + ".");
+                        "Assessments are available for your skills: "
+                                + String.join(", ", coveredSkills) + ".");
             } else {
                 candidate.setAssessmentAssignmentMessage(
                         "Assessments are available for: " + String.join(", ", coveredSkills)
-                                + ". No assessment is available yet for: " + String.join(", ", missingSkills) + ".");
+                                + ". No assessment is available yet for: "
+                                + String.join(", ", missingSkills) + ".");
             }
             return;
         }
@@ -358,25 +404,6 @@ public class CandidateService {
         return new ArrayList<>(uniqueSkills.values());
     }
 
-    // // ------------------- OTHER METHODS -------------------
-    // public List<Candidate> findByApprovedFalse() {
-    // return repo.findAll().stream()
-    // .filter(c -> Boolean.FALSE.equals(c.getApproved()))
-    // .collect(Collectors.toList());
-    // }
-    //
-    // public List<Candidate> searchCandidates(String name, String city, Integer
-    // year) {
-    // return repo.findAll().stream()
-    // .filter(c -> (name == null ||
-    // c.getFullName().toLowerCase().contains(name.toLowerCase())) &&
-    // (city == null || (c.getCity() != null && c.getCity().equalsIgnoreCase(city)))
-    // &&
-    // (year == null || (c.getYearOfGraduation() != null &&
-    // c.getYearOfGraduation().equals(year))))
-    // .collect(Collectors.toList());
-    // }
-    // }
     // ------------------- FIND UNAPPROVED -------------------
     public List<Candidate> findByApprovedFalse() {
         return repo.findAll().stream()
@@ -430,17 +457,18 @@ public class CandidateService {
                             && candidate.getSkills().toLowerCase().contains(skill.trim().toLowerCase());
                 })
                 .filter(candidate -> {
-                    if (experienceFilter == null || experienceFilter.isBlank() || "all".equalsIgnoreCase(experienceFilter)) {
+                    if (experienceFilter == null || experienceFilter.isBlank()
+                            || "all".equalsIgnoreCase(experienceFilter)) {
                         return true;
                     }
 
                     int experience = candidate.getExperience() != null ? candidate.getExperience() : 0;
                     return switch (experienceFilter.toLowerCase()) {
                         case "0-1" -> experience <= 1;
-                        case "1" -> experience == 1;
-                        case "2+" -> experience >= 2;
-                        case "3+" -> experience >= 3;
-                        default -> true;
+                        case "1"   -> experience == 1;
+                        case "2+"  -> experience >= 2;
+                        case "3+"  -> experience >= 3;
+                        default    -> true;
                     };
                 })
                 .sorted((first, second) -> {
@@ -454,5 +482,4 @@ public class CandidateService {
                 })
                 .collect(Collectors.toList());
     }
-
 }

@@ -19,45 +19,46 @@ import {
   fetchResumePdfBlob,
   updateResume,
 } from "./resumeApi";
+import { ResumeTemplateRender, ResumeTemplateThumbnail } from "./ResumeTemplateRender";
 import { updateCandidateProfile } from "../profile/profileApi";
-import { getCandidateFileUrl, getResumeFileName, isPdfResume } from "../profile/profileUtils";
+import { getApiUrl, getCandidateFileUrl, getResumeFileName, isPdfResume } from "../profile/profileUtils";
 import "./CandidateResumeModule.css";
 
 const RESUME_TEMPLATES = [
   {
-    id: "modern-slate",
-    name: "Modern Slate",
-    accent: "linear-gradient(135deg, #0f172a, #2563eb)",
-    summary: "Balanced ATS layout with strong hierarchy and generous spacing.",
-    labels: ["ATS Safe", "Modern", "Recruiter Friendly"],
+    id: "classic-professional",
+    name: "Classic Professional",
+    accent: "linear-gradient(135deg, #1e3a8a, #0f172a)",
+    summary: "Traditional recruiter-friendly layout with polished hierarchy and strong readability.",
+    labels: ["Classic", "ATS Safe", "Professional"],
   },
   {
-    id: "minimal-grid",
-    name: "Minimal Grid",
-    accent: "linear-gradient(135deg, #155e75, #22c55e)",
-    summary: "Simple, clean structure for software, analytics, and operations roles.",
-    labels: ["Minimal", "Neat", "Keyword Dense"],
+    id: "clean-structured",
+    name: "Clean Structured",
+    accent: "linear-gradient(135deg, #0f766e, #0891b2)",
+    summary: "Organized section-based template that keeps content clean, consistent, and ATS friendly.",
+    labels: ["Structured", "Readable", "Balanced"],
   },
   {
-    id: "executive-line",
-    name: "Executive Line",
-    accent: "linear-gradient(135deg, #312e81, #7c3aed)",
-    summary: "Elegant top-line identity block with compact section flow.",
-    labels: ["Leadership", "Compact", "Clean"],
+    id: "modern-minimal",
+    name: "Modern Minimal",
+    accent: "linear-gradient(135deg, #334155, #64748b)",
+    summary: "Minimal modern styling with restrained visuals and strong content-first presentation.",
+    labels: ["Modern", "Minimal", "ATS Safe"],
   },
   {
-    id: "compact-ats",
-    name: "Compact ATS",
-    accent: "linear-gradient(135deg, #1f2937, #f59e0b)",
-    summary: "Dense one-page style focused on role keywords and impact bullets.",
-    labels: ["One Page", "ATS", "Fast Read"],
+    id: "simple-elegant",
+    name: "Simple Elegant",
+    accent: "linear-gradient(135deg, #7c2d12, #b45309)",
+    summary: "Simple and elegant formatting for a refined professional resume without extra visual noise.",
+    labels: ["Elegant", "Simple", "Refined"],
   },
   {
-    id: "bold-edge",
-    name: "Bold Edge",
-    accent: "linear-gradient(135deg, #0f766e, #0ea5e9)",
-    summary: "Sharper visual identity while preserving machine-readable structure.",
-    labels: ["Bold", "Readable", "Hybrid"],
+    id: "two-column-executive",
+    name: "Two Column Executive",
+    accent: "linear-gradient(135deg, #4c1d95, #7c3aed)",
+    summary: "Executive-style two-column layout for candidates who want a stronger visual information split.",
+    labels: ["Executive", "Two Column", "Premium"],
   },
 ];
 
@@ -71,6 +72,7 @@ const createEmptyResume = (candidate) => ({
   templateId: "",
   personalInfo: {
     name: candidate?.fullName || "",
+    title: candidate?.experienceLevel || "",
     email: candidate?.email || "",
     phone: candidate?.phoneNumber || "",
     location: [candidate?.city, candidate?.state].filter(Boolean).join(", "),
@@ -434,7 +436,10 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
     }
   };
 
-  const profileResumeUrl = getCandidateFileUrl(candidate?.resumePath);
+  const profileResumeUrl =
+    getApiUrl(candidate?.resumeUrl) || getCandidateFileUrl(candidate?.resumePath);
+  const profileResumeDownloadUrl =
+    getApiUrl(candidate?.resumeDownloadUrl) || profileResumeUrl;
   const profileResumeName = getResumeFileName(candidate?.resumePath);
 
   const handleProfileResumeUpload = async () => {
@@ -499,8 +504,8 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
               </p>
             </div>
 
-            {/* Profile resume uses a normal <a> tag because getCandidateFileUrl
-                now encodes the filename — no auth cookie needed for this endpoint. */}
+            {/* Use backend-provided self-service resume URLs first because they map
+                to /api/candidates/me/resume and respect the logged-in candidate session. */}
             <div className="resume-card-actions">
               {profileResumeUrl ? (
                 <>
@@ -508,7 +513,7 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                     <Eye size={15} />
                     View Resume
                   </a>
-                  <a href={profileResumeUrl} download={profileResumeName} className="resume-action-btn">
+                  <a href={profileResumeDownloadUrl} download={profileResumeName} className="resume-action-btn">
                     <Download size={15} />
                     Download Resume
                   </a>
@@ -648,19 +653,7 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                 }}
               >
                 <div className="resume-template-preview" style={{ background: item.accent }}>
-                  <div className="resume-template-preview-sheet">
-                    <div className="resume-template-preview-bar short" />
-                    <div className="resume-template-preview-bar long" />
-                    <div className="resume-template-preview-columns">
-                      <span />
-                      <span />
-                    </div>
-                    <div className="resume-template-preview-lines">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
+                  <ResumeTemplateThumbnail templateId={item.id} />
                 </div>
                 <div className="resume-template-copy">
                   <div className="resume-template-title-row">
@@ -720,6 +713,7 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                 <div className="resume-form-grid">
                   {[
                     ["name", "Name"],
+                    ["title", "Professional Title"],
                     ["email", "Email"],
                     ["phone", "Phone"],
                     ["location", "Location"],
@@ -867,67 +861,10 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                   <span className="resume-template-mini-chip">{selectedTemplateId || formState.templateId || template.id}</span>
                 </div>
 
-                <div className={`resume-preview-sheet template-${template.id}`}>
-                  <header className="resume-preview-header">
-                    <div className="resume-preview-header-band" style={{ background: template.accent }} />
-                    <h2>{formState.personalInfo.name || "Your Name"}</h2>
-                    <p>
-                      {[formState.personalInfo.email, formState.personalInfo.phone, formState.personalInfo.location]
-                        .filter(Boolean)
-                        .join(" | ") || "Email | Phone | Location"}
-                    </p>
-                    <p className="resume-preview-links">
-                      {[formState.personalInfo.linkedin, formState.personalInfo.portfolio].filter(Boolean).join(" | ") || "LinkedIn | Portfolio"}
-                    </p>
-                  </header>
-
-                  <div className="resume-preview-section">
-                    <h4>Professional Summary</h4>
-                    <p>{formState.professionalSummary || "Your summary will appear here as you type."}</p>
-                  </div>
-
-                  <div className="resume-preview-section">
-                    <h4>Skills</h4>
-                    <div className="resume-preview-chip-row">
-                      {formState.skills.length ? formState.skills.map((skill) => <span key={skill}>{skill}</span>) : <p>Add skills to preview ATS keywords.</p>}
-                    </div>
-                  </div>
-
-                  {[
-                    ["Experience", formState.experience, ["company", "role", "duration", "description"]],
-                    ["Education", formState.education, ["institution", "degree", "duration", "description"]],
-                    ["Projects", formState.projects, ["name", "role", "duration", "description"]],
-                    ["Certifications", formState.certifications, ["name", "issuer", "year", "description"]],
-                  ].map(([title, items, keys]) => (
-                    <div key={title} className="resume-preview-section">
-                      <h4>{title}</h4>
-                      {items.some((item) => Object.values(item).some(Boolean)) ? (
-                        items.map((item, index) => (
-                          <div key={`${title}-${index}`} className="resume-preview-item">
-                            <strong>{keys.map((key) => item[key]).filter(Boolean).slice(0, 2).join(" | ") || title}</strong>
-                            <span>{item[keys[2]] || ""}</span>
-                            <p>{item[keys[3]] || "Add description details here."}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <p>Add {title.toLowerCase()} details to preview them here.</p>
-                      )}
-                    </div>
-                  ))}
-
-                  <div className="resume-preview-section">
-                    <h4>Achievements</h4>
-                    {formState.achievements.length ? (
-                      <ul>
-                        {formState.achievements.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>Add achievements to strengthen the final resume.</p>
-                    )}
-                  </div>
-                </div>
+                <ResumeTemplateRender
+                  templateId={selectedTemplateId || formState.templateId || template.id}
+                  formState={formState}
+                />
               </section>
 
               <section className="resume-ats-card">
