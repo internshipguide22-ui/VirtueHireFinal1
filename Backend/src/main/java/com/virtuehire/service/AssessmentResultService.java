@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 @Service
 public class AssessmentResultService {
@@ -194,16 +195,21 @@ public class AssessmentResultService {
     public void updateCandidateBadge(Candidate candidate) {
         List<Map<String, Object>> cumulativeResults = getCandidateCumulativeResults(candidate.getId());
 
-        List<String> expertBadges = cumulativeResults.stream()
-                .map(res -> (String) res.get("badge"))
-                .filter(b -> b != null && b.endsWith("Expert"))
-                .distinct()
-                .collect(Collectors.toList());
+        // FIX: Find the single highest scoring badge instead of joining all badges
+        Optional<Map<String, Object>> highestResult = cumulativeResults.stream()
+                .filter(res -> {
+                    String badge = (String) res.get("badge");
+                    return badge != null && badge.endsWith("Expert");
+                })
+                .max(Comparator.comparing(
+                        res -> ((Number) res.get("cumulativePercentage")).doubleValue()));
 
-        if (expertBadges.isEmpty()) {
-            candidate.setBadge("No badge");
+        if (highestResult.isPresent()) {
+            String bestBadge = (String) highestResult.get().get("badge");
+            double bestScore = ((Number) highestResult.get().get("cumulativePercentage")).doubleValue();
+            candidate.setBadge(bestBadge + " (" + (int) bestScore + "%)");
         } else {
-            candidate.setBadge(String.join(", ", expertBadges));
+            candidate.setBadge("No badge");
         }
     }
 
@@ -399,11 +405,15 @@ public class AssessmentResultService {
             double maxScore = subjectResults.size() * 100;
             double percentage = Math.round((totalScore / maxScore) * 100);
 
-            String offlineBadge = resolveOfflinePriorityBadge(candidate, subject);
-            String badge = offlineBadge != null
-                    ? offlineBadge
-                    : percentage > 95 ? subject + " Expert" : "No Badge";
             boolean offlineTaken = subjectResults.stream().anyMatch(AssessmentResult::isOfflineMode);
+            
+            // FIX: Expert badge only for offline mode tests with >95% score
+            String badge;
+            if (offlineTaken && percentage > 95) {
+                badge = subject + " Expert";
+            } else {
+                badge = "No Badge";
+            }
 
             Map<String, Object> subjectResult = new HashMap<>();
             subjectResult.put("subject", subject);
@@ -411,6 +421,8 @@ public class AssessmentResultService {
             subjectResult.put("badge", badge);
             subjectResult.put("offlineTaken", offlineTaken);
             subjectResult.put("candidateId", candidateId);
+            // FIX: Add flag to indicate if this is a verified Expert (offline mode + >95%)
+            subjectResult.put("isVerifiedExpert", offlineTaken && percentage > 95);
 
             finalResults.add(subjectResult);
         }

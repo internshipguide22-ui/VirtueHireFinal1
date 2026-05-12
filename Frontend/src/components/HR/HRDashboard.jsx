@@ -6,7 +6,6 @@ import {
   Users,
   LogOut,
   CheckCircle,
-  AlertCircle,
   Clock,
   FileSearch,
   Search,
@@ -19,6 +18,7 @@ import {
   X,
   Save,
   UserCheck,
+  ClipboardList,
 } from "lucide-react";
 import "./HRDashboard.css";
 import "../Jobs/JobsModule.css";
@@ -37,6 +37,7 @@ import {
   syncStoredHrUser,
 } from "../../utils/hrSubscription";
 import { useAppDialog } from "../common/AppDialog";
+import HRManualTestBuilder from "./HRManualTestBuilder";
 
 const EMPTY_JOB_FORM = {
   title: "",
@@ -389,20 +390,40 @@ const HRDashboard = () => {
           </div>
         </div>
 
-        <ul className="hr-nav-list">
-          <li
+        {hr && (
+          <div className="hr-profile-card">
+            <div className="hr-profile-avatar">
+              {hr.profilePic ? (
+                <img src={hr.profilePic} alt={hr.fullName || hr.name} />
+              ) : (
+                <span>{(hr.fullName || hr.name || "HR").charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="hr-profile-info">
+              <strong>{hr.fullName || hr.name || "HR User"}</strong>
+              <span>{hr.designation || hr.role || "HR Manager"}</span>
+            </div>
+          </div>
+        )}
+
+        <nav className="hr-nav-list">
+          <button
+            type="button"
             className={`hr-nav-item ${activeTab === "overview" ? "active" : ""}`}
             onClick={() => setActiveTab("overview")}
           >
-            <LayoutDashboard size={20} /> Dashboard
-          </li>
-          <li
+            <LayoutDashboard size={18} />
+            Dashboard
+          </button>
+          <button
+            type="button"
             className={`hr-nav-item ${activeTab === "candidates" ? "active" : ""}`}
             onClick={() => setActiveTab("candidates")}
           >
-            <Users size={20} /> Candidates
-          </li>
-          <li
+            <Users size={18} />
+            Candidates
+          </button>
+          <div
             className={`hr-nav-group ${activeTab === "create-job" || activeTab === "view-jobs" ? "open" : ""}`}
           >
             <button
@@ -410,7 +431,8 @@ const HRDashboard = () => {
               className={`hr-nav-item hr-nav-group-trigger ${activeTab === "create-job" || activeTab === "view-jobs" ? "active" : ""}`}
               onClick={() => setActiveTab("view-jobs")}
             >
-              <BriefcaseBusiness size={20} /> Job Portal
+              <BriefcaseBusiness size={18} />
+              Job Portal
             </button>
             <div className="hr-nav-group-panel">
               <button
@@ -418,28 +440,31 @@ const HRDashboard = () => {
                 className={`hr-sub-nav-item ${activeTab === "create-job" ? "active" : ""}`}
                 onClick={() => setActiveTab("create-job")}
               >
-                <PlusSquare size={18} /> Create a Job
+                <PlusSquare size={16} /> Create a Job
               </button>
               <button
                 type="button"
                 className={`hr-sub-nav-item ${activeTab === "view-jobs" ? "active" : ""}`}
                 onClick={() => setActiveTab("view-jobs")}
               >
-                <List size={18} /> View Jobs
+                <List size={16} /> View Jobs
               </button>
             </div>
-          </li>
-          {/* <li
-            className={`hr-nav-item ${activeTab === "hiring" ? "active" : ""}`}
-            onClick={() => navigate("/hr/hiring")}
+          </div>
+          <button
+            type="button"
+            className={`hr-nav-item ${activeTab === "manage-tests" ? "active" : ""}`}
+            onClick={() => setActiveTab("manage-tests")}
           >
-            <UserCheck size={20} /> Hiring Workflow
-          </li> */}
-        </ul>
+            <ClipboardList size={18} />
+            Manage Tests
+          </button>
+        </nav>
 
         <div className="hr-sidebar-footer">
           <button className="hr-btn-logout" onClick={handleLogout}>
-            <LogOut size={20} /> Sign Out
+            <LogOut size={18} />
+            Sign Out
           </button>
         </div>
       </aside>
@@ -476,7 +501,7 @@ const HRDashboard = () => {
 
         {error && (
           <div className="hrm-alert error">
-            <AlertCircle size={18} /> {error}
+            <X size={18} /> {error}
           </div>
         )}
         {hrSubscription ? (
@@ -750,7 +775,7 @@ const HRDashboard = () => {
 
             {jobError && (
               <div className="hrm-alert error">
-                <AlertCircle size={18} /> {jobError}
+                <X size={18} /> {jobError}
               </div>
             )}
             {jobSuccess && (
@@ -868,7 +893,7 @@ const HRDashboard = () => {
             </div>
             {jobError && (
               <div className="hrm-alert error">
-                <AlertCircle size={18} /> {jobError}
+                <X size={18} /> {jobError}
               </div>
             )}
             {jobSuccess && (
@@ -1130,6 +1155,16 @@ const HRDashboard = () => {
                 </div>
               </>
             )}
+          </section>
+        )}
+
+        {activeTab === "manage-tests" && (
+          <section className="hr-section-card">
+            <div className="hr-section-header">
+              <h2>Manage Tests</h2>
+              <p>Create your own HR questions manually and publish assignable assessments.</p>
+            </div>
+            <HRManualTestBuilder />
           </section>
         )}
       </main>

@@ -48,8 +48,15 @@ export default function CandidatesList() {
   const fetchCandidates = async () => {
     setLoading(true);
     try {
+      // FIX: Add cache-busting to prevent stale data showing for wrong candidates
       const [candidatesRes, dashboardRes] = await Promise.all([
-        api.get(API_BASE),
+        api.get(`${API_BASE}?t=${Date.now()}`, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }),
         api.get("/admin/dashboard"),
       ]);
       const list = candidatesRes.data.candidates || [];

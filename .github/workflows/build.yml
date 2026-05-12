@@ -1,0 +1,101 @@
+name: Build and Compile
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build-backend:
+    name: Build Java Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Build with Maven
+      working-directory: ./Backend
+      run: mvn clean compile -B
+      
+    - name: Run Tests
+      working-directory: ./Backend
+      run: mvn test -B
+      
+    - name: Package Application
+      working-directory: ./Backend
+      run: mvn package -DskipTests -B
+      
+    - name: Upload Backend Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-jar
+        path: Backend/target/*.jar
+
+  build-frontend:
+    name: Build React Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
+        
+    - name: Install Dependencies
+      working-directory: ./Frontend
+      run: npm ci
+      
+    - name: Build Frontend
+      working-directory: ./Frontend
+      run: npm run build
+      
+    - name: Upload Frontend Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: Frontend/build
+
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Run Checkstyle
+      working-directory: ./Backend
+      run: mvn checkstyle:check -B || true
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
+        
+    - name: Run ESLint
+      working-directory: ./Frontend
+      run: npx eslint src/ --ext .js,.jsx || true

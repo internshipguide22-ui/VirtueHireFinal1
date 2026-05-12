@@ -271,86 +271,71 @@ function ModernMinimalTemplate({ data }) {
   );
 }
 
-function TwoColumnExecutiveTemplate({ data }) {
+function ExecutiveTemplate({ data }) {
+  // FIX: Converted to single-column ATS-friendly layout
+  // Two-column layouts can confuse ATS systems that read left-to-right, top-to-bottom
   return (
     <div className="resume-template-preview-root resume-template-executive">
-      <aside className="resume-template-sidebar">
-        <section className="resume-template-section resume-template-section-executive sidebar">
-          <h4>Contact</h4>
-          <div className="resume-template-stack compact">
-            {[data.personalInfo.email, data.personalInfo.phone, data.personalInfo.location, data.personalInfo.linkedin, data.personalInfo.portfolio]
-              .filter(hasContent)
-              .map((item) => (
-                <p key={item}>{item}</p>
-              ))}
-          </div>
-        </section>
+      <header className="resume-template-header resume-template-header-executive">
+        <h2>{data.personalInfo.name}</h2>
+        <p className="resume-template-role">{data.personalInfo.title}</p>
+        <p className="resume-template-contact center">{ContactLine({ data })}</p>
+      </header>
 
-        <section className="resume-template-section resume-template-section-executive sidebar">
-          <h4>Skills</h4>
-          {data.skills.length ? (
-            <ul className="resume-template-bullets executive">
-              {data.skills.map((skill) => (
-                <li key={skill}>{skill}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="resume-template-empty dark">Add skills to preview them here.</p>
-          )}
-        </section>
+      <section className="resume-template-section resume-template-section-executive">
+        <h4>Professional Summary</h4>
+        <p>{data.summary}</p>
+      </section>
 
-        <section className="resume-template-section resume-template-section-executive sidebar">
-          <h4>Education</h4>
-          <SectionList
-            items={data.education}
-            emptyText="Add education details to preview them here."
-            className="resume-template-stack"
-            renderItem={(item) => (
-              <article key={item.id} className="resume-template-item dark">
-                <strong>{item.degree || "Degree"}</strong>
-                <p>{item.school}</p>
-                <span>{item.duration}</span>
-              </article>
-            )}
-          />
-        </section>
+      <section className="resume-template-section resume-template-section-executive">
+        <h4>Core Competencies</h4>
+        {data.skills.length ? (
+          <p className="resume-template-skills-executive">{data.skills.join(" • ")}</p>
+        ) : (
+          <p className="resume-template-empty">Add skills to preview them here.</p>
+        )}
+      </section>
 
-        <SharedCertificationSection certifications={data.certifications} variant="executive" />
-      </aside>
-
-      <div className="resume-template-main">
-        <header className="resume-template-header resume-template-header-executive">
-          <h2>{data.personalInfo.name}</h2>
-          <p className="resume-template-role">{data.personalInfo.title}</p>
-        </header>
-
-        <section className="resume-template-section resume-template-section-executive">
-          <h4>Profile</h4>
-          <p>{data.summary}</p>
-        </section>
-
-        <section className="resume-template-section resume-template-section-executive">
-          <h4>Experience</h4>
-          <SectionList
-            items={data.experience}
-            emptyText="Add experience details to preview them here."
-            className="resume-template-stack spacious"
-            renderItem={(item) => (
-              <article key={item.id} className="resume-template-item">
+      <section className="resume-template-section resume-template-section-executive">
+        <h4>Professional Experience</h4>
+        <SectionList
+          items={data.experience}
+          emptyText="Add experience details to preview them here."
+          className="resume-template-stack"
+          renderItem={(item) => (
+            <article key={item.id} className="resume-template-item">
+              <div className="resume-template-row spread">
                 <strong>{item.position || "Job Title"}</strong>
-                <div className="resume-template-row spread">
-                  <p className="resume-template-subtle">{item.company}</p>
-                  <span>{item.duration}</span>
-                </div>
-                {item.description ? <p>{item.description}</p> : null}
-              </article>
-            )}
-          />
-        </section>
+                <span>{item.duration}</span>
+              </div>
+              <em>{item.company}</em>
+              {item.description ? <p>{item.description}</p> : null}
+            </article>
+          )}
+        />
+      </section>
 
-        <SharedProjectSection projects={data.projects} variant="executive" />
-        <SharedAchievementSection achievements={data.achievements} variant="executive" />
-      </div>
+      <section className="resume-template-section resume-template-section-executive">
+        <h4>Education</h4>
+        <SectionList
+          items={data.education}
+          emptyText="Add education details to preview them here."
+          className="resume-template-stack"
+          renderItem={(item) => (
+            <article key={item.id} className="resume-template-item">
+              <div className="resume-template-row spread">
+                <strong>{item.degree || "Degree"}</strong>
+                <span>{item.duration}</span>
+              </div>
+              <em>{item.school}</em>
+            </article>
+          )}
+        />
+      </section>
+
+      <SharedProjectSection projects={data.projects} variant="executive" />
+      <SharedCertificationSection certifications={data.certifications} variant="executive" />
+      <SharedAchievementSection achievements={data.achievements} variant="executive" />
     </div>
   );
 }
@@ -501,8 +486,11 @@ function SimpleElegantTemplate({ data }) {
 
 export function ResumeTemplateRender({ templateId, formState }) {
   const data = buildPreviewData(formState);
+  
+  // FIX: Map old template IDs to new ATS-friendly versions
+  const normalizedTemplateId = templateId === "two-column-executive" ? "executive" : templateId;
 
-  switch (templateId) {
+  switch (normalizedTemplateId) {
     case "classic-professional":
       return <ClassicProfessionalTemplate data={data} />;
     case "clean-structured":
@@ -511,21 +499,24 @@ export function ResumeTemplateRender({ templateId, formState }) {
       return <ModernMinimalTemplate data={data} />;
     case "simple-elegant":
       return <SimpleElegantTemplate data={data} />;
-    case "two-column-executive":
-      return <TwoColumnExecutiveTemplate data={data} />;
+    case "executive":
+      return <ExecutiveTemplate data={data} />;
     default:
       return <ClassicProfessionalTemplate data={data} />;
   }
 }
 
 export function ResumeTemplateThumbnail({ templateId }) {
+  // FIX: Map old template IDs for thumbnail display
+  const normalizedId = templateId === "two-column-executive" ? "executive" : templateId;
+  
   const thumbnailClass = {
     "classic-professional": "classic",
     "clean-structured": "structured",
     "modern-minimal": "modern",
     "simple-elegant": "elegant",
-    "two-column-executive": "executive",
-  }[templateId] || "classic";
+    "executive": "executive",
+  }[normalizedId] || "classic";
 
   return (
     <div className={`resume-template-thumb resume-template-thumb-${thumbnailClass}`}>

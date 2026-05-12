@@ -13,6 +13,7 @@ import java.util.List;
 public interface AssessmentQuestionRepository extends JpaRepository<AssessmentQuestion, Long> {
     List<AssessmentQuestion> findByAssessmentId(Long assessmentId);
     List<AssessmentQuestion> findBySectionId(Long sectionId);
+    boolean existsByQuestion_Id(Long questionId);
 
     @Query("SELECT q FROM AssessmentQuestion aq JOIN aq.question q LEFT JOIN FETCH q.options WHERE aq.section.id = :sectionId")
     List<Question> findQuestionsBySectionId(@Param("sectionId") Long sectionId);

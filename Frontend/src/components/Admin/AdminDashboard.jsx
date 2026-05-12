@@ -73,7 +73,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout
-      description="Monitor platform growth, revenue, HR operations, and assessment activity from one control center."
+      title="Welcome back, Admin!"
       actions={
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <button onClick={fetchDashboard} className="adm-refresh-btn">

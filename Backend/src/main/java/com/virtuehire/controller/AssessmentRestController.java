@@ -31,6 +31,8 @@ public class AssessmentRestController {
     private final QuestionRepository questionRepository;
     private final QuestionService questionService;
     private final CodeExecutionService codeExecutionService;
+    private final HiringWorkflowService hiringWorkflowService;
+    private final TestAllocationService testAllocationService;
     private final ObjectMapper objectMapper;
 
     public AssessmentRestController(
@@ -41,6 +43,8 @@ public class AssessmentRestController {
             QuestionRepository questionRepository,
             QuestionService questionService,
             CodeExecutionService codeExecutionService,
+            HiringWorkflowService hiringWorkflowService,
+            TestAllocationService testAllocationService,
             ObjectMapper objectMapper) {
 
         this.resultService = resultService;
@@ -50,6 +54,8 @@ public class AssessmentRestController {
         this.questionRepository = questionRepository;
         this.questionService = questionService;
         this.codeExecutionService = codeExecutionService;
+        this.hiringWorkflowService = hiringWorkflowService;
+        this.testAllocationService = testAllocationService;
         this.objectMapper = objectMapper;
     }
 
@@ -292,6 +298,7 @@ public class AssessmentRestController {
                     "offline".equalsIgnoreCase(request.deliveryMode));
 
             persistCandidateAnswers(savedResult, candidate.getId(), answersForStorage);
+            syncWorkflowSubmission(candidate, assessment, sections, level, percentage, savedResult);
 
             return ResponseEntity.ok(Map.of(
                     "score", correct,
@@ -528,6 +535,50 @@ public class AssessmentRestController {
 
         if (!entities.isEmpty()) {
             candidateAnswerRepository.saveAll(entities);
+        }
+    }
+
+    private void syncWorkflowSubmission(Candidate candidate,
+                                        Assessment assessment,
+                                        List<AssessmentSection> sections,
+                                        int currentLevel,
+                                        int percentage,
+                                        AssessmentResult savedResult) {
+        if (candidate == null || assessment == null || sections == null || savedResult == null) {
+            return;
+        }
+
+        if (currentLevel != sections.size()) {
+            return;
+        }
+
+        Optional<CandidateTestMapping> mappingOpt = hiringWorkflowService
+                .getAssignedTestsForCandidate(candidate.getId())
+                .stream()
+                .filter(mapping -> Objects.equals(mapping.getTestId(), assessment.getId()))
+                .findFirst();
+
+        if (mappingOpt.isEmpty()) {
+            return;
+        }
+
+        CandidateTestMapping mapping = mappingOpt.get();
+        if (Boolean.TRUE.equals(mapping.getSubmitted())) {
+            return;
+        }
+
+        AssignmentSubmission submission = new AssignmentSubmission(
+                candidate.getId(),
+                mapping.getId(),
+                assessment.getId(),
+                percentage,
+                percentage >= 50);
+        submission.setSubmissionDetails("Assessment resultId=" + savedResult.getId());
+
+        try {
+            hiringWorkflowService.submitAssignment(submission);
+            testAllocationService.markTestSubmitted(mapping.getId(), percentage);
+        } catch (RuntimeException ignored) {
         }
     }
 

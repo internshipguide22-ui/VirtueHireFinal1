@@ -38,37 +38,11 @@ const primaryNav = [
   { to: "/admin/manage-tests", label: "Manage Test", icon: Settings2 },
   { to: "/admin/live-monitoring", label: "Live Monitoring", icon: Activity },
   { to: "/admin/candidates", label: "Candidates", icon: Users },
+  { to: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/admin/view-jobs", label: "View Jobs", icon: FileSearch },
   { to: "/admin/access-requests", label: "Access Requests", icon: Eye },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
 ];
-
-const getAdminUser = () => {
-  try {
-    return JSON.parse(localStorage.getItem("admin_user") || "null");
-  } catch {
-    return null;
-  }
-};
-
-const getAdminDisplayName = (adminUser) =>
-  adminUser?.fullName ||
-  adminUser?.name ||
-  adminUser?.username ||
-  adminUser?.email ||
-  "Admin User";
-
-const getAdminInitials = (adminUser) => {
-  const name = getAdminDisplayName(adminUser);
-  const parts = String(name)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  if (parts.length === 0) return "VA";
-  return parts.map((part) => part[0]?.toUpperCase() || "").join("");
-};
 
 export default function AdminLayout({
   title,
@@ -80,11 +54,8 @@ export default function AdminLayout({
 }) {
   const navigate = useNavigate();
   const role = (localStorage.getItem("user_role") || "").toLowerCase();
-  const adminUser = getAdminUser();
-  const adminDisplayName = getAdminDisplayName(adminUser);
-  const adminSecondary =
-    adminUser?.email || adminUser?.role || "Platform Operations";
 
+  const adminUser = localStorage.getItem("admin_user");
   if (role !== "admin" || !adminUser) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -104,14 +75,6 @@ export default function AdminLayout({
             <div className="adm-logo-copy">
               <span>Virtue Admin</span>
               <small>Operations console</small>
-            </div>
-          </div>
-
-          <div className="adm-admin-card">
-            <div className="adm-admin-avatar">{getAdminInitials(adminUser)}</div>
-            <div className="adm-admin-copy">
-              <strong>{adminDisplayName}</strong>
-              <span>{adminSecondary}</span>
             </div>
           </div>
         </div>
@@ -139,7 +102,7 @@ export default function AdminLayout({
             onClick={handleLogout}
           >
             <LogOut size={18} />
-            <span>Logout</span>
+            Sign Out
           </button>
         </div>
       </aside>
@@ -148,16 +111,23 @@ export default function AdminLayout({
         {!hidePageHeader ? (
           <div className="adm-page-header adm-header adm-header-shell">
             <div className="adm-header-copy">
-              <p className="adm-header-kicker">ADMIN PORTAL</p>
-              <h1>{title || "Admin Dashboard"}</h1>
+              <p className="adm-header-kicker">ADMIN WORKSPACE</p>
+              <h1>{title || "Welcome back, Admin!"}</h1>
               <p>
                 {description ||
-                  "Manage operations, assessments, and oversight from one workspace."}
+                  "Monitor platform growth, revenue, HR operations, and assessment activity from one control center."}
               </p>
             </div>
-            {actions ? (
-              <div className="adm-header-actions">{actions}</div>
-            ) : null}
+            <div className="adm-header-meta">
+              <div className="adm-hero-badge">
+                <span className="adm-badge-icon">⚡</span>
+                <span className="adm-badge-text">Platform Admin</span>
+              </div>
+              <div className="adm-hero-card">
+                <strong>System Admin</strong>
+                <span>Full access dashboard</span>
+              </div>
+            </div>
           </div>
         ) : null}
 

@@ -3,6 +3,8 @@ package com.virtuehire.service;
 import com.virtuehire.model.*;
 import com.virtuehire.repository.*;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class HiringWorkflowService {
+
+    private static final Logger logger = LoggerFactory.getLogger(HiringWorkflowService.class);
 
     private final CandidateRepository candidateRepo;
     private final CandidateTestMappingRepository testMappingRepo;
@@ -128,7 +132,7 @@ public class HiringWorkflowService {
      */
     public List<Candidate> getCandidatesForHrAction() {
         return candidateRepo.findByApplicationStatusIn(
-            List.of(CandidateStatus.INTERESTED, CandidateStatus.UNDER_REVIEW)
+            List.of(CandidateStatus.INTERESTED, CandidateStatus.UNDER_REVIEW, CandidateStatus.TEST_ASSIGNED)
         );
     }
 
@@ -166,7 +170,24 @@ public class HiringWorkflowService {
      * Get all assigned tests for a candidate
      */
     public List<CandidateTestMapping> getAssignedTestsForCandidate(Long candidateId) {
-        return testMappingRepo.findByCandidateId(candidateId);
+        // FIX: Add logging to verify per-candidate isolation
+        if (candidateId == null) {
+            logger.error("GET ASSIGNED TESTS: candidateId is null");
+            return List.of();
+        }
+        
+        List<CandidateTestMapping> mappings = testMappingRepo.findByCandidateId(candidateId);
+        logger.info("GET ASSIGNED TESTS: Found {} tests for candidate {}", mappings.size(), candidateId);
+        
+        // Verify all mappings belong to this candidate
+        for (CandidateTestMapping mapping : mappings) {
+            if (!candidateId.equals(mapping.getCandidateId())) {
+                logger.error("GET ASSIGNED TESTS ERROR: Mapping {} has candidateId {} but expected {}", 
+                    mapping.getId(), mapping.getCandidateId(), candidateId);
+            }
+        }
+        
+        return mappings;
     }
 
     /**
@@ -211,6 +232,16 @@ public class HiringWorkflowService {
      */
     public Optional<AssignmentSubmission> getSubmissionForCandidateTest(Long candidateId, Long testId) {
         return submissionRepo.findByCandidateIdAndTestId(candidateId, testId);
+    }
+
+    public AssignmentSubmission submitAssignment(AssignmentSubmission submission) {
+        Optional<AssignmentSubmission> existing = submissionRepo.findByCandidateTestMappingId(
+            submission.getCandidateTestMappingId()
+        );
+        if (existing.isPresent()) {
+            throw new RuntimeException("Assignment already submitted");
+        }
+        return submissionRepo.save(submission);
     }
 
     /**

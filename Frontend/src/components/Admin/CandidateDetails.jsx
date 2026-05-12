@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Briefcase,
+  CheckCircle2,
   Download,
   FileText,
   Mail,
@@ -89,6 +90,7 @@ export default function CandidateDetails() {
   const navigate = useNavigate();
   const [candidate, setCandidate] = useState(null);
   const [results, setResults] = useState([]);
+  const [cumulativeResults, setCumulativeResults] = useState([]); // FIX: Added cumulative results with badges
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
@@ -99,24 +101,47 @@ export default function CandidateDetails() {
   const [success, setSuccess] = useState("");
   const { showConfirm, dialogNode } = useAppDialog();
 
+  const loadCumulativeResults = useCallback(async () => {
+    try {
+      const cumulativeRes = await api.get(`/admin/candidates/${id}/cumulative-results`);
+      setCumulativeResults(cumulativeRes.data.cumulativeResults || []);
+    } catch (err) {
+      console.error("Failed to load cumulative results:", err);
+      setCumulativeResults([]);
+    }
+  }, [id]);
+
   const loadCandidate = useCallback(async () => {
     setLoading(true);
     setError("");
+    // FIX: Reset all candidate-specific state to prevent data leakage between candidates
+    setCandidate(null);
+    setResults([]);
+    setCumulativeResults([]);
+    setForm(EMPTY_FORM);
 
     try {
-      const res = await api.get(`/admin/candidates/${id}`);
+      // FIX: Add cache-busting timestamp to prevent browser caching
+      const res = await api.get(`/admin/candidates/${id}?t=${Date.now()}`, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
       const nextCandidate = res.data?.candidate || null;
       setCandidate(nextCandidate);
-      setResults(Array.isArray(res.data?.results) ? res.data.results : []);
+      setResults(res.data?.results || []);
       setForm(buildFormState(nextCandidate));
       setErrors({});
+      await loadCumulativeResults();
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Failed to load candidate details.");
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, loadCumulativeResults]);
 
   useEffect(() => {
     loadCandidate();
@@ -563,29 +588,35 @@ export default function CandidateDetails() {
               )}
             </div>
 
-            <div className="adm-card adm-card-section">
-              <div className="adm-section-head">
-                <div>
-                  <h3>Assessment History</h3>
-                  <p>Latest recorded activity and result trail.</p>
+            <div className="adm-section-stack">
+              <div className="adm-card adm-card-section">
+                <div className="adm-section-head">
+                  <div>
+                    <h3>Expert Badges</h3>
+                    <p>Verified subject-level achievements.</p>
+                  </div>
                 </div>
               </div>
 
-              {results.length === 0 ? (
-                <div className="adm-empty-note">No assessment results available for this candidate yet.</div>
+              {cumulativeResults.length === 0 ? (
+                <div className="adm-empty-note">No Expert badges earned yet.</div>
               ) : (
-                <div className="adm-results-list">
-                  {results.map((result, index) => (
-                    <div key={`${result.subject}-${result.level}-${index}`} className="adm-result-card">
-                      <div className="adm-result-row">
-                        <div>
-                          <div className="adm-result-title">{result.subject || "Assessment"} • Level {result.level}</div>
-                          <div className="adm-result-sub">
-                            Attempted {result.attemptedAt ? new Date(result.attemptedAt).toLocaleString() : "N/A"}
-                          </div>
+                <div className="adm-badges-list">
+                  {cumulativeResults.map((result, index) => (
+                    <div key={`${result.subject}-${index}`} className="adm-badge-row">
+                      <div className="adm-badge-info">
+                        <div className="adm-badge-label">{result.badge}</div>
+                        <div className="adm-badge-subject">
+                          {result.subject}
                         </div>
-                        <div className="adm-result-score">{result.score}%</div>
+                        {/* FIX: Show offline mode indicator with checkmark */}
+                        {result.offlineTaken && (
+                          <div className="adm-offline-badge">
+                            <span className="offline-check">✓</span> Offline Test
+                          </div>
+                        )}
                       </div>
+                      <div className="adm-badge-score">{(result.cumulativePercentage ?? result.cumulative_percentage ?? 0)}%</div>
                     </div>
                   ))}
                 </div>

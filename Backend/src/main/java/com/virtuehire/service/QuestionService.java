@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -18,15 +19,18 @@ public class QuestionService {
 
     private final QuestionRepository      repo;
     private final AssessmentConfigRepository configRepo;
+    private final AssessmentQuestionRepository assessmentQuestionRepo;
     private final CodingDetailRepository  codingDetailRepo;
     private final TestCaseRepository      testCaseRepo;
 
     public QuestionService(QuestionRepository repo,
                            AssessmentConfigRepository configRepo,
+                           AssessmentQuestionRepository assessmentQuestionRepo,
                            CodingDetailRepository codingDetailRepo,
                            TestCaseRepository testCaseRepo) {
         this.repo            = repo;
         this.configRepo      = configRepo;
+        this.assessmentQuestionRepo = assessmentQuestionRepo;
         this.codingDetailRepo = codingDetailRepo;
         this.testCaseRepo    = testCaseRepo;
     }
@@ -62,6 +66,13 @@ public class QuestionService {
     public void saveQuestionsFromUpload(MultipartFile file, String testName,
                                         String input1, String output1,
                                         String input2, String output2) throws Exception {
+        saveQuestionsFromUpload(file, testName, input1, output1, input2, output2, "ADMIN", null);
+    }
+
+    public void saveQuestionsFromUpload(MultipartFile file, String testName,
+                                        String input1, String output1,
+                                        String input2, String output2,
+                                        String createdByRole, Long createdByHrId) throws Exception {
         if (file.isEmpty()) {
             throw new RuntimeException("CSV file is empty.");
         }
@@ -71,7 +82,7 @@ public class QuestionService {
 
         if (originalFilename.endsWith(".pdf") || contentType.contains("pdf")) {
             // ✅ FIX: Route to the single, authoritative PDF handler
-            saveQuestionFromPdf(file, testName, input1, output1, input2, output2);
+            saveQuestionFromPdf(file, testName, input1, output1, input2, output2, createdByRole, createdByHrId);
             return;
         }
 
@@ -95,9 +106,9 @@ public class QuestionService {
                     || normalizedHeaders.contains("hascompi");
 
             if (isMixedFormat) {
-                processMixedCsv(csvParser, testName);
+                processMixedCsv(csvParser, testName, createdByRole, createdByHrId);
             } else {
-                processLegacyCsv(csvParser, testName, normalizedHeaders, headers);
+                processLegacyCsv(csvParser, testName, normalizedHeaders, headers, createdByRole, createdByHrId);
             }
         }
     }
@@ -109,7 +120,8 @@ public class QuestionService {
 
     private void saveQuestionFromPdf(MultipartFile file, String testName,
                                      String input1, String output1,
-                                     String input2, String output2) throws Exception {
+                                     String input2, String output2,
+                                     String createdByRole, Long createdByHrId) throws Exception {
         String subject = testName == null ? "" : testName.trim();
         List<String> missing = new ArrayList<>();
 
@@ -135,6 +147,7 @@ public class QuestionService {
 
         // ✅ FIX: Use the same constructor as saveCodingRow — sets hasCompiler=true AND type="CODING"
         Question question = new Question(subject, subject, true, "CODING");
+        applyOwnership(question, createdByRole, createdByHrId);
         question = repo.save(question);
 
         CodingDetail detail = new CodingDetail();
@@ -151,7 +164,8 @@ public class QuestionService {
     // MIXED CSV (MCQ + CODING rows)
     // ───────────────────────────────────────────────────────────
 
-    private void processMixedCsv(CSVParser csvParser, String testName) {
+    private void processMixedCsv(CSVParser csvParser, String testName,
+                                 String createdByRole, Long createdByHrId) {
         List<Question> mcqToSave = new ArrayList<>();
         int rowNum = 1;
 
@@ -162,9 +176,9 @@ public class QuestionService {
             boolean hasCompiler = Boolean.parseBoolean(hasCompilerStr);
 
             if (hasCompiler || "CODING".equals(type)) {
-                saveCodingRow(record, testName, rowNum);
+                saveCodingRow(record, testName, rowNum, createdByRole, createdByHrId);
             } else {
-                Question q = buildMcqFromMixedRow(record, testName, rowNum);
+                Question q = buildMcqFromMixedRow(record, testName, rowNum, createdByRole, createdByHrId);
                 if (q != null && !repo.existsByTextAndSubject(q.getText(), q.getSubject())) {
                     mcqToSave.add(q);
                 }
@@ -176,7 +190,8 @@ public class QuestionService {
         }
     }
 
-    private void saveCodingRow(CSVRecord record, String testName, int rowNum) {
+    private void saveCodingRow(CSVRecord record, String testName, int rowNum,
+                               String createdByRole, Long createdByHrId) {
         String description = safeGet(record, "description");
         String input1      = safeGet(record, "input1");
         String output1     = safeGet(record, "output1");
@@ -206,6 +221,7 @@ public class QuestionService {
         }
 
         Question q = new Question(subject, subject, true, "CODING");
+        applyOwnership(q, createdByRole, createdByHrId);
         q = repo.save(q);
 
         CodingDetail detail = new CodingDetail();
@@ -225,7 +241,8 @@ public class QuestionService {
         testCaseRepo.save(tc);
     }
 
-    private Question buildMcqFromMixedRow(CSVRecord record, String testName, int rowNum) {
+    private Question buildMcqFromMixedRow(CSVRecord record, String testName, int rowNum,
+                                          String createdByRole, Long createdByHrId) {
         String subject = safeGet(record, "subject");
         if (subject.isBlank()) subject = testName != null ? testName.trim() : "";
         String text          = safeGet(record, "question");
@@ -239,7 +256,9 @@ public class QuestionService {
         if (blank) return null;
 
         List<String> options = Arrays.asList(opt1, opt2, opt3, opt4);
-        return new Question(1, text, options, correctAnswer, subject, subject);
+        Question question = new Question(1, text, options, correctAnswer, subject, subject);
+        applyOwnership(question, createdByRole, createdByHrId);
+        return question;
     }
 
     private String safeGet(CSVRecord record, String... keys) {
@@ -264,13 +283,14 @@ public class QuestionService {
 
     private void processLegacyCsv(CSVParser csvParser, String testName,
                                    Set<String> normalizedHeaders,
-                                   Map<String, Integer> rawHeaders) {
+                                   Map<String, Integer> rawHeaders,
+                                   String createdByRole, Long createdByHrId) {
         Map<String, String> headerAliases = resolveHeaderAliases(
                 rawHeaders == null ? Set.of() : rawHeaders.keySet(), testName);
 
         List<Question> questions = new ArrayList<>();
         for (CSVRecord record : csvParser) {
-            Question q = buildQuestionFromRecord(record, testName, headerAliases);
+            Question q = buildQuestionFromRecord(record, testName, headerAliases, createdByRole, createdByHrId);
             if (q == null) continue;
             if (!repo.existsByTextAndSubject(q.getText(), q.getSubject())) {
                 questions.add(q);
@@ -335,7 +355,8 @@ public class QuestionService {
     }
 
     private Question buildQuestionFromRecord(CSVRecord record, String testName,
-                                             Map<String, String> headerAliases) {
+                                             Map<String, String> headerAliases,
+                                             String createdByRole, Long createdByHrId) {
         boolean subjectFormat = headerAliases.containsKey("subject");
 
         String subject      = subjectFormat ? value(record, headerAliases.get("subject")) : testName.trim();
@@ -382,7 +403,9 @@ public class QuestionService {
                     + " has an invalid correct answer. The correct answer must exactly match one of the provided options.");
         }
 
-        return new Question(1, text, optionsList, correctAnswer, subject, sectionName);
+        Question question = new Question(1, text, optionsList, correctAnswer, subject, sectionName);
+        applyOwnership(question, createdByRole, createdByHrId);
+        return question;
     }
 
     private List<String> findMissingHeaders(Map<String, String> normalizedToActual,
@@ -438,12 +461,26 @@ public class QuestionService {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getAllSubjectsForHr(Long hrId) {
+        return repo.findAll().stream()
+                .filter(question -> canHrOwnQuestion(question, hrId))
+                .map(Question::getSubject)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     public List<String> getConfiguredSubjects() {
         return configRepo.findDistinctSubject();
     }
 
     public List<Question> getQuestionsBySubject(String subject) {
         return repo.findBySubject(subject);
+    }
+
+    public List<Question> getQuestionsBySubjectForHr(String subject, Long hrId) {
+        return repo.findBySubject(subject).stream()
+                .filter(question -> canHrOwnQuestion(question, hrId))
+                .collect(Collectors.toList());
     }
 
     public List<Question> getQuestionsBySubjectAndLevel(String subject, int level) {
@@ -453,6 +490,15 @@ public class QuestionService {
     public String normalizeSubject(String subject) {
         if (subject == null) return null;
         List<String> validSubjects = getAllSubjects();
+        for (String s : validSubjects) {
+            if (s.equalsIgnoreCase(subject)) return s;
+        }
+        return subject;
+    }
+
+    public String normalizeSubjectForHr(String subject, Long hrId) {
+        if (subject == null) return null;
+        List<String> validSubjects = getAllSubjectsForHr(hrId);
         for (String s : validSubjects) {
             if (s.equalsIgnoreCase(subject)) return s;
         }
@@ -490,4 +536,247 @@ public class QuestionService {
     public List<TestCase> getTestCases(Long questionId) {
         return testCaseRepo.findByQuestionId(questionId);
     }
+
+    public List<Map<String, Object>> getManualQuestionsForHr(Long hrId, String subject) {
+        return repo.findAll().stream()
+                .filter(question -> canHrOwnQuestion(question, hrId))
+                .filter(question -> subject == null
+                        || subject.isBlank()
+                        || subject.equalsIgnoreCase(question.getSubject()))
+                .sorted(Comparator.comparing(Question::getSubject, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Question::getId))
+                .map(this::toQuestionBankEntry)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> createManualQuestionForHr(ManualQuestionDraft draft, Long hrId) {
+        validateManualQuestionDraft(draft);
+
+        Question question = buildQuestionEntity(draft, hrId);
+        Question saved = repo.save(question);
+        syncCodingArtifacts(saved, draft);
+        return toQuestionBankEntry(saved);
+    }
+
+    @Transactional
+    public Map<String, Object> updateManualQuestionForHr(Long questionId, ManualQuestionDraft draft, Long hrId) {
+        validateManualQuestionDraft(draft);
+
+        Question question = repo.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+
+        if (!canHrOwnQuestion(question, hrId)) {
+            throw new RuntimeException("You can update only your own HR questions");
+        }
+
+        question.setSubject(draft.subject().trim());
+        question.setSectionName(draft.subject().trim());
+        question.setLevel(1);
+
+        if (draft.isCoding()) {
+            question.setText("");
+            question.setOptions(List.of());
+            question.setCorrectAnswer("");
+            question.setHasCompiler(true);
+            question.setQuestionType("CODING");
+        } else {
+            question.setText(draft.questionText().trim());
+            question.setOptions(draft.options().stream().map(String::trim).toList());
+            question.setCorrectAnswer(draft.correctAnswer().trim());
+            question.setHasCompiler(false);
+            question.setQuestionType("MCQ");
+        }
+
+        Question saved = repo.save(question);
+        syncCodingArtifacts(saved, draft);
+        return toQuestionBankEntry(saved);
+    }
+
+    @Transactional
+    public void deleteManualQuestionForHr(Long questionId, Long hrId) {
+        Question question = repo.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+
+        if (!canHrOwnQuestion(question, hrId)) {
+            throw new RuntimeException("You can delete only your own HR questions");
+        }
+
+        if (assessmentQuestionRepo.existsByQuestion_Id(questionId)) {
+            throw new RuntimeException("This question is already used in an assessment and cannot be deleted");
+        }
+
+        codingDetailRepo.findByQuestionId(questionId).ifPresent(codingDetailRepo::delete);
+        List<TestCase> testCases = testCaseRepo.findByQuestionId(questionId);
+        if (!testCases.isEmpty()) {
+            testCaseRepo.deleteAll(testCases);
+        }
+        repo.delete(question);
+    }
+
+    private void validateManualQuestionDraft(ManualQuestionDraft draft) {
+        if (draft == null) {
+            throw new RuntimeException("Question data is required");
+        }
+
+        if (draft.subject() == null || draft.subject().trim().isBlank()) {
+            throw new RuntimeException("Subject is required");
+        }
+
+        if (draft.isCoding()) {
+            if (draft.codingDescription() == null || draft.codingDescription().trim().isBlank()) {
+                throw new RuntimeException("Coding description is required");
+            }
+            if (draft.testCases() == null || draft.testCases().size() < 2) {
+                throw new RuntimeException("At least two coding test cases are required");
+            }
+            for (int index = 0; index < draft.testCases().size(); index++) {
+                ManualTestCaseDraft testCase = draft.testCases().get(index);
+                if (testCase == null
+                        || testCase.input() == null || testCase.input().trim().isBlank()
+                        || testCase.expectedOutput() == null || testCase.expectedOutput().trim().isBlank()) {
+                    throw new RuntimeException("Test case " + (index + 1) + " must include input and expected output");
+                }
+            }
+            return;
+        }
+
+        if (draft.questionText() == null || draft.questionText().trim().isBlank()) {
+            throw new RuntimeException("Question text is required");
+        }
+        if (draft.options() == null || draft.options().size() != 4) {
+            throw new RuntimeException("Exactly four options are required");
+        }
+
+        List<String> cleanedOptions = draft.options().stream()
+                .map(option -> option == null ? "" : option.trim())
+                .toList();
+
+        if (cleanedOptions.stream().anyMatch(String::isBlank)) {
+            throw new RuntimeException("All four options are required");
+        }
+
+        if (draft.correctAnswer() == null || draft.correctAnswer().trim().isBlank()) {
+            throw new RuntimeException("Correct answer is required");
+        }
+
+        boolean matchesOption = cleanedOptions.stream()
+                .anyMatch(option -> option.equalsIgnoreCase(draft.correctAnswer().trim()));
+
+        if (!matchesOption) {
+            throw new RuntimeException("Correct answer must exactly match one of the options");
+        }
+    }
+
+    private Question buildQuestionEntity(ManualQuestionDraft draft, Long hrId) {
+        Question question;
+        if (draft.isCoding()) {
+            question = new Question(draft.subject().trim(), draft.subject().trim(), true, "CODING");
+            question.setText("");
+            question.setCorrectAnswer("");
+            question.setOptions(List.of());
+        } else {
+            question = new Question(
+                    1,
+                    draft.questionText().trim(),
+                    draft.options().stream().map(String::trim).toList(),
+                    draft.correctAnswer().trim(),
+                    draft.subject().trim(),
+                    draft.subject().trim());
+            question.setHasCompiler(false);
+            question.setQuestionType("MCQ");
+        }
+        applyOwnership(question, "HR", hrId);
+        return question;
+    }
+
+    private void syncCodingArtifacts(Question question, ManualQuestionDraft draft) {
+        if (draft.isCoding()) {
+            CodingDetail codingDetail = codingDetailRepo.findByQuestionId(question.getId()).orElseGet(CodingDetail::new);
+            codingDetail.setQuestion(question);
+            codingDetail.setDescription(draft.codingDescription().trim());
+            codingDetailRepo.save(codingDetail);
+
+            List<TestCase> existing = testCaseRepo.findByQuestionId(question.getId());
+            if (!existing.isEmpty()) {
+                testCaseRepo.deleteAll(existing);
+            }
+
+            List<TestCase> newCases = draft.testCases().stream()
+                    .map(testCaseDraft -> {
+                        TestCase testCase = new TestCase();
+                        testCase.setQuestion(question);
+                        testCase.setInput(testCaseDraft.input().trim());
+                        testCase.setExpectedOutput(testCaseDraft.expectedOutput().trim());
+                        return testCase;
+                    })
+                    .collect(Collectors.toList());
+            testCaseRepo.saveAll(newCases);
+            return;
+        }
+
+        codingDetailRepo.findByQuestionId(question.getId()).ifPresent(codingDetailRepo::delete);
+        List<TestCase> existing = testCaseRepo.findByQuestionId(question.getId());
+        if (!existing.isEmpty()) {
+            testCaseRepo.deleteAll(existing);
+        }
+    }
+
+    private Map<String, Object> toQuestionBankEntry(Question question) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("id", question.getId());
+        entry.put("subject", question.getSubject());
+        entry.put("sectionName", question.getSectionName());
+        entry.put("questionType", question.getQuestionType());
+        entry.put("hasCompiler", question.isHasCompiler());
+        entry.put("questionText", question.isHasCompiler() ? "" : question.getText());
+        entry.put("options", question.getOptions() != null ? question.getOptions() : List.of());
+        entry.put("correctAnswer", question.isHasCompiler() ? "" : question.getCorrectAnswer());
+        entry.put("codingDescription", question.isHasCompiler()
+                ? codingDetailRepo.findByQuestionId(question.getId()).map(CodingDetail::getDescription).orElse("")
+                : "");
+        entry.put("testCases", question.isHasCompiler()
+                ? testCaseRepo.findByQuestionId(question.getId()).stream()
+                    .map(testCase -> Map.of(
+                            "id", (Object) testCase.getId(),
+                            "input", (Object) testCase.getInput(),
+                            "expectedOutput", (Object) testCase.getExpectedOutput()))
+                    .collect(Collectors.toList())
+                : List.of());
+        return entry;
+    }
+
+    private void applyOwnership(Question question, String createdByRole, Long createdByHrId) {
+        question.setCreatedByRole(createdByRole != null && !createdByRole.isBlank() ? createdByRole : "ADMIN");
+        question.setCreatedByHrId(createdByHrId);
+    }
+
+    private boolean canHrAccessQuestion(Question question, Long hrId) {
+        String ownerRole = question.getCreatedByRole();
+        if (ownerRole == null || ownerRole.isBlank() || "ADMIN".equalsIgnoreCase(ownerRole)) {
+            return true;
+        }
+        return "HR".equalsIgnoreCase(ownerRole) && Objects.equals(question.getCreatedByHrId(), hrId);
+    }
+
+    private boolean canHrOwnQuestion(Question question, Long hrId) {
+        return question != null
+                && "HR".equalsIgnoreCase(question.getCreatedByRole())
+                && Objects.equals(question.getCreatedByHrId(), hrId);
+    }
+
+    public record ManualQuestionDraft(
+            String subject,
+            String questionType,
+            String questionText,
+            List<String> options,
+            String correctAnswer,
+            String codingDescription,
+            List<ManualTestCaseDraft> testCases) {
+        public boolean isCoding() {
+            return "CODING".equalsIgnoreCase(questionType);
+        }
+    }
+
+    public record ManualTestCaseDraft(String input, String expectedOutput) {}
 }

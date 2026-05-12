@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  AlertCircle,
+  X,
   ArrowLeft,
   ArrowRight,
   CheckCircle,
@@ -125,7 +125,7 @@ export default function CandidateOtpVerification() {
             {status.type === "success" ? (
               <CheckCircle size={18} />
             ) : (
-              <AlertCircle size={18} />
+              <X size={18} />
             )}
             <span>{status.msg}</span>
           </div>

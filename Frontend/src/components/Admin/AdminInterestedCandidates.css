@@ -108,3 +108,12 @@
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+.aic-feedback {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #334155;
+  max-width: 420px;
+  line-height: 1.45;
+}

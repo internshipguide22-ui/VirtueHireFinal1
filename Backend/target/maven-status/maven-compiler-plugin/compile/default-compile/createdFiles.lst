@@ -4,6 +4,7 @@ com\virtuehire\model\Assessment.class
 com\virtuehire\util\JwtUtil.class
 com\virtuehire\model\PaymentStatus.class
 com\virtuehire\model\ExamActivity.class
+com\virtuehire\controller\HrRestController$2.class
 com\virtuehire\model\CandidateAnswer.class
 com\virtuehire\controller\ResumeRestController.class
 com\virtuehire\controller\CandidateRestController.class
@@ -33,6 +34,7 @@ com\virtuehire\controller\AssessmentRestController$CodingAnswerRequest.class
 com\virtuehire\model\Payment.class
 com\virtuehire\repository\CandidateRepository.class
 com\virtuehire\model\ResumeDocument.class
+com\virtuehire\service\QuestionService$ManualTestCaseDraft.class
 com\virtuehire\service\ResumeService$1.class
 com\virtuehire\service\ExamMonitoringService.class
 com\virtuehire\VirtueHireApplication.class
@@ -44,6 +46,7 @@ com\virtuehire\controller\HrRestController.class
 com\virtuehire\controller\AuthRestController.class
 com\virtuehire\repository\ExamActivityRepository.class
 com\virtuehire\model\AssessmentQuestion.class
+com\virtuehire\service\QuestionService$ManualQuestionDraft.class
 com\virtuehire\repository\CodingDetailRepository.class
 com\virtuehire\service\AdminNotificationService.class
 com\virtuehire\controller\AdminRestController.class
@@ -71,4 +74,5 @@ com\virtuehire\model\CandidateAccessRequest.class
 com\virtuehire\model\CodingDetail.class
 com\virtuehire\model\AssignmentSubmission.class
 com\virtuehire\controller\ExamActivityController.class
+com\virtuehire\controller\HrRestController$1.class
 com\virtuehire\repository\CandidateHrStatusRepository.class

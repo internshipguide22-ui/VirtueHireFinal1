@@ -8,6 +8,10 @@ import {
   ChevronUp,
   PlayCircle,
   RotateCw,
+  Filter,
+  X,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import api from "../../services/api";
 
@@ -245,6 +249,9 @@ export default function CoursesDashboard() {
   const [assignmentMessage, setAssignmentMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all"); // all | completed | inprogress | notstarted | locked
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("default"); // default | name | progress | status
 
   // ─────────────────────────────────────────────────────────────
   // Fetch assessment names on mount
@@ -259,34 +266,41 @@ export default function CoursesDashboard() {
 
         const raw = assessmentsRes.data?.assessments;
 
-        // FIX: The backend may return assessments as a comma-separated string
-        // like "Java Assessment,Java,Java Assignment" instead of a proper array.
-        // We normalise it here so each individual assessment name is its own entry.
         let visibleAssessments = [];
         if (Array.isArray(raw)) {
-          // Could be ["Java Assessment,Java,Java Assignment"] (array with one joined string)
-          // or already ["Java Assessment", "Java", "Java Assignment"] (correct array)
           visibleAssessments = raw.flatMap((entry) =>
             typeof entry === "string"
               ? entry.split(",").map((n) => n.trim()).filter(Boolean)
               : [],
           );
         } else if (typeof raw === "string") {
-          // Plain string fallback
           visibleAssessments = raw.split(",").map((n) => n.trim()).filter(Boolean);
         }
 
         setAssessmentNames(visibleAssessments);
         setAssignmentMessage(profileRes.data?.candidate?.assessmentAssignmentMessage || "");
+        setError("");
       } catch (err) {
         console.error("Error fetching assessments:", err);
-        setError("We could not load the available assessments.");
+        const status = err?.response?.status;
+        if (status === 401) {
+          setError("Your session has expired. Please log in again.");
+          setTimeout(() => navigate("/login"), 3000);
+        } else if (status === 403) {
+          setError("Access denied. Please complete any required verification steps.");
+        } else if (status >= 500) {
+          setError("Server error. Please try again later.");
+        } else if (err?.request) {
+          setError("Network error. Please check your connection and try again.");
+        } else {
+          setError("");
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchAssessments();
-  }, []);
+  }, [navigate]);
 
   // ─────────────────────────────────────────────────────────────
   // Fetch assessment statuses with cache-busting
@@ -298,11 +312,10 @@ export default function CoursesDashboard() {
       const statusEntries = await Promise.all(
         assessmentNames.map(async (name) => {
           try {
-            // FIX: Add cache-busting query parameter and headers
             const res = await api.get(`/assessment/status`, {
-              params: { 
+              params: {
                 name,
-                t: Date.now(), // Timestamp to bust cache
+                t: Date.now(),
               },
               withCredentials: true,
               headers: {
@@ -335,7 +348,6 @@ export default function CoursesDashboard() {
     }
   };
 
-  // Fetch status on mount and when assessmentNames changes
   useEffect(() => {
     fetchStatusData();
   }, [assessmentNames]);
@@ -346,8 +358,7 @@ export default function CoursesDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchStatusData();
-    }, 30000); // Refresh every 30 seconds
-
+    }, 30000);
     return () => clearInterval(interval);
   }, [assessmentNames]);
 
@@ -366,6 +377,66 @@ export default function CoursesDashboard() {
       state: getAssessmentState(statusData[name]),
     }));
   }, [assessmentNames, statusData]);
+
+  // FIX: Filter and sort assessments
+  const filteredAssessments = useMemo(() => {
+    let result = assessments;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(({ name }) => name.toLowerCase().includes(query));
+    }
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      result = result.filter(({ state }) => {
+        switch (filterStatus) {
+          case "completed":
+            return state.completed;
+          case "inprogress":
+            return state.hasStarted && !state.completed && !state.isLocked;
+          case "notstarted":
+            return !state.hasStarted && !state.isLocked;
+          case "locked":
+            return state.isLocked;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "progress":
+          return b.state.progressValue - a.state.progressValue;
+        case "status":
+          const statusOrder = { locked: 0, completed: 1, inprogress: 2, notstarted: 3 };
+          const getStatus = (s) => {
+            if (s.isLocked) return "locked";
+            if (s.completed) return "completed";
+            if (s.hasStarted) return "inprogress";
+            return "notstarted";
+          };
+          return statusOrder[getStatus(a.state)] - statusOrder[getStatus(b.state)];
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [assessments, filterStatus, searchQuery, sortBy]);
+
+  const hasActiveFilters = searchQuery || filterStatus !== "all" || sortBy !== "default";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterStatus("all");
+    setSortBy("default");
+  };
 
   const handleAction = (assessmentName, assessmentState) => {
     if (!assessmentState.canLaunch) return;
@@ -420,6 +491,24 @@ export default function CoursesDashboard() {
         .refresh-btn.spinning {
           animation: spin 1s linear infinite;
         }
+        .filter-input-wrap:hover, .filter-input-wrap:focus-within {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+        .filter-select-wrap:hover, .filter-select-wrap:focus-within {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+        .input-clear:hover {
+          background: #94a3b8 !important;
+        }
+        .filter-clear-btn:hover:not(:disabled) {
+          background: #1d4ed8 !important;
+          transform: translateY(-1px);
+        }
+        .filter-clear-btn:disabled {
+          background: #93c5fd !important;
+        }
       `}</style>
 
       <div style={s.page}>
@@ -435,13 +524,11 @@ export default function CoursesDashboard() {
               <div style={s.brandMark}>V</div>
               <span style={s.brandText}>VirtueHire</span>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleManualRefresh}
               disabled={refreshing || loading}
-              style={{
-                ...s.refreshBtn,
-              }}
+              style={{ ...s.refreshBtn }}
               className={refreshing ? "refresh-btn spinning" : "refresh-btn"}
               title="Refresh assessment status"
             >
@@ -463,6 +550,90 @@ export default function CoursesDashboard() {
             )}
           </section>
 
+          {/* ── Filter Bar ── */}
+          {assessments.length > 0 && (
+            <section style={s.filterBar}>
+              <div style={s.filterRow}>
+                {/* Search by name */}
+                <div style={s.filterInputWrap} className="filter-input-wrap">
+                  <Search size={16} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder="Search by assessment name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={s.filterInput}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      style={s.inputClear}
+                      className="input-clear"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort dropdown */}
+                <div style={s.filterSelectWrap} className="filter-select-wrap">
+                  <ArrowUpDown size={16} style={{ color: "#64748b", flexShrink: 0 }} />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    style={s.filterSelect}
+                  >
+                    <option value="default">Default Sort</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="progress">Progress (High-Low)</option>
+                    <option value="status">Status</option>
+                  </select>
+                </div>
+
+                {/* Status filter dropdown */}
+                <div style={s.filterSelectWrap} className="filter-select-wrap">
+                  <Filter size={16} style={{ color: "#64748b", flexShrink: 0 }} />
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    style={s.filterSelect}
+                  >
+                    <option value="all">All Status ({assessments.length})</option>
+                    <option value="completed">
+                      Completed ({assessments.filter(a => a.state.completed).length})
+                    </option>
+                    <option value="inprogress">
+                      In Progress ({assessments.filter(a => a.state.hasStarted && !a.state.completed && !a.state.isLocked).length})
+                    </option>
+                    <option value="notstarted">
+                      Not Started ({assessments.filter(a => !a.state.hasStarted && !a.state.isLocked).length})
+                    </option>
+                    <option value="locked">
+                      Locked ({assessments.filter(a => a.state.isLocked).length})
+                    </option>
+                  </select>
+                </div>
+
+                {/* Clear button */}
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={!hasActiveFilters}
+                  style={{
+                    ...s.filterClearBtn,
+                    opacity: hasActiveFilters ? 1 : 0.5,
+                    cursor: hasActiveFilters ? "pointer" : "not-allowed",
+                  }}
+                  className="filter-clear-btn"
+                >
+                  <RotateCw size={16} />
+                  Clear
+                </button>
+              </div>
+            </section>
+          )}
+
           {error && <div style={s.errorBanner}>{error}</div>}
 
           {/* ── List card ── */}
@@ -471,11 +642,74 @@ export default function CoursesDashboard() {
               <div style={s.emptyState}>Loading assessments…</div>
             ) : assessments.length === 0 ? (
               <div style={s.emptyState}>
-                {assignmentMessage || "No assessments are available right now."}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                  <div style={{ fontSize: "3rem", opacity: 0.3 }}>📋</div>
+                  <div style={{ fontWeight: 600, color: "#475569" }}>
+                    {assignmentMessage || "No assessments assigned yet"}
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#94a3b8", maxWidth: "400px" }}>
+                    Contact your HR or administrator if you believe this is an error. They can assign assessments to your account.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleManualRefresh}
+                    disabled={refreshing}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "10px 18px",
+                      background: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      cursor: refreshing ? "not-allowed" : "pointer",
+                      opacity: refreshing ? 0.6 : 1,
+                      marginTop: "8px",
+                    }}
+                  >
+                    <RotateCw size={16} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+                    {refreshing ? "Checking..." : "Check for new assessments"}
+                  </button>
+                </div>
+              </div>
+            ) : filteredAssessments.length === 0 ? (
+              <div style={s.emptyState}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                  <div style={{ fontSize: "3rem", opacity: 0.3 }}>🔍</div>
+                  <div style={{ fontWeight: 600, color: "#475569" }}>
+                    No assessments match the selected filter
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#94a3b8", maxWidth: "400px" }}>
+                    Try selecting a different filter option or clear the filter to see all assessments.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFilterStatus("all")}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "10px 18px",
+                      background: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={16} />
+                    Clear Filter
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={s.list}>
-                {assessments.map(({ name, state }, i) => (
+                {filteredAssessments.map(({ name, state }, i) => (
                   <article
                     key={name}
                     style={{ ...s.listItem, animationDelay: `${i * 60}ms` }}
@@ -483,6 +717,7 @@ export default function CoursesDashboard() {
                   >
                     {/* ── Top row ── */}
                     <div style={s.listItemTop}>
+
                       {/* Left: icon + name */}
                       <div style={s.listMain}>
                         <div style={{
@@ -514,6 +749,7 @@ export default function CoursesDashboard() {
                           {state.statusLabel}
                         </span>
 
+                        {/* FIX: progressWrap now correctly closed before the button */}
                         <div style={s.progressWrap}>
                           <span style={s.progressText}>
                             {state.passedCount}/{state.totalSections || 0} sections cleared
@@ -528,6 +764,7 @@ export default function CoursesDashboard() {
                             }} />
                           </div>
                         </div>
+                        {/* ↑ progressWrap closes here — button is now a sibling, not a child */}
 
                         <button
                           type="button"
@@ -544,7 +781,10 @@ export default function CoursesDashboard() {
                           {state.canLaunch && <ChevronRight size={15} />}
                         </button>
                       </div>
+                      {/* ↑ listSide closes here */}
+
                     </div>
+                    {/* ↑ listItemTop closes here */}
 
                     {/* ── Section reviews ── */}
                     {state.results && state.results.length > 0 && (
@@ -553,10 +793,13 @@ export default function CoursesDashboard() {
                           const config = statusData[name]?.configs?.find(
                             (c) => Number(c.sectionNumber) === Number(result.level),
                           );
-                          return <SectionReview key={idx} result={result} config={config} />;
+                          return (
+                            <SectionReview key={idx} result={result} config={config} />
+                          );
                         })}
                       </div>
                     )}
+
                   </article>
                 ))}
               </div>
@@ -683,6 +926,108 @@ const s = {
     lineHeight: 1.4,
     fontSize: "0.8rem",
     fontWeight: 500,
+  },
+
+  // Filter Bar - Horizontal layout matching reference
+  filterBar: {
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "14px 18px",
+    boxShadow: "0 2px 8px rgba(15,23,42,0.04)",
+  },
+  filterRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+  },
+  filterInputWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flex: "1 1 260px",
+    minWidth: "220px",
+    maxWidth: "320px",
+    padding: "10px 14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    position: "relative",
+    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  },
+  filterInput: {
+    flex: 1,
+    border: "none",
+    background: "transparent",
+    fontSize: "0.9rem",
+    fontWeight: 500,
+    color: "#0f172a",
+    outline: "none",
+    fontFamily: "inherit",
+    minWidth: 0,
+    padding: "2px 0",
+  },
+  inputClear: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "18px",
+    height: "18px",
+    background: "#cbd5e1",
+    border: "none",
+    borderRadius: "50%",
+    cursor: "pointer",
+    color: "#ffffff",
+    padding: 0,
+    flexShrink: 0,
+    transition: "background 0.15s ease",
+  },
+  filterSelectWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    flexShrink: 0,
+    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  },
+  filterSelect: {
+    border: "none",
+    background: "transparent",
+    fontSize: "0.9rem",
+    fontWeight: 500,
+    color: "#0f172a",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    outline: "none",
+    minWidth: "150px",
+    padding: "2px 20px 2px 0",
+    appearance: "none",
+    WebkitAppearance: "none",
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right center",
+  },
+  filterClearBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    padding: "10px 20px",
+    background: "#2563eb",
+    border: "none",
+    borderRadius: "10px",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    color: "#ffffff",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.15s ease",
+    flexShrink: 0,
+    minWidth: "90px",
   },
 
   // Error

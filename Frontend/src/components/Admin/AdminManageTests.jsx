@@ -13,6 +13,7 @@ export default function AdminManageTests() {
 
   return (
     <AdminLayout
+      title="Manage Tests"
       description="Create assessments and control live test availability from the Admin portal."
       actions={
         <button

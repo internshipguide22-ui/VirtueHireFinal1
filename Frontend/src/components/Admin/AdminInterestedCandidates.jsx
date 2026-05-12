@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, MessageSquare, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import {
   getAllInterestedCandidates,
@@ -8,12 +8,14 @@ import {
   subscribeContactAccessRequests,
   subscribeJobs,
 } from "../../utils/jobsStore";
+import api from "../../services/api";
 import "../Jobs/JobsModule.css";
 import "./AdminInterestedCandidates.css";
 
 export default function AdminInterestedCandidates() {
   const [interestedCandidates, setInterestedCandidates] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [feedbackRows, setFeedbackRows] = useState([]);
 
   useEffect(() => {
     setInterestedCandidates(getAllInterestedCandidates());
@@ -27,6 +29,25 @@ export default function AdminInterestedCandidates() {
       unsubscribeJobs();
       unsubscribeRequests();
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const response = await api.get("/admin/feedback");
+        const interestedIds = new Set(
+          getAllInterestedCandidates().map((row) => String(row.candidateId)),
+        );
+        const rows = (response.data?.candidates || []).filter((candidate) =>
+          interestedIds.has(String(candidate.candidateId || candidate.id)),
+        );
+        setFeedbackRows(rows);
+      } catch (error) {
+        setFeedbackRows([]);
+      }
+    };
+
+    fetchFeedback();
   }, []);
 
   const pendingRequests = useMemo(
@@ -151,6 +172,61 @@ export default function AdminInterestedCandidates() {
                           </button>
                         </div>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="aic-card">
+          <span className="jobs-summary-badge">
+            {feedbackRows.length} Hiring Feedback Updates
+          </span>
+          {feedbackRows.length === 0 ? (
+            <div className="jobs-empty-state">
+              No HR feedback available yet for interested candidates.
+            </div>
+          ) : (
+            <div className="aic-table-wrap">
+              <table className="aic-table">
+                <thead>
+                  <tr>
+                    <th>Candidate</th>
+                    <th>Status</th>
+                    <th>Feedback</th>
+                    <th>Tests Assigned</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedbackRows.map((row) => (
+                    <tr key={`feedback_${row.candidateId || row.id}`}>
+                      <td>
+                        <div className="aic-main">
+                          {row.candidateName || "Candidate"}
+                        </div>
+                        <div className="aic-sub">{row.candidateEmail || "N/A"}</div>
+                      </td>
+                      <td>
+                        <span
+                          className={`aic-status ${String(row.status || "").toLowerCase()}`}
+                        >
+                          {row.status === "APPROVED" ? (
+                            <CheckCircle2 size={14} />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
+                          {row.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="aic-feedback">
+                          <MessageSquare size={14} />
+                          <span>{row.feedback || "No feedback provided"}</span>
+                        </div>
+                      </td>
+                      <td>{row.testCount || 0}</td>
                     </tr>
                   ))}
                 </tbody>

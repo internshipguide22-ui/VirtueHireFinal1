@@ -3,27 +3,44 @@ package com.virtuehire.service;
 import com.virtuehire.model.*;
 import com.virtuehire.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.SimpleMailMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class TestAllocationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TestAllocationService.class);
 
     private final CandidateTestMappingRepository testMappingRepo;
     private final CandidateRepository candidateRepo;
-    private final QuestionService questionService;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentSectionRepository assessmentSectionRepository;
+    private final AssessmentQuestionRepository assessmentQuestionRepository;
     private final HiringWorkflowService hiringWorkflowService;
+    private final JavaMailSender mailSender;
 
     public TestAllocationService(CandidateTestMappingRepository testMappingRepo,
                                  CandidateRepository candidateRepo,
-                                 QuestionService questionService,
-                                 HiringWorkflowService hiringWorkflowService) {
+                                 AssessmentRepository assessmentRepository,
+                                 AssessmentSectionRepository assessmentSectionRepository,
+                                 AssessmentQuestionRepository assessmentQuestionRepository,
+                                 HiringWorkflowService hiringWorkflowService,
+                                 JavaMailSender mailSender) {
         this.testMappingRepo = testMappingRepo;
         this.candidateRepo = candidateRepo;
-        this.questionService = questionService;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentSectionRepository = assessmentSectionRepository;
+        this.assessmentQuestionRepository = assessmentQuestionRepository;
         this.hiringWorkflowService = hiringWorkflowService;
+        this.mailSender = mailSender;
     }
 
     /**
@@ -40,63 +57,27 @@ public class TestAllocationService {
      * These are reused from the existing Admin "Manage Test" module
      */
     public List<Map<String, Object>> getAvailableTests() {
-        List<String> subjects = questionService.getAllSubjects();
-        
-        return subjects.stream()
-            .map(subject -> {
-                List<Question> questions = questionService.getQuestionsBySubject(subject);
-                
-                // Get assessment config if available
-                List<AssessmentConfig> configs = questionService.getConfigs(subject);
-                
-                int durationMinutes = 60; // default
-                String description = "";
-                
-                if (!configs.isEmpty()) {
-                    AssessmentConfig config = configs.get(0);
-                    durationMinutes = config.getTimeLimit() != null ? config.getTimeLimit() : 60;
-                    // FIX: Use default pass percentage (60%) since AssessmentConfig doesn't have this field
-                    description = "60% pass required";
-                }
-                
-                return Map.of(
-                    "testName", (Object) subject,
-                    "testId", (Object) subject, // Using subject name as ID
-                    "description", (Object) description,
-                    "questionCount", (Object) questions.size(),
-                    "durationMinutes", (Object) durationMinutes,
-                    "questionsIncluded", (Object) questions.size()
-                );
-            })
+        return assessmentRepository.findAll().stream()
+            .sorted(Comparator.comparing(Assessment::getCreatedAt).reversed())
+            .map(this::toAssessmentSummary)
+            .collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getAvailableTests(Long hrId) {
+        return assessmentRepository.findAll().stream()
+            .filter(assessment -> isAssessmentOwnedByHr(assessment.getId(), hrId))
+            .sorted(Comparator.comparing(Assessment::getCreatedAt).reversed())
+            .map(this::toAssessmentSummary)
             .collect(Collectors.toList());
     }
 
     /**
-     * Get test details by subject/test name
+     * Get test details by assessment ID
      */
-    public Map<String, Object> getTestDetails(String testName) {
-        List<Question> questions = questionService.getQuestionsBySubject(testName);
-        List<AssessmentConfig> configs = questionService.getConfigs(testName);
-        
-        Map<String, Object> details = new HashMap<>();
-        details.put("testName", testName);
-        details.put("questionCount", questions.size());
-        details.put("questions", questions);
-        
-        if (!configs.isEmpty()) {
-            AssessmentConfig config = configs.get(0);
-            details.put("durationMinutes", config.getTimeLimit() != null ? config.getTimeLimit() : 60);
-            // FIX: Use default pass percentage (60%) since AssessmentConfig doesn't have this field
-            details.put("passPercentage", 60);
-            // FIX #2: Add description field
-            details.put("description", "60% pass required");
-        } else {
-            details.put("durationMinutes", 60);
-            details.put("passPercentage", 60);
-            details.put("description", ""); // FIX #3: Ensure non-null description
-        }
-        
-        return details;
+    public Map<String, Object> getTestDetails(Long testId) {
+        Assessment assessment = assessmentRepository.findById(testId)
+            .orElseThrow(() -> new RuntimeException("Test not found"));
+        return toAssessmentSummary(assessment);
     }
 
     // ===== TEST ASSIGNMENT =====
@@ -105,68 +86,94 @@ public class TestAllocationService {
      * Assign test to candidate (prevent duplicates)
      * @return CandidateTestMapping object or null if already assigned
      */
-    public CandidateTestMapping assignTestToCandidate(Long candidateId, String testName, Long hrId) {
-        // FIX #8: Validate test exists before assignment
-        List<String> subjects = questionService.getAllSubjects();
-        if (!subjects.contains(testName)) {
-            throw new RuntimeException("Invalid test name: " + testName);
+    public CandidateTestMapping assignTestToCandidate(Long candidateId, Long testId, Long hrId) {
+        return assignTestToCandidate(candidateId, testId, hrId, null);
+    }
+
+    public CandidateTestMapping assignTestToCandidate(Long candidateId, Long testId, Long hrId, LocalDateTime availableFrom) {
+        // FIX: Add defensive validation and logging
+        if (candidateId == null) {
+            logger.error("ASSIGN TEST FAILED: candidateId is null");
+            throw new RuntimeException("Candidate ID cannot be null");
         }
-        
-        // Check if already assigned
-        List<CandidateTestMapping> existing = testMappingRepo.findByCandidateId(candidateId).stream()
-            .filter(m -> m.getTestName().equalsIgnoreCase(testName))
-            .collect(Collectors.toList());
-        
-        if (!existing.isEmpty()) {
-            throw new RuntimeException("Test '" + testName + "' is already assigned to this candidate");
+        if (testId == null) {
+            logger.error("ASSIGN TEST FAILED: testId is null");
+            throw new RuntimeException("Test ID cannot be null");
         }
 
-        // Get candidate
+        logger.info("ASSIGN TEST START: candidateId={}, testId={}, hrId={}", candidateId, testId, hrId);
+
+        Assessment assessment = assessmentRepository.findById(testId)
+            .orElseThrow(() -> new RuntimeException("Invalid test id: " + testId));
+
+        if (testMappingRepo.existsByBothCandidateAndTest(candidateId, testId)) {
+            logger.warn("ASSIGN TEST: Test '{}' already assigned to candidate {}", assessment.getAssessmentName(), candidateId);
+            throw new RuntimeException("Test '" + assessment.getAssessmentName() + "' is already assigned to this candidate");
+        }
+
         Optional<Candidate> candidateOpt = candidateRepo.findById(candidateId);
         if (candidateOpt.isEmpty()) {
+            logger.error("ASSIGN TEST FAILED: Candidate {} not found", candidateId);
             throw new RuntimeException("Candidate not found");
         }
 
-        // Get test details
-        Map<String, Object> testDetails = getTestDetails(testName);
-        
-        // FIX #7: Add debug logging
-        System.out.println("Assigning test: " + testName);
-        System.out.println("Test details: " + testDetails);
-        
-        // FIX #1: Safe type casting for durationMinutes
-        Object durationValue = testDetails.get("durationMinutes");
-        Integer durationMinutes = durationValue != null ? ((Number) durationValue).intValue() : 60;
-        
-        // FIX #3: Ensure non-null description
-        Object descValue = testDetails.get("description");
-        String description = descValue != null ? (String) descValue : "";
+        Candidate candidate = candidateOpt.get();
+        logger.info("ASSIGN TEST: Found candidate {} - {}", candidate.getId(), candidate.getFullName());
 
-        // Create mapping
-        // FIX #4: Use Math.abs for hashcode to avoid negative IDs
+        Map<String, Object> testDetails = toAssessmentSummary(assessment);
+        Integer durationMinutes = ((Number) testDetails.get("durationMinutes")).intValue();
+        String description = String.valueOf(testDetails.get("description"));
+
         CandidateTestMapping mapping = new CandidateTestMapping(
             candidateId,
-            Long.valueOf(Math.abs(testName.hashCode())), // Using test name hash as ID (since tests are stored as subjects)
+            assessment.getId(),
             hrId,
-            testName,
+            assessment.getAssessmentName(),
             description,
-            durationMinutes
+            durationMinutes,
+            availableFrom
         );
 
         mapping.setAssignedAt(LocalDateTime.now());
+        mapping.setAvailableFrom(availableFrom != null ? availableFrom : LocalDateTime.now());
 
-        // Save mapping
+        // DEBUG: Verify the mapping entity has correct candidateId BEFORE saving
+        logger.info("ASSIGN TEST: About to save - mapping.candidateId={}, mapping.testId={}, mapping.testName='{}'", 
+            mapping.getCandidateId(), mapping.getTestId(), mapping.getTestName());
+
         CandidateTestMapping saved = testMappingRepo.save(mapping);
 
-        // Update candidate status to TEST_ASSIGNED if not already approved/rejected
-        Candidate candidate = candidateOpt.get();
+        logger.info("ASSIGN TEST SUCCESS: Saved mapping id={}, candidateId={}, testId={}, testName='{}'", 
+            saved.getId(), saved.getCandidateId(), saved.getTestId(), saved.getTestName());
         
-        // FIX #5: Null-safe status check
+        // DEBUG: Verify what was actually saved by querying it back
+        List<CandidateTestMapping> verifyMappings = testMappingRepo.findByCandidateId(candidateId);
+        logger.info("ASSIGN TEST VERIFY: Candidate {} now has {} tests assigned", 
+            candidateId, verifyMappings.size());
+        
+        // CRITICAL DEBUG: Check total count in database to detect bulk insert
+        long totalMappings = testMappingRepo.count();
+        logger.info("ASSIGN TEST TOTAL: Total mappings in database = {}", totalMappings);
+        
+        // CRITICAL DEBUG: Query all recent mappings to see if there are unexpected inserts
+        List<CandidateTestMapping> allRecentMappings = testMappingRepo.findByTestId(testId);
+        logger.info("ASSIGN TEST ALL FOR TEST: Test {} has {} total assignments across all candidates", 
+            testId, allRecentMappings.size());
+        for (CandidateTestMapping m : allRecentMappings) {
+            logger.info("  - Mapping: id={}, candidateId={}, testId={}", 
+                m.getId(), m.getCandidateId(), m.getTestId());
+        }
+
+        // FIX: Only update the specific candidate's status, not all candidates
         if (candidate.getApplicationStatus() == null ||
            (candidate.getApplicationStatus() != CandidateStatus.APPROVED &&
             candidate.getApplicationStatus() != CandidateStatus.REJECTED)) {
+            logger.info("ASSIGN TEST: Updating candidate {} status to TEST_ASSIGNED", candidateId);
             hiringWorkflowService.moveToTestAssigned(candidateId);
         }
+
+        // Send email notification to candidate
+        sendTestAssignmentEmail(candidate, assessment, availableFrom);
 
         return saved;
     }
@@ -174,21 +181,32 @@ public class TestAllocationService {
     /**
      * Assign multiple tests to a candidate
      */
-    public List<CandidateTestMapping> assignMultipleTestsToCandidate(Long candidateId, List<String> testNames, Long hrId) {
-        List<CandidateTestMapping> mappings = new ArrayList<>();
-        
-        for (String testName : testNames) {
-            try {
-                CandidateTestMapping mapping = assignTestToCandidate(candidateId, testName, hrId);
-                mappings.add(mapping);
-            } catch (RuntimeException e) {
-                // Skip already assigned tests
-                if (!e.getMessage().contains("already assigned")) {
-                    throw e;
-                }
-            }
+    public List<CandidateTestMapping> assignMultipleTestsToCandidate(Long candidateId, List<Long> testIds, Long hrId) {
+        return assignMultipleTestsToCandidate(candidateId, testIds, hrId, null);
+    }
+
+    public List<CandidateTestMapping> assignMultipleTestsToCandidate(Long candidateId, List<Long> testIds, Long hrId,
+                                                                     LocalDateTime availableFrom) {
+        // FIX: Add validation and logging for bulk assignment
+        if (candidateId == null) {
+            logger.error("ASSIGN MULTIPLE TESTS FAILED: candidateId is null");
+            throw new RuntimeException("Candidate ID cannot be null");
         }
-        
+        if (testIds == null || testIds.isEmpty()) {
+            logger.error("ASSIGN MULTIPLE TESTS FAILED: testIds is null or empty");
+            throw new RuntimeException("Test IDs cannot be null or empty");
+        }
+
+        logger.info("ASSIGN MULTIPLE TESTS START: candidateId={}, testCount={}", candidateId, testIds.size());
+
+        List<CandidateTestMapping> mappings = new ArrayList<>();
+
+        for (Long testId : testIds) {
+            mappings.add(assignTestToCandidate(candidateId, testId, hrId, availableFrom));
+        }
+
+        logger.info("ASSIGN MULTIPLE TESTS COMPLETE: candidateId={}, assignedCount={}", candidateId, mappings.size());
+
         return mappings;
     }
 
@@ -227,17 +245,12 @@ public class TestAllocationService {
      * Get all test assignments for reporting
      */
     public List<Map<String, Object>> getTestAssignmentReport() {
-        List<String> subjects = questionService.getAllSubjects();
-        
-        return subjects.stream()
-            .map(subject -> {
-                // FIX #4: Use Math.abs for hashcode to avoid negative IDs
-                List<CandidateTestMapping> mappings = testMappingRepo.findByTestId(
-                    Long.valueOf(Math.abs(subject.hashCode()))
-                );
-                
+        return assessmentRepository.findAll().stream()
+            .map(assessment -> {
+                List<CandidateTestMapping> mappings = testMappingRepo.findByTestId(assessment.getId());
                 return Map.of(
-                    "testName", (Object) subject,
+                    "testId", (Object) assessment.getId(),
+                    "testName", (Object) assessment.getAssessmentName(),
                     "totalAssignments", (Object) mappings.size(),
                     "submittedCount", (Object) mappings.stream()
                         .filter(m -> Boolean.TRUE.equals(m.getSubmitted()))
@@ -253,17 +266,14 @@ public class TestAllocationService {
     /**
      * Get candidates assigned to a specific test with their submission status
      */
-    public List<Map<String, Object>> getCandidatesByTestWithStatus(String testName) {
-        // FIX #4: Use Math.abs for hashcode to avoid negative IDs
-        List<CandidateTestMapping> mappings = testMappingRepo.findByTestId(
-            Long.valueOf(Math.abs(testName.hashCode()))
-        );
+    public List<Map<String, Object>> getCandidatesByTestWithStatus(Long testId) {
+        Assessment assessment = assessmentRepository.findById(testId)
+            .orElseThrow(() -> new RuntimeException("Test not found"));
+        List<CandidateTestMapping> mappings = testMappingRepo.findByTestId(testId);
 
         return mappings.stream()
             .map(mapping -> {
                 Optional<Candidate> candidateOpt = candidateRepo.findById(mapping.getCandidateId());
-                
-                // FIX #3: Ensure non-null values for Map.of()
                 String candidateName = candidateOpt.isPresent() && candidateOpt.get().getFullName() != null 
                     ? candidateOpt.get().getFullName() : "Unknown";
                 String candidateEmail = candidateOpt.isPresent() && candidateOpt.get().getEmail() != null 
@@ -273,8 +283,10 @@ public class TestAllocationService {
                     "candidateId", (Object) mapping.getCandidateId(),
                     "candidateName", (Object) candidateName,
                     "candidateEmail", (Object) candidateEmail,
-                    "testName", (Object) testName,
+                    "testId", (Object) assessment.getId(),
+                    "testName", (Object) assessment.getAssessmentName(),
                     "assignedAt", (Object) (mapping.getAssignedAt() != null ? mapping.getAssignedAt() : LocalDateTime.now()),
+                    "availableFrom", (Object) (mapping.getAvailableFrom() != null ? mapping.getAvailableFrom() : mapping.getAssignedAt()),
                     "submitted", (Object) (mapping.getSubmitted() != null ? mapping.getSubmitted() : false),
                     "submittedAt", (Object) (mapping.getSubmittedAt() != null ? mapping.getSubmittedAt() : ""),
                     "scoreObtained", (Object) (mapping.getScoreObtained() != null ? mapping.getScoreObtained() : 0)
@@ -317,5 +329,100 @@ public class TestAllocationService {
      */
     private long calculateDaysOverdue(LocalDateTime assignedAt) {
         return java.time.temporal.ChronoUnit.DAYS.between(assignedAt, LocalDateTime.now());
+    }
+
+    /**
+     * Send email notification to candidate when test is assigned
+     */
+    private void sendTestAssignmentEmail(Candidate candidate, Assessment assessment, LocalDateTime availableFrom) {
+        try {
+            if (candidate.getEmail() == null || candidate.getEmail().isBlank()) {
+                logger.warn("Cannot send test assignment email - candidate {} has no email", candidate.getId());
+                return;
+            }
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(candidate.getEmail());
+            message.setSubject("New Test Assigned - " + assessment.getAssessmentName());
+            
+            StringBuilder emailBody = new StringBuilder();
+            emailBody.append("Hello ").append(candidate.getFullName()).append(",\n\n");
+            emailBody.append("A new test has been assigned to you by the HR team.\n\n");
+            emailBody.append("Test Details:\n");
+            emailBody.append("- Test Name: ").append(assessment.getAssessmentName()).append("\n");
+            
+            if (assessment.getDescription() != null && !assessment.getDescription().isBlank()) {
+                emailBody.append("- Description: ").append(assessment.getDescription()).append("\n");
+            }
+            
+            if (availableFrom != null && availableFrom.isAfter(LocalDateTime.now())) {
+                emailBody.append("- Available From: ").append(availableFrom.toLocalDate()).append(" at ").append(availableFrom.toLocalTime()).append("\n");
+                emailBody.append("\nPlease log in to the portal after the scheduled time to take the test.\n");
+            } else {
+                emailBody.append("- Status: Available immediately\n");
+                emailBody.append("\nPlease log in to the portal to take the test at your earliest convenience.\n");
+            }
+            
+            emailBody.append("\nBest regards,\n");
+            emailBody.append("VirtueHire Team\n");
+            emailBody.append("(Sent on behalf of HR)");
+            
+            message.setText(emailBody.toString());
+            mailSender.send(message);
+            
+            logger.info("Test assignment email sent to candidate {} at {}", candidate.getId(), candidate.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send test assignment email to candidate {}: {}", candidate.getId(), e.getMessage());
+        }
+    }
+
+    private Map<String, Object> toAssessmentSummary(Assessment assessment) {
+        List<AssessmentSection> sections = assessmentSectionRepository.findByAssessmentIdOrderBySectionNumberAsc(assessment.getId());
+        int durationMinutes = sections.stream().mapToInt(AssessmentSection::getSectionTime).sum();
+        int questionCount = sections.stream().mapToInt(AssessmentSection::getQuestionCount).sum();
+        List<Map<String, Object>> sectionDetails = sections.stream()
+            .map(section -> Map.of(
+                "id", (Object) section.getId(),
+                "sectionNumber", (Object) section.getSectionNumber(),
+                "subject", (Object) section.getSubject(),
+                "questionCount", (Object) section.getQuestionCount(),
+                "sectionTime", (Object) section.getSectionTime(),
+                "passPercentage", (Object) section.getPassPercentage(),
+                "sectionMode", (Object) section.getSectionMode(),
+                "supportedLanguages", (Object) (section.getSupportedLanguages() != null ? section.getSupportedLanguages() : "")
+            ))
+            .collect(Collectors.toList());
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("testId", assessment.getId());
+        summary.put("title", assessment.getAssessmentName());
+        summary.put("testName", assessment.getAssessmentName());
+        summary.put("description", assessment.getDescription() != null ? assessment.getDescription() : "");
+        summary.put("questionCount", questionCount);
+        summary.put("questions", questionCount);
+        summary.put("durationMinutes", durationMinutes);
+        summary.put("sectionCount", sections.size());
+        summary.put("sections", sectionDetails);
+        summary.put("createdAt", assessment.getCreatedAt());
+        summary.put("locked", assessment.isLocked());
+        return summary;
+    }
+
+    private boolean isAssessmentOwnedByHr(Long assessmentId, Long hrId) {
+        if (assessmentId == null || hrId == null) {
+            return false;
+        }
+
+        List<AssessmentQuestion> assessmentQuestions = assessmentQuestionRepository.findByAssessmentId(assessmentId);
+        if (assessmentQuestions.isEmpty()) {
+            return false;
+        }
+
+        return assessmentQuestions.stream().allMatch(assessmentQuestion -> {
+            Question question = assessmentQuestion.getQuestion();
+            return question != null
+                && "HR".equalsIgnoreCase(question.getCreatedByRole())
+                && Objects.equals(question.getCreatedByHrId(), hrId);
+        });
     }
 }

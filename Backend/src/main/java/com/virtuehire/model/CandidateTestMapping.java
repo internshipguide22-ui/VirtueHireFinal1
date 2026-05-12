@@ -23,6 +23,9 @@ public class CandidateTestMapping {
     @Column(nullable = false)
     private LocalDateTime assignedAt = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private LocalDateTime availableFrom = LocalDateTime.now();
+
     // Test details (denormalized for quick access)
     @Column(nullable = false)
     private String testName;
@@ -43,6 +46,12 @@ public class CandidateTestMapping {
 
     public CandidateTestMapping(Long candidateId, Long testId, Long assignedByHrId, 
                                 String testName, String testDescription, Integer durationMinutes) {
+        this(candidateId, testId, assignedByHrId, testName, testDescription, durationMinutes, LocalDateTime.now());
+    }
+
+    public CandidateTestMapping(Long candidateId, Long testId, Long assignedByHrId, 
+                                String testName, String testDescription, Integer durationMinutes,
+                                LocalDateTime availableFrom) {
         this.candidateId = candidateId;
         this.testId = testId;
         this.assignedByHrId = assignedByHrId;
@@ -50,6 +59,7 @@ public class CandidateTestMapping {
         this.testDescription = testDescription;
         this.durationMinutes = durationMinutes;
         this.assignedAt = LocalDateTime.now();
+        this.availableFrom = availableFrom != null ? availableFrom : LocalDateTime.now();
     }
 
     // ===== Getters & Setters =====
@@ -91,6 +101,14 @@ public class CandidateTestMapping {
 
     public void setAssignedAt(LocalDateTime assignedAt) {
         this.assignedAt = assignedAt;
+    }
+
+    public LocalDateTime getAvailableFrom() {
+        return availableFrom;
+    }
+
+    public void setAvailableFrom(LocalDateTime availableFrom) {
+        this.availableFrom = availableFrom;
     }
 
     public String getTestName() {

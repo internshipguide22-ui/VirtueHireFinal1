@@ -4,13 +4,13 @@ import api from "../../services/api";
 import {
   CheckCircle,
   XCircle,
+  X,
   User,
   FileText,
   MessageSquare,
   Calendar,
   Award,
   Loader2,
-  AlertCircle,
   Search,
   Filter,
   Eye,
@@ -19,7 +19,7 @@ import "./FeedbackDashboard.css";
 
 const STATUS_CONFIG = {
   APPROVED: { icon: CheckCircle, class: "status-approved", label: "Approved" },
-  REJECTED: { icon: XCircle, class: "status-rejected", label: "Rejected" },
+  REJECTED: { icon: X, class: "status-rejected", label: "Rejected" },
 };
 
 const FeedbackDashboard = () => {
@@ -30,6 +30,7 @@ const FeedbackDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [allocationHistory, setAllocationHistory] = useState([]);
 
   useEffect(() => {
     fetchFeedbackData();
@@ -37,42 +38,9 @@ const FeedbackDashboard = () => {
 
   const fetchFeedbackData = async () => {
     try {
-      // Get all candidates and filter for APPROVED/REJECTED
-      const response = await api.get("/admin/candidates");
-      const allCandidates = response.data.candidates || [];
-      
-      // Filter for candidates with final status (APPROVED or REJECTED)
-      const finalStatusCandidates = allCandidates.filter(
-        c => c.applicationStatus === "APPROVED" || c.applicationStatus === "REJECTED"
-      );
-      
-      // Fetch additional details for each candidate including test assignments and feedback
-      const candidatesWithDetails = await Promise.all(
-        finalStatusCandidates.map(async (candidate) => {
-          try {
-            const [feedbackRes, testsRes] = await Promise.all([
-              api.get(`/hrs/candidates/${candidate.id}/status-feedback`).catch(() => ({ data: null })),
-              api.get(`/hrs/candidates/${candidate.id}/assigned-tests`).catch(() => ({ data: { assignedTests: [] } })),
-            ]);
-            
-            return {
-              ...candidate,
-              hrFeedback: feedbackRes.data?.feedback || candidate.hrFeedback || "No feedback provided",
-              processedAt: feedbackRes.data?.processedAt || candidate.updatedAt,
-              processedBy: feedbackRes.data?.processedBy || "HR",
-              assignedTests: testsRes.data?.assignedTests || [],
-            };
-          } catch (err) {
-            return {
-              ...candidate,
-              hrFeedback: candidate.hrFeedback || "No feedback provided",
-              assignedTests: [],
-            };
-          }
-        })
-      );
-      
-      setCandidates(candidatesWithDetails);
+      const response = await api.get("/admin/feedback");
+      setCandidates(response.data.candidates || []);
+      setAllocationHistory(response.data.allocationHistory || []);
     } catch (err) {
       console.error("Error fetching feedback data:", err);
       if (err.response?.status === 401) {
@@ -99,17 +67,17 @@ const FeedbackDashboard = () => {
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = 
-      (candidate.fullName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (candidate.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (candidate.hrFeedback?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+      (candidate.candidateName?.toLowerCase() || candidate.fullName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (candidate.candidateEmail?.toLowerCase() || candidate.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (candidate.feedback?.toLowerCase() || candidate.hrFeedback?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || candidate.applicationStatus === statusFilter;
+    const matchesStatus = statusFilter === "all" || (candidate.applicationStatus || candidate.status) === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status) => {
-    const config = STATUS_CONFIG[status] || { icon: AlertCircle, class: "status-default", label: status };
+    const config = STATUS_CONFIG[status] || { icon: X, class: "status-default", label: status };
     const Icon = config.icon;
     return (
       <span className={`status-badge ${config.class}`}>
@@ -119,8 +87,8 @@ const FeedbackDashboard = () => {
     );
   };
 
-  const approvedCount = candidates.filter(c => c.applicationStatus === "APPROVED").length;
-  const rejectedCount = candidates.filter(c => c.applicationStatus === "REJECTED").length;
+  const approvedCount = candidates.filter(c => (c.applicationStatus || c.status) === "APPROVED").length;
+  const rejectedCount = candidates.filter(c => (c.applicationStatus || c.status) === "REJECTED").length;
 
   if (loading) {
     return (
@@ -145,7 +113,7 @@ const FeedbackDashboard = () => {
 
       {error && (
         <div className="feedback-dashboard-error">
-          <AlertCircle size={20} />
+          <X size={20} />
           <span>{error}</span>
           <button onClick={fetchFeedbackData}>Retry</button>
         </div>
@@ -197,6 +165,20 @@ const FeedbackDashboard = () => {
         </div>
       </div>
 
+      {allocationHistory.length > 0 && (
+        <div className="feedback-summary">
+          {allocationHistory.slice(0, 4).map((item) => (
+            <div key={item.testId || item.testName} className="summary-card total">
+              <FileText size={24} />
+              <div className="summary-info">
+                <span className="summary-number">{item.totalAssignments}</span>
+                <span className="summary-label">{item.testName}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Candidates Table */}
       <div className="feedback-table-container">
         <table className="feedback-table">
@@ -223,8 +205,8 @@ const FeedbackDashboard = () => {
               filteredCandidates.map((candidate) => (
                 <tr key={candidate.id}>
                   <td className="candidate-info">
-                    <div className="candidate-name">{candidate.fullName || "Unknown"}</div>
-                    <div className="candidate-email">{candidate.email || "No email"}</div>
+                    <div className="candidate-name">{candidate.candidateName || candidate.fullName || "Unknown"}</div>
+                    <div className="candidate-email">{candidate.candidateEmail || candidate.email || "No email"}</div>
                     {candidate.skills && (
                       <div className="candidate-skills">
                         {candidate.skills.split(",").slice(0, 2).map((skill, idx) => (
@@ -233,11 +215,11 @@ const FeedbackDashboard = () => {
                       </div>
                     )}
                   </td>
-                  <td>{getStatusBadge(candidate.applicationStatus)}</td>
+                  <td>{getStatusBadge(candidate.applicationStatus || candidate.status)}</td>
                   <td className="tests-count">
                     <div className="tests-info">
                       <FileText size={14} />
-                      <span>{candidate.assignedTests?.length || 0} tests</span>
+                      <span>{candidate.testCount ?? candidate.assignedTests?.length ?? 0} tests</span>
                     </div>
                     {candidate.assignedTests && candidate.assignedTests.length > 0 && (
                       <div className="tests-submitted">
@@ -251,12 +233,12 @@ const FeedbackDashboard = () => {
                   <td className="feedback-cell">
                     <div className="feedback-preview">
                       <MessageSquare size={14} />
-                      <p>{candidate.hrFeedback || "No feedback provided"}</p>
+                      <p>{candidate.feedback || candidate.hrFeedback || "No feedback provided"}</p>
                     </div>
                   </td>
                   <td className="processed-date">
                     <Calendar size={14} />
-                    <span>{formatDate(candidate.processedAt || candidate.updatedAt)}</span>
+                    <span>{formatDate(candidate.statusUpdatedAt || candidate.processedAt || candidate.updatedAt)}</span>
                   </td>
                   <td className="actions">
                     <button
@@ -278,12 +260,12 @@ const FeedbackDashboard = () => {
       {selectedCandidate && (
         <div className="modal-overlay" onClick={() => setSelectedCandidate(null)}>
           <div className="candidate-detail-modal" onClick={e => e.stopPropagation()}>
-            <div className={`modal-header ${selectedCandidate.applicationStatus?.toLowerCase()}`}>
+            <div className={`modal-header ${(selectedCandidate.applicationStatus || selectedCandidate.status || "").toLowerCase()}`}>
               <div className="modal-title">
                 <User size={24} />
                 <div>
-                  <h2>{selectedCandidate.fullName}</h2>
-                  <p>{selectedCandidate.email}</p>
+                  <h2>{selectedCandidate.candidateName || selectedCandidate.fullName}</h2>
+                  <p>{selectedCandidate.candidateEmail || selectedCandidate.email}</p>
                 </div>
               </div>
               <button className="modal-close" onClick={() => setSelectedCandidate(null)}>
@@ -294,14 +276,14 @@ const FeedbackDashboard = () => {
             <div className="modal-content">
               <div className="detail-section">
                 <h3>Status</h3>
-                {getStatusBadge(selectedCandidate.applicationStatus)}
+                {getStatusBadge(selectedCandidate.applicationStatus || selectedCandidate.status)}
               </div>
 
               <div className="detail-section">
                 <h3>HR Feedback</h3>
                 <div className="feedback-box">
                   <MessageSquare size={18} />
-                  <p>{selectedCandidate.hrFeedback || "No feedback provided"}</p>
+                  <p>{selectedCandidate.feedback || selectedCandidate.hrFeedback || "No feedback provided"}</p>
                 </div>
               </div>
 
@@ -345,7 +327,7 @@ const FeedbackDashboard = () => {
                 <div className="detail-item">
                   <Calendar size={16} />
                   <span className="label">Processed:</span>
-                  <span className="value">{formatDate(selectedCandidate.processedAt || selectedCandidate.updatedAt)}</span>
+                  <span className="value">{formatDate(selectedCandidate.statusUpdatedAt || selectedCandidate.processedAt || selectedCandidate.updatedAt)}</span>
                 </div>
               </div>
             </div>

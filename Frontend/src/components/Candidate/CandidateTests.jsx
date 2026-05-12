@@ -5,7 +5,7 @@ import {
   FileText,
   Clock,
   CheckCircle,
-  AlertCircle,
+  X,
   Play,
   Loader2,
   Calendar,
@@ -49,17 +49,16 @@ const CandidateTests = () => {
     setStartingTest(test.id);
     
     try {
-      // Navigate to test-taking interface
-      navigate(`/candidate/take-test/${test.id}`, {
-        state: {
-          testId: test.id,
-          testName: test.testName,
-          durationMinutes: test.durationMinutes,
-        },
-      });
+      const detailsResponse = await api.get(`/candidates/me/tests/${test.testId}`);
+      const assessmentName = detailsResponse.data?.testName || test.testName;
+
+      localStorage.setItem("selectedAssessment", assessmentName);
+      sessionStorage.setItem("selectedAssessment", assessmentName);
+      navigate("/assessment");
     } catch (err) {
       console.error("Error starting test:", err);
       setError("Failed to start test. Please try again.");
+    } finally {
       setStartingTest(null);
     }
   };
@@ -102,7 +101,7 @@ const CandidateTests = () => {
 
       {error && (
         <div className="candidate-tests-error">
-          <AlertCircle size={20} />
+          <X size={20} />
           <span>{error}</span>
           <button onClick={fetchAssignedTests}>Retry</button>
         </div>
@@ -128,7 +127,7 @@ const CandidateTests = () => {
       {pendingTests.length > 0 && (
         <div className="tests-section">
           <h2 className="section-title">
-            <AlertCircle size={20} />
+            <X size={20} />
             Pending Tests ({pendingTests.length})
           </h2>
           <div className="tests-grid">

@@ -773,6 +773,11 @@ const TestManager = ({ hr, onSuccess, apiBase = "/hrs" }) => {
           Upload questions to the Question Bank and create assessments for
           candidates.
         </p>
+        {apiBase === "/hrs" ? (
+          <p className="tm-page-sub">
+            HR question bank access includes Admin shared questions plus your own uploaded questions.
+          </p>
+        ) : null}
       </div>
 
       {/* ════════════════════════════════════════════════════

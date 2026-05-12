@@ -50,6 +50,12 @@ public class Question {
     @Column(name = "question_type", nullable = false, length = 10)
     private String questionType = "MCQ";
 
+    @Column(name = "created_by_role", length = 20)
+    private String createdByRole = "ADMIN";
+
+    @Column(name = "created_by_hr_id")
+    private Long createdByHrId;
+
     // ===== Constructors =====
     public Question() {
     }
@@ -147,5 +153,21 @@ public class Question {
 
     public void setQuestionType(String questionType) {
         this.questionType = questionType;
+    }
+
+    public String getCreatedByRole() {
+        return createdByRole;
+    }
+
+    public void setCreatedByRole(String createdByRole) {
+        this.createdByRole = createdByRole;
+    }
+
+    public Long getCreatedByHrId() {
+        return createdByHrId;
+    }
+
+    public void setCreatedByHrId(Long createdByHrId) {
+        this.createdByHrId = createdByHrId;
     }
 }

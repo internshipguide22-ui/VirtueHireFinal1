@@ -311,6 +311,23 @@
   line-height: 1.2;
 }
 
+.candidate-offline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.candidate-offline-badge .offline-check {
+  color: #10b981;
+  font-weight: bold;
+}
+
 .candidate-offline-verified {
   display: inline-flex;
   align-items: center;

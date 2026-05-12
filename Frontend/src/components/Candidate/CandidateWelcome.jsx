@@ -513,7 +513,7 @@ export default function CandidateWelcome() {
           onClick={handleLogout}
         >
           <LogOut size={18} />
-          Logout
+          Sign Out
         </button>
       </aside>
 
@@ -613,17 +613,7 @@ export default function CandidateWelcome() {
                       className="candidate-result-card"
                     >
                       <div className="candidate-result-top">
-                        <h4>
-                          {result.subject}{" "}
-                          {result.offlineTaken ? (
-                            <span
-                              className="candidate-offline-verified"
-                              title="Taken in offline mode"
-                            >
-                              <BadgeCheck size={16} />
-                            </span>
-                          ) : null}
-                        </h4>
+                        <h4>{result.subject}</h4>
                         <span
                           className={
                             result.cumulativePercentage >= 60
@@ -631,7 +621,7 @@ export default function CandidateWelcome() {
                               : "failed"
                           }
                         >
-                          {result.cumulativePercentage}%
+                          {(result.cumulativePercentage ?? result.cumulative_percentage ?? 0)}%
                         </span>
                       </div>
                       <p>
@@ -639,6 +629,12 @@ export default function CandidateWelcome() {
                           ? result.badge
                           : "No badge yet"}
                       </p>
+                      {/* FIX: Show offline mode indicator with checkmark */}
+                      {result.offlineTaken && (
+                        <div className="candidate-offline-badge">
+                          <span className="offline-check">✓</span> Offline Test
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>

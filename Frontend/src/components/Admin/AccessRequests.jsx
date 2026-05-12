@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   Clock3,
   RefreshCw,
-  ShieldAlert,
+  X,
   XCircle,
 } from "lucide-react";
 
@@ -103,7 +103,7 @@ export default function AccessRequests() {
                 color: "#64748b",
               }}
             >
-              <ShieldAlert
+              <X
                 size={48}
                 style={{ opacity: 0.3, marginBottom: "12px" }}
               />

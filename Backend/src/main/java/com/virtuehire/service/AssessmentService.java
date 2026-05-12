@@ -32,6 +32,7 @@ public class AssessmentService {
     private final AssessmentSectionRepository sectionRepo;
     private final AssessmentQuestionRepository aqRepo;
     private final QuestionRepository questionRepo;
+    private final QuestionService questionService;
     private final AssessmentResultRepository resultRepo;
     private final AdminNotificationService adminNotificationService;
 
@@ -39,24 +40,31 @@ public class AssessmentService {
                              AssessmentSectionRepository sectionRepo,
                              AssessmentQuestionRepository aqRepo,
                              QuestionRepository questionRepo,
+                             QuestionService questionService,
                              AssessmentResultRepository resultRepo,
                              AdminNotificationService adminNotificationService) {
         this.assessmentRepo = assessmentRepo;
         this.sectionRepo = sectionRepo;
         this.aqRepo = aqRepo;
         this.questionRepo = questionRepo;
+        this.questionService = questionService;
         this.resultRepo = resultRepo;
         this.adminNotificationService = adminNotificationService;
     }
 
     @Transactional
     public Assessment createAssessment(String name, String description, List<Map<String, Object>> sectionsData) {
+        return createAssessment(name, description, sectionsData, null);
+    }
+
+    @Transactional
+    public Assessment createAssessment(String name, String description, List<Map<String, Object>> sectionsData, Long hrId) {
         // Validation step
         for (Map<String, Object> sec : sectionsData) {
-            String subject = normalizeSkill((String) sec.get("subject"));
+            String subject = normalizeSkill((String) sec.get("subject"), hrId);
             int requestedCount = (Integer) sec.get("questionCount");
             String sectionMode = normalizeSectionMode((String) sec.get("sectionMode"));
-            List<Question> availableQuestions = getQuestionsForMode(subject, sectionMode);
+            List<Question> availableQuestions = getQuestionsForMode(subject, sectionMode, hrId);
 
             long availableCount = availableQuestions.size();
             if (availableCount < requestedCount) {
@@ -79,7 +87,7 @@ public class AssessmentService {
         // 2. Iterate sections, save sections, assign random questions
         int sectionNumber = 1;
         for (Map<String, Object> sec : sectionsData) {
-            String subject = normalizeSkill((String) sec.get("subject"));
+            String subject = normalizeSkill((String) sec.get("subject"), hrId);
             int requestedCount = (Integer) sec.get("questionCount");
             int timeLimit = (Integer) sec.get("timeLimit");
             int passPercentage = (Integer) sec.get("passPercentage");
@@ -98,7 +106,7 @@ public class AssessmentService {
             section = sectionRepo.save(section);
 
             // Fetch and shuffle questions
-            List<Question> availableQs = getQuestionsForMode(subject, sectionMode);
+            List<Question> availableQs = getQuestionsForMode(subject, sectionMode, hrId);
             Collections.shuffle(availableQs);
 
             List<Question> selectedQs = availableQs.subList(0, requestedCount);
@@ -111,7 +119,7 @@ public class AssessmentService {
         }
 
         adminNotificationService.resolveCombinedAssessmentNotification(
-                buildSkillSignatureFromSections(getAssessmentSections(assessment.getId())));
+                buildSkillSignatureFromSections(getAssessmentSections(assessment.getId()), hrId));
 
         return assessment;
     }
@@ -179,7 +187,7 @@ public class AssessmentService {
         // Find ALL matching assessments, not just the first one
         List<Assessment> matchedAssessments = new ArrayList<>();
         for (Assessment assessment : assessmentRepo.findAll()) {
-            String assessmentSignature = buildSkillSignatureFromSections(getAssessmentSections(assessment.getId()));
+            String assessmentSignature = buildSkillSignatureFromSections(getAssessmentSections(assessment.getId()), null);
             if (requestedSignature.equals(assessmentSignature)) {
                 matchedAssessments.add(assessment);
             }
@@ -243,7 +251,7 @@ public class AssessmentService {
         for (AssessmentSection section : sections) {
             String subject = section.getSubject();
             if (subject != null && !subject.isBlank()) {
-                String normalized = normalizeSkill(subject);
+                String normalized = normalizeSkill(subject, null);
                 if (!normalized.isBlank()) {
                     uniqueSubjects.add(normalized);
                 }
@@ -315,31 +323,34 @@ public class AssessmentService {
 
         return skills.stream()
                 .filter(skill -> skill != null && !skill.isBlank())
-                .map(this::normalizeSkill)
+                .map(skill -> normalizeSkill(skill, null))
                 .map(skill -> skill.toLowerCase(Locale.ROOT))
                 .distinct()
                 .sorted()
                 .collect(Collectors.joining("|"));
     }
 
-    private String buildSkillSignatureFromSections(List<AssessmentSection> sections) {
+    private String buildSkillSignatureFromSections(List<AssessmentSection> sections, Long hrId) {
         Set<String> skills = sections.stream()
                 .map(AssessmentSection::getSubject)
                 .filter(subject -> subject != null && !subject.isBlank())
-                .map(this::normalizeSkill)
+                .map(subject -> normalizeSkill(subject, hrId))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return buildSkillSignature(new ArrayList<>(skills));
     }
 
-    private String normalizeSkill(String skill) {
+    private String normalizeSkill(String skill, Long hrId) {
         if (skill == null) {
             return "";
         }
 
         String trimmed = skill.trim();
-        return questionRepo.findAll().stream()
-                .map(Question::getSubject)
+        List<String> visibleSubjects = hrId == null
+                ? questionService.getAllSubjects()
+                : questionService.getAllSubjectsForHr(hrId);
+
+        return visibleSubjects.stream()
                 .filter(subject -> subject != null
                         && canonicalizeSkill(subject).equals(canonicalizeSkill(trimmed)))
                 .findFirst()
@@ -367,7 +378,7 @@ public class AssessmentService {
     }
 
     private String buildSkillMatchKey(String skill) {
-        String canonical = canonicalizeSkill(normalizeSkill(skill));
+        String canonical = canonicalizeSkill(normalizeSkill(skill, null));
         if (canonical.isBlank()) {
             return "";
         }
@@ -387,11 +398,14 @@ public class AssessmentService {
         };
     }
 
-    private List<Question> getQuestionsForMode(String subject, String sectionMode) {
+    private List<Question> getQuestionsForMode(String subject, String sectionMode, Long hrId) {
+        List<Question> questions = hrId == null
+                ? questionService.getQuestionsBySubject(subject)
+                : questionService.getQuestionsBySubjectForHr(subject, hrId);
         if ("COMPILER".equals(sectionMode)) {
-            return questionRepo.findBySubjectAndHasCompiler(subject, true);
+            return questions.stream().filter(Question::isHasCompiler).toList();
         }
-        return questionRepo.findBySubjectAndHasCompiler(subject, false);
+        return questions.stream().filter(question -> !question.isHasCompiler()).toList();
     }
 
     private String normalizeSectionMode(String sectionMode) {

@@ -11,7 +11,9 @@ export const WS_BASE_URL = isLocal
   ? "http://localhost:8081"
   : "https://backend.virtuehire.in";
 
-export default {
+const config = {
   API_BASE_URL,
   WS_BASE_URL,
 };
+
+export default config;

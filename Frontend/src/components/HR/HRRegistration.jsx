@@ -12,7 +12,7 @@ import {
   Briefcase,
   Upload,
   CheckCircle,
-  AlertCircle,
+  X,
   Shield,
   ArrowRight,
   FileText,
@@ -300,7 +300,7 @@ const HRRegistration = () => {
 
           {error && (
             <div className="hr-reg-alert error">
-              <AlertCircle size={20} />
+              <X size={20} />
               <span>{error}</span>
             </div>
           )}

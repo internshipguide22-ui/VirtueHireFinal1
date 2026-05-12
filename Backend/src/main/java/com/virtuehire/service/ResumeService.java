@@ -315,12 +315,18 @@ public class ResumeService {
             document.addPage(page);
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                switch (templateId) {
-                    case "modern-minimal" -> renderModernMinimalPdf(contentStream, page, resumeData, title, templateId);
-                    case "clean-structured" -> renderCleanStructuredPdf(contentStream, page, resumeData, title, templateId);
-                    case "simple-elegant" -> renderSimpleElegantPdf(contentStream, page, resumeData, title, templateId);
-                    case "two-column-executive" -> renderTwoColumnExecutivePdf(contentStream, page, resumeData, title, templateId);
-                    default -> renderClassicProfessionalPdf(contentStream, page, resumeData, title, templateId);
+                // FIX: Map old template IDs to new ATS-friendly versions
+                String normalizedTemplateId = templateId;
+                if ("two-column-executive".equals(templateId)) {
+                    normalizedTemplateId = "executive"; // Migrated to single-column ATS-friendly version
+                }
+                
+                switch (normalizedTemplateId) {
+                    case "modern-minimal" -> renderModernMinimalPdf(contentStream, page, resumeData, title, normalizedTemplateId);
+                    case "clean-structured" -> renderCleanStructuredPdf(contentStream, page, resumeData, title, normalizedTemplateId);
+                    case "simple-elegant" -> renderSimpleElegantPdf(contentStream, page, resumeData, title, normalizedTemplateId);
+                    case "executive" -> renderExecutivePdf(contentStream, page, resumeData, title, normalizedTemplateId);
+                    default -> renderClassicProfessionalPdf(contentStream, page, resumeData, title, normalizedTemplateId);
                 }
             }
             document.save(filePath.toFile());
@@ -415,53 +421,72 @@ public class ResumeService {
         writeFooter(contentStream, margin, templateId);
     }
 
-    private void renderTwoColumnExecutivePdf(PDPageContentStream contentStream, PDPage page,
-                                             Map<String, Object> resumeData, String title, String templateId) throws IOException {
-        float pageHeight = page.getMediaBox().getHeight();
-        float pageWidth = page.getMediaBox().getWidth();
-        float sidebarWidth = 165f;
-        float margin = 24f;
+    // FIX: Single-column ATS-friendly executive layout
+    // Two-column layouts can confuse ATS systems that read sequentially
+    private void renderExecutivePdf(PDPageContentStream contentStream, PDPage page,
+                                    Map<String, Object> resumeData, String title, String templateId) throws IOException {
+        float margin = 48f;
+        float y = page.getMediaBox().getHeight() - margin;
+        float width = page.getMediaBox().getWidth() - (margin * 2);
         Map<String, Object> personalInfo = castMap(resumeData.get("personalInfo"));
 
-        contentStream.setNonStrokingColor(31, 41, 55);
-        contentStream.addRect(0, 0, sidebarWidth, pageHeight);
-        contentStream.fill();
-
-        float leftX = 18f;
-        float leftY = pageHeight - 36f;
-        contentStream.setNonStrokingColor(255, 255, 255);
-        leftY = writeText(contentStream, "CONTACT", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
-        leftY = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, "\n")), leftX, leftY - 8, sidebarWidth - 34, 9, 12, PDType1Font.HELVETICA);
-
-        leftY -= 10;
-        leftY = writeText(contentStream, "SKILLS", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
-        for (String skill : sanitizeStringList(resumeData.get("skills"))) {
-            leftY = writeWrappedText(contentStream, "• " + trimForPdf(skill), leftX, leftY - 6, sidebarWidth - 34, 9, 11, PDType1Font.HELVETICA);
-        }
-
-        leftY -= 10;
-        leftY = writeText(contentStream, "EDUCATION", leftX, leftY, 11, PDType1Font.HELVETICA_BOLD);
-        for (Map<String, String> item : sanitizeObjectList(resumeData.get("education"), List.of("institution", "degree", "duration", "description"))) {
-            leftY = writeWrappedText(contentStream,
-                    trimForPdf(firstNonBlank(item.get("degree"), item.get("institution"))), leftX, leftY - 6, sidebarWidth - 34, 9, 11, PDType1Font.HELVETICA_BOLD);
-            leftY = writeWrappedText(contentStream,
-                    trimForPdf(String.join(" | ", sanitizeStringList(List.of(item.get("institution"), item.get("duration"))))),
-                    leftX, leftY, sidebarWidth - 34, 8.5f, 10.5f, PDType1Font.HELVETICA);
-            leftY -= 6;
-        }
-
-        float mainX = sidebarWidth + margin;
-        float mainY = pageHeight - 48f;
-        float mainWidth = pageWidth - mainX - margin;
+        // Header with professional styling
         contentStream.setNonStrokingColor(15, 23, 42);
-        mainY = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), mainX, mainY, 22, PDType1Font.HELVETICA_BOLD);
+        y = writeText(contentStream, firstNonBlank(asString(personalInfo.get("name")), title), margin, y, 22, PDType1Font.HELVETICA_BOLD);
         String titleLine = firstNonBlank(asString(personalInfo.get("title")), "");
         if (!titleLine.isBlank()) {
-            mainY = writeText(contentStream, titleLine, mainX, mainY - 4, 11, PDType1Font.HELVETICA);
+            y = writeText(contentStream, titleLine, margin, y - 4, 12, PDType1Font.HELVETICA);
         }
-        mainY = writeSection(contentStream, "Profile", List.of(asString(resumeData.get("professionalSummary"))), mainX, mainY - 14, mainWidth);
-        writeStandardSections(contentStream, resumeData, mainX, mainY, mainWidth, 55, 65, 81, false, true);
-        writeFooter(contentStream, mainX, templateId);
+        y = writeWrappedText(contentStream, trimForPdf(buildContactLine(personalInfo, " | ")), margin, y - 8, width, 10, 14, PDType1Font.HELVETICA);
+        
+        // Draw header underline
+        y -= 12;
+        contentStream.setStrokingColor(76, 29, 149);
+        contentStream.setLineWidth(2f);
+        contentStream.moveTo(margin, y);
+        contentStream.lineTo(page.getMediaBox().getWidth() - margin, y);
+        contentStream.stroke();
+        y -= 8;
+
+        // Professional Summary
+        y = writeSection(contentStream, "Professional Summary", List.of(asString(resumeData.get("professionalSummary"))), margin, y, width, 76, 29, 149);
+        
+        // Core Competencies (Skills)
+        List<String> skills = sanitizeStringList(resumeData.get("skills"));
+        if (!skills.isEmpty()) {
+            y = writeSection(contentStream, "Core Competencies", List.of(String.join(" • ", skills)), margin, y, width, 76, 29, 149);
+        }
+        
+        // Professional Experience
+        y = writeObjectSection(contentStream, "Professional Experience", 
+            sanitizeObjectList(resumeData.get("experience"), List.of("company", "role", "duration", "description")), 
+            margin, y, width, 76, 29, 149);
+        
+        // Education
+        y = writeObjectSection(contentStream, "Education", 
+            sanitizeObjectList(resumeData.get("education"), List.of("institution", "degree", "duration", "description")), 
+            margin, y, width, 76, 29, 149);
+        
+        // Projects
+        y = writeObjectSection(contentStream, "Projects", 
+            sanitizeObjectList(resumeData.get("projects"), List.of("name", "role", "duration", "description")), 
+            margin, y, width, 76, 29, 149);
+        
+        // Certifications
+        y = writeObjectSection(contentStream, "Certifications", 
+            sanitizeObjectList(resumeData.get("certifications"), List.of("name", "issuer", "year", "description")), 
+            margin, y, width, 76, 29, 149);
+        
+        // Achievements
+        y = writeSection(contentStream, "Achievements", sanitizeStringList(resumeData.get("achievements")), margin, y, width, 76, 29, 149);
+        
+        // ATS Keywords (for parser optimization)
+        List<String> keywords = sanitizeStringList(resumeData.get("keywords"));
+        if (!keywords.isEmpty()) {
+            y = writeSection(contentStream, "ATS Keywords", List.of(String.join(", ", keywords)), margin, y, width, 76, 29, 149);
+        }
+        
+        writeFooter(contentStream, margin, templateId);
     }
 
     private float writeStandardSections(PDPageContentStream contentStream, Map<String, Object> resumeData,

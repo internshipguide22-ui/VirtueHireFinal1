@@ -312,13 +312,22 @@ public class CandidateService {
     }
 
     private void applyAssessmentAssignment(Candidate candidate) {
+        List<String> existingAssignments = getAssignedAssessmentNames(candidate);
         List<String> displaySkills = extractDisplaySkills(candidate.getSkills());
 
         if (displaySkills.isEmpty()) {
-            candidate.setAssignedAssessmentName(null);
-            candidate.setAssessmentAssignmentStatus("NO_SKILLS_SELECTED");
-            candidate.setAssessmentAssignmentMessage(
-                    "No skills selected yet. Add skills to get a relevant assessment.");
+            // Preserve any manually/admin/HR assigned assessments even when skills are absent.
+            if (existingAssignments.isEmpty()) {
+                candidate.setAssignedAssessmentName(null);
+                candidate.setAssessmentAssignmentStatus("NO_SKILLS_SELECTED");
+                candidate.setAssessmentAssignmentMessage(
+                        "No skills selected yet. Add skills to get a relevant assessment.");
+            } else {
+                candidate.setAssignedAssessmentName(String.join(",", existingAssignments));
+                candidate.setAssessmentAssignmentStatus("ASSIGNED");
+                candidate.setAssessmentAssignmentMessage(
+                        "Assessments are already assigned to your profile.");
+            }
             return;
         }
 
@@ -334,6 +343,10 @@ public class CandidateService {
                     .distinct()
                     .toList();
 
+            // Preserve existing assignments and merge skill-based matches.
+            LinkedHashSet<String> mergedAssignments = new LinkedHashSet<>(existingAssignments);
+            mergedAssignments.addAll(allMatchedNames);
+
             List<String> coveredSkills = matchedAssessments.stream()
                     .flatMap(assessment -> assessmentService.getAssessmentSubjects(assessment).stream())
                     .filter(Objects::nonNull)
@@ -347,8 +360,8 @@ public class CandidateService {
                             .noneMatch(covered -> assessmentService.skillsMatch(covered, skill)))
                     .toList();
 
-            // Store all names comma-separated — getAssignedAssessmentNames() splits them back
-            candidate.setAssignedAssessmentName(String.join(",", allMatchedNames));
+            // Store merged names comma-separated — getAssignedAssessmentNames() splits them back
+            candidate.setAssignedAssessmentName(String.join(",", mergedAssignments));
             candidate.setAssessmentAssignmentStatus("ASSIGNED");
 
             if (missingSkills.isEmpty()) {
@@ -361,6 +374,15 @@ public class CandidateService {
                                 + ". No assessment is available yet for: "
                                 + String.join(", ", missingSkills) + ".");
             }
+            return;
+        }
+
+        // No skill-based match found. Preserve existing manual/admin/HR assignments if present.
+        if (!existingAssignments.isEmpty()) {
+            candidate.setAssignedAssessmentName(String.join(",", existingAssignments));
+            candidate.setAssessmentAssignmentStatus("ASSIGNED");
+            candidate.setAssessmentAssignmentMessage(
+                    "Assessments are already assigned to your profile.");
             return;
         }
 

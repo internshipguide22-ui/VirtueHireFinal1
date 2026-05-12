@@ -432,6 +432,15 @@
 }
 
 @media (max-width: 640px) {
+  .adm-container {
+    padding: 18px 12px 100px;
+  }
+  .adm-content {
+    padding: 18px;
+  }
+  .adm-card {
+    padding: 18px;
+  }
   .adm-candidate-profile {
     flex-direction: column;
   }
@@ -443,6 +452,7 @@
     grid-template-columns: 1fr;
   }
 
+  /* FIX: These were orphaned outside the @media block — moved inside */
   .adm-form-actions,
   .adm-edit-actions,
   .adm-result-row,
@@ -450,4 +460,68 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* Expert Badges section styles */
+.adm-badges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.adm-badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adm-badge-subject {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.adm-badge-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.adm-badge-score {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+/* Offline test badge indicator with checkmark */
+.adm-offline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.adm-offline-badge .offline-check {
+  color: #10b981;
+  font-weight: bold;
 }

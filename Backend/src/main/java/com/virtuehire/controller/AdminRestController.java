@@ -30,6 +30,8 @@ public class AdminRestController {
     private final AssessmentResultService assessmentResultService;
     private final AssessmentService assessmentService;
     private final AdminNotificationService adminNotificationService;
+    private final HiringWorkflowService hiringWorkflowService;
+    private final TestAllocationService testAllocationService;
     private final Path uploadDir;
 
     public AdminRestController(HrService hrService, PaymentService paymentService,
@@ -37,6 +39,8 @@ public class AdminRestController {
             QuestionService questionService,
             AssessmentResultService assessmentResultService, AssessmentService assessmentService,
             AdminNotificationService adminNotificationService,
+            HiringWorkflowService hiringWorkflowService,
+            TestAllocationService testAllocationService,
             @Value("${file.upload-dir}") String uploadDirPath) {
         this.hrService = hrService;
         this.paymentService = paymentService;
@@ -46,6 +50,8 @@ public class AdminRestController {
         this.assessmentResultService = assessmentResultService;
         this.assessmentService = assessmentService;
         this.adminNotificationService = adminNotificationService;
+        this.hiringWorkflowService = hiringWorkflowService;
+        this.testAllocationService = testAllocationService;
         this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
     }
 
@@ -312,15 +318,25 @@ public class AdminRestController {
 
         List<AssessmentResult> results = assessmentResultService.getCandidateResults(id);
 
-        return ResponseEntity.ok(Map.of(
-                "candidate", candidate,
-                "results", results,
-                "statusSummary", assessmentResultService.getCandidateStatusSummary(id)));
+        // FIX: Add cache-control headers to prevent browser caching candidate data
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(Map.of(
+                        "candidate", candidate,
+                        "results", results,
+                        "statusSummary", assessmentResultService.getCandidateStatusSummary(id)));
     }
 
     @GetMapping("/candidates")
     public ResponseEntity<?> getAllCandidates() {
-        return ResponseEntity.ok(Map.of("candidates", candidateService.findAll()));
+        // FIX: Add cache-control headers to prevent browser caching candidate data
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(Map.of("candidates", candidateService.findAll()));
     }
 
     @DeleteMapping("/candidates/{id}")
@@ -620,6 +636,26 @@ public class AdminRestController {
         return ResponseEntity.ok(Map.of("assessments", liveList));
     }
 
+    @GetMapping("/tests")
+    public ResponseEntity<?> getAdminTests(HttpSession session) {
+        ResponseEntity<Map<String, String>> forbidden = requireAdmin(session);
+        if (forbidden != null)
+            return forbidden;
+
+        return ResponseEntity.ok(Map.of("tests", testAllocationService.getAvailableTests()));
+    }
+
+    @GetMapping("/feedback")
+    public ResponseEntity<?> getAdminFeedback(HttpSession session) {
+        ResponseEntity<Map<String, String>> forbidden = requireAdmin(session);
+        if (forbidden != null)
+            return forbidden;
+
+        return ResponseEntity.ok(Map.of(
+                "candidates", hiringWorkflowService.getAllApprovedRejectedCandidates(),
+                "allocationHistory", testAllocationService.getTestAssignmentReport()));
+    }
+
     @DeleteMapping("/assessments/{id}")
     public ResponseEntity<?> deleteAssessment(@PathVariable Long id, HttpSession session) {
         ResponseEntity<Map<String, String>> forbidden = requireAdmin(session);
@@ -651,5 +687,28 @@ public class AdminRestController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to update assessment status."));
         }
+    }
+
+    // ------------------ CANDIDATE CUMULATIVE RESULTS (BADGES/EXPERT STATUS) ------------------
+    // FIX: Added endpoint so Admin can see candidate Expert badges with verified indicator
+    @GetMapping("/candidates/{candidateId}/cumulative-results")
+    public ResponseEntity<?> getCandidateCumulativeResults(@PathVariable Long candidateId, HttpSession session) {
+        ResponseEntity<Map<String, String>> forbidden = requireAdmin(session);
+        if (forbidden != null)
+            return forbidden;
+
+        Candidate candidate = candidateService.findById(candidateId).orElse(null);
+        if (candidate == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
+        }
+
+        // Get cumulative results with badge info (e.g., "Java1 Expert")
+        List<Map<String, Object>> cumulativeResults = assessmentResultService.getCandidateCumulativeResults(candidateId);
+
+        return ResponseEntity.ok(Map.of(
+                "candidateId", candidateId,
+                "candidateName", candidate.getFullName(),
+                "cumulativeResults", cumulativeResults,
+                "currentBadge", candidate.getBadge()));
     }
 }

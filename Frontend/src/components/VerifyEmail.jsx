@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import {
   CheckCircle,
-  AlertCircle,
+  X,
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
@@ -118,7 +118,7 @@ export default function VerifyEmail() {
             {status.type === "success" ? (
               <CheckCircle size={18} />
             ) : (
-              <AlertCircle size={18} />
+              <X size={18} />
             )}
             <span>{status.msg}</span>
           </div>

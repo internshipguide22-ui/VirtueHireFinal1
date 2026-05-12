@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Judge0 Code Execution Engine
+  judge0:
+    image: judge0/judge0:latest
+    ports:
+      - "2358:2358"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=judge0
+      - DB_USER=judge0
+      - DB_PASSWORD=Judge0Password
+    volumes:
+      - judge0-data:/judge0
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=Judge0Password
+      - POSTGRES_DB=judge0
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # MySQL Database for VirtueHire
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=virtuehire
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  judge0-data:
+  redis-data:
+  postgres-data:
+  mysql-data:

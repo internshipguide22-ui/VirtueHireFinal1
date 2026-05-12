@@ -3,8 +3,10 @@
 package com.virtuehire.controller;
 
 import com.virtuehire.model.AssessmentResult;
+import com.virtuehire.model.AssignmentSubmission;
 import com.virtuehire.model.Candidate;
 import com.virtuehire.model.CandidateStatus;
+import com.virtuehire.model.CandidateTestMapping;
 import com.virtuehire.service.AssessmentResultService;
 import com.virtuehire.service.CandidateService;
 import com.virtuehire.service.HiringWorkflowService;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.*;
 import org.slf4j.Logger;
@@ -52,6 +55,21 @@ public class CandidateRestController {
         this.hiringWorkflowService = hiringWorkflowService;
         this.testAllocationService = testAllocationService;
         this.uploadDir = StoragePathResolver.resolveUploadDir(uploadDirPath);
+        
+        // Log the resolved upload directory for debugging
+        logger.info("Upload directory configured: {}", uploadDirPath);
+        logger.info("Resolved upload directory: {}", this.uploadDir.toAbsolutePath());
+        logger.info("Upload directory exists: {}", Files.exists(this.uploadDir));
+        
+        // Create directory if it doesn't exist
+        if (!Files.exists(this.uploadDir)) {
+            try {
+                Files.createDirectories(this.uploadDir);
+                logger.info("Created upload directory: {}", this.uploadDir.toAbsolutePath());
+            } catch (IOException e) {
+                logger.error("Failed to create upload directory: {}", this.uploadDir, e);
+            }
+        }
     }
 
     // ---------------------------
@@ -216,15 +234,30 @@ public class CandidateRestController {
                 return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
             }
 
-            candidate = candidateService.refreshAssessmentAssignment(candidate);
+            // Do not recompute assignments here; this endpoint should be read-only
+            // and must not mutate existing assignment state on each request.
             session.setAttribute("candidate", candidate);
 
             // Use LinkedHashSet to deduplicate while preserving insertion order.
-            // Assigned assessments go first, then any others the candidate has attempted.
+            // Show all candidate-specific sources:
+            // 1) HR-mapped assessments (candidate_test_mapping)
+            // 2) Admin-assigned assessments (candidate.assignedAssessmentName)
+            // 3) Candidate's own attempted assessments (result history)
             LinkedHashSet<String> assessmentSet = new LinkedHashSet<>();
 
-            // FIX: Split the comma-separated assignedAssessmentName into individual
-            // names before adding — never add the whole joined string as one entry.
+            // Source 1: candidate_test_mapping for this specific candidate.
+            LocalDateTime now = LocalDateTime.now();
+            List<CandidateTestMapping> assignedMappings = hiringWorkflowService.getAssignedTestsForCandidate(candidate.getId()).stream()
+                    .filter(mapping -> mapping.getAvailableFrom() == null || !mapping.getAvailableFrom().isAfter(now))
+                    .toList();
+            assignedMappings.stream()
+                    .map(CandidateTestMapping::getTestName)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(name -> !name.isBlank())
+                    .forEach(assessmentSet::add);
+
+            // Source 2: admin-assigned names stored on candidate profile.
             if (candidate.getAssignedAssessmentName() != null
                     && !candidate.getAssignedAssessmentName().isBlank()) {
                 Arrays.stream(candidate.getAssignedAssessmentName().split(","))
@@ -233,7 +266,7 @@ public class CandidateRestController {
                         .forEach(assessmentSet::add);
             }
 
-            // Pull all assessment names from the candidate's actual result history
+            // Source 3: subjects from this candidate's own result history.
             List<AssessmentResult> results = assessmentResultService.getCandidateResults(candidate.getId());
             for (AssessmentResult result : results) {
                 if (result.getSubject() != null && !result.getSubject().isBlank()) {
@@ -243,12 +276,13 @@ public class CandidateRestController {
 
             return ResponseEntity.ok(Map.of(
                     "assessments", new ArrayList<>(assessmentSet),
-                    "assignedAssessmentName", candidate.getAssignedAssessmentName() != null
-                            ? candidate.getAssignedAssessmentName() : "",
-                    "assessmentAssignmentStatus", candidate.getAssessmentAssignmentStatus() != null
-                            ? candidate.getAssessmentAssignmentStatus() : "",
-                    "assessmentAssignmentMessage", candidate.getAssessmentAssignmentMessage() != null
-                            ? candidate.getAssessmentAssignmentMessage() : ""));
+                    "assignedAssessmentName", !assessmentSet.isEmpty()
+                            ? String.join(",", assessmentSet)
+                            : (candidate.getAssignedAssessmentName() != null ? candidate.getAssignedAssessmentName() : ""),
+                    "assessmentAssignmentStatus", assessmentSet.isEmpty() ? "NOT_ASSIGNED" : "ASSIGNED",
+                    "assessmentAssignmentMessage", assessmentSet.isEmpty()
+                            ? "No tests assigned yet. Please wait for HR to assign your test."
+                            : "Tests assigned by HR are available in your dashboard."));
         } catch (Exception e) {
             logger.error("Failed to fetch assessments for candidate", e);
             return ResponseEntity.status(500)
@@ -257,7 +291,20 @@ public class CandidateRestController {
     }
 
     @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updateProfile(@ModelAttribute Candidate payload,
+    public ResponseEntity<?> updateProfile(
+            @RequestParam("fullName") String fullName,
+            @RequestParam("email") String email,
+            @RequestParam("phoneNumber") String phoneNumber,
+            @RequestParam(value = "alternatePhoneNumber", required = false) String alternatePhoneNumber,
+            @RequestParam(value = "gender", required = false) String gender,
+            @RequestParam(value = "dateOfBirth", required = false) String dateOfBirth,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "highestEducation", required = false) String highestEducation,
+            @RequestParam(value = "collegeUniversity", required = false) String collegeUniversity,
+            @RequestParam(value = "yearOfGraduation", required = false) Integer yearOfGraduation,
+            @RequestParam(value = "experience", required = false) Integer experience,
+            @RequestParam(value = "skills", required = false) String skills,
             @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile,
             @RequestParam(value = "profilePicFile", required = false) MultipartFile profilePicFile,
             HttpSession session) throws IOException {
@@ -273,30 +320,39 @@ public class CandidateRestController {
             return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
         }
 
+        logger.info("Updating profile for candidate: {}, uploadDir: {}", candidate.getId(), uploadDir);
+
         if (!Files.exists(uploadDir)) {
+            logger.info("Creating upload directory: {}", uploadDir);
             Files.createDirectories(uploadDir);
         }
 
-        candidate.setFullName(payload.getFullName());
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            logger.info("Received resume file: {}, size: {}", resumeFile.getOriginalFilename(), resumeFile.getSize());
+        }
 
-        Candidate existingByEmail = candidateService.findByEmail(payload.getEmail());
+        candidate.setFullName(fullName);
+
+        Candidate existingByEmail = candidateService.findByEmail(email);
         if (existingByEmail != null && !existingByEmail.getId().equals(candidate.getId())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", "Email already registered. Please use a different email."));
         }
 
-        candidate.setEmail(payload.getEmail());
-        candidate.setPhoneNumber(payload.getPhoneNumber());
-        candidate.setAlternatePhoneNumber(payload.getAlternatePhoneNumber());
-        candidate.setGender(payload.getGender());
-        candidate.setDateOfBirth(payload.getDateOfBirth());
-        candidate.setCity(payload.getCity());
-        candidate.setState(payload.getState());
-        candidate.setHighestEducation(payload.getHighestEducation());
-        candidate.setCollegeUniversity(payload.getCollegeUniversity());
-        candidate.setYearOfGraduation(payload.getYearOfGraduation());
-        candidate.setExperience(payload.getExperience());
-        candidate.setSkills(payload.getSkills());
+        candidate.setEmail(email);
+        candidate.setPhoneNumber(phoneNumber);
+        candidate.setAlternatePhoneNumber(alternatePhoneNumber);
+        candidate.setGender(gender);
+        if (dateOfBirth != null && !dateOfBirth.isBlank()) {
+            candidate.setDateOfBirth(java.time.LocalDate.parse(dateOfBirth));
+        }
+        candidate.setCity(city);
+        candidate.setState(state);
+        candidate.setHighestEducation(highestEducation);
+        candidate.setCollegeUniversity(collegeUniversity);
+        candidate.setYearOfGraduation(yearOfGraduation);
+        candidate.setExperience(experience);
+        candidate.setSkills(skills);
 
         if (resumeFile != null && !resumeFile.isEmpty()) {
             candidate.setResumePath(storeUploadedFile(resumeFile));
@@ -489,6 +545,9 @@ public class CandidateRestController {
         data.put("badge", candidate.getBadge());
         data.put("score", candidate.getScore());
         data.put("approved", candidate.getApproved());
+        data.put("applicationStatus", candidate.getApplicationStatus() != null ? candidate.getApplicationStatus().name() : null);
+        data.put("hrFeedback", candidate.getHrFeedback());
+        data.put("statusUpdatedAt", candidate.getStatusUpdatedAt());
         data.put("emailVerified", candidate.getEmailVerified());
         data.put("rejectionReason", candidate.getRejectionReason());
         data.put("assessmentTaken", candidate.getAssessmentTaken());
@@ -501,9 +560,16 @@ public class CandidateRestController {
     // ==================== HIRING WORKFLOW ENDPOINTS ====================
 
     // --------- MARK CANDIDATE AS INTERESTED ---------
-    @PostMapping("/interested/{candidateId}")
-    public ResponseEntity<?> markInterested(@PathVariable Long candidateId) {
+    @PostMapping({"/interested/{candidateId}", "/me/interested"})
+    public ResponseEntity<?> markInterested(@PathVariable(required = false) Long candidateId, HttpSession session) {
         try {
+            if (candidateId == null) {
+                Candidate sessionCandidate = (Candidate) session.getAttribute("candidate");
+                if (sessionCandidate == null) {
+                    return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+                }
+                candidateId = sessionCandidate.getId();
+            }
             var candidate = hiringWorkflowService.markCandidateInterested(candidateId);
             if (candidate != null) {
                 return ResponseEntity.ok(Map.of(
@@ -531,35 +597,64 @@ public class CandidateRestController {
                 return ResponseEntity.status(404).body(Map.of("error", "Candidate not found"));
             }
 
-            var assignedTests = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId());
-            return ResponseEntity.ok(Map.of(
-                    "candidateId", candidate.getId(),
-                    "assignedTests", assignedTests,
-                    "totalTests", assignedTests.size(),
-                    "candidateStatus", candidateOpt.get().getApplicationStatus().toString()));
+            LocalDateTime now = LocalDateTime.now();
+            var assignedTests = hiringWorkflowService.getAssignedTestsForCandidate(candidate.getId());
+            var availableTests = assignedTests.stream()
+                    .filter(test -> test.getAvailableFrom() == null || !test.getAvailableFrom().isAfter(now))
+                    .toList();
+            var scheduledTests = assignedTests.stream()
+                    .filter(test -> test.getAvailableFrom() != null && test.getAvailableFrom().isAfter(now))
+                    .toList();
+            var pendingTests = availableTests.stream()
+                    .filter(test -> !Boolean.TRUE.equals(test.getSubmitted()))
+                    .toList();
+            var submittedTests = availableTests.stream()
+                    .filter(test -> Boolean.TRUE.equals(test.getSubmitted()))
+                    .toList();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("candidateId", candidate.getId());
+            response.put("assignedTests", availableTests);
+            response.put("tests", availableTests);
+            response.put("scheduledTests", scheduledTests);
+            response.put("pendingTests", pendingTests);
+            response.put("submittedTests", submittedTests);
+            response.put("totalTests", availableTests.size());
+            response.put("scheduledCount", scheduledTests.size());
+            response.put("pendingCount", pendingTests.size());
+            response.put("submittedCount", submittedTests.size());
+            response.put("candidateStatus", candidateOpt.get().getApplicationStatus().toString());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch assigned tests"));
         }
     }
 
+    @GetMapping({"/tests", "/my-tests"})
+    public ResponseEntity<?> getCandidateTests(HttpSession session) {
+        return getMyAssignedTests(session);
+    }
+
     // --------- GET TEST DETAILS BY NAME FOR CANDIDATE ---------
-    @GetMapping("/me/tests/{testName}")
-    public ResponseEntity<?> getTestDetails(@PathVariable String testName, HttpSession session) {
+    @GetMapping("/me/tests/{testId}")
+    public ResponseEntity<?> getTestDetails(@PathVariable Long testId, HttpSession session) {
         Candidate candidate = (Candidate) session.getAttribute("candidate");
         if (candidate == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
         }
 
         try {
-            var assignedTests = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId());
+            LocalDateTime now = LocalDateTime.now();
+            var assignedTests = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId()).stream()
+                    .filter(t -> t.getAvailableFrom() == null || !t.getAvailableFrom().isAfter(now))
+                    .toList();
             boolean hasAccess = assignedTests.stream()
-                    .anyMatch(t -> t.getTestName().equalsIgnoreCase(testName));
+                    .anyMatch(t -> Objects.equals(t.getTestId(), testId));
 
             if (!hasAccess) {
                 return ResponseEntity.status(403).body(Map.of("error", "You don't have access to this test"));
             }
 
-            var testDetails = testAllocationService.getTestDetails(testName);
+            var testDetails = testAllocationService.getTestDetails(testId);
             return ResponseEntity.ok(testDetails);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch test details"));
@@ -575,8 +670,13 @@ public class CandidateRestController {
         }
 
         try {
-            var unsubmitted = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId());
-            var submitted = hiringWorkflowService.getSubmittedTestsForCandidate(candidate.getId());
+            LocalDateTime now = LocalDateTime.now();
+            var unsubmitted = hiringWorkflowService.getUnsubmittedTestsForCandidate(candidate.getId()).stream()
+                    .filter(test -> test.getAvailableFrom() == null || !test.getAvailableFrom().isAfter(now))
+                    .toList();
+            var submitted = hiringWorkflowService.getSubmittedTestsForCandidate(candidate.getId()).stream()
+                    .filter(test -> test.getAvailableFrom() == null || !test.getAvailableFrom().isAfter(now))
+                    .toList();
 
             return ResponseEntity.ok(Map.of(
                     "candidateId", candidate.getId(),
@@ -589,9 +689,61 @@ public class CandidateRestController {
         }
     }
 
+    @PostMapping("/submit-assignment")
+    public ResponseEntity<?> submitAssignment(@RequestBody Map<String, Object> request, HttpSession session) {
+        Candidate candidate = (Candidate) session.getAttribute("candidate");
+        if (candidate == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not logged in"));
+        }
+
+        try {
+            Object mappingIdObj = request.get("mappingId");
+            if (mappingIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "mappingId is required"));
+            }
+
+            Long mappingId = Long.parseLong(String.valueOf(mappingIdObj));
+            Integer scoreObtained = Integer.parseInt(String.valueOf(request.getOrDefault("scoreObtained", "0")));
+            String submissionDetails = String.valueOf(request.getOrDefault("submissionDetails", "")).trim();
+
+            CandidateTestMapping mapping = hiringWorkflowService.getAssignedTestsForCandidate(candidate.getId()).stream()
+                    .filter(item -> Objects.equals(item.getId(), mappingId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (mapping == null) {
+                return ResponseEntity.status(403).body(Map.of("error", "Assignment not found for this candidate"));
+            }
+            if (Boolean.TRUE.equals(mapping.getSubmitted())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Assignment already submitted"));
+            }
+
+            AssignmentSubmission submission = new AssignmentSubmission(
+                    candidate.getId(),
+                    mapping.getId(),
+                    mapping.getTestId(),
+                    scoreObtained,
+                    scoreObtained >= 50);
+            submission.setSubmissionDetails(submissionDetails);
+
+            AssignmentSubmission saved = hiringWorkflowService.submitAssignment(submission);
+            CandidateTestMapping updatedMapping = testAllocationService.markTestSubmitted(mapping.getId(), scoreObtained);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Assignment submitted successfully",
+                    "submission", saved,
+                    "mapping", updatedMapping));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to submit assignment"));
+        }
+    }
+
     private String storeUploadedFile(MultipartFile file) throws IOException {
         if (!Files.exists(uploadDir)) {
             Files.createDirectories(uploadDir);
+            logger.info("Created upload directory during file storage: {}", uploadDir);
         }
 
         String originalName = file.getOriginalFilename();
@@ -607,28 +759,47 @@ public class CandidateRestController {
         }
 
         file.transferTo(storedPath.toFile());
+        logger.info("Stored file: {} (original: {}, size: {} bytes) at {}", 
+            storedFileName, originalName, file.getSize(), storedPath);
         return storedFileName;
     }
 
     private ResponseEntity<Resource> serveStoredFile(String storedFileName, String disposition) throws IOException {
         String normalizedStoredFileName = extractFileName(storedFileName);
         if (normalizedStoredFileName.isBlank()) {
+            logger.warn("File serve request with blank filename");
             return ResponseEntity.notFound().build();
         }
+
+        logger.info("Serving file request: '{}', uploadDir: '{}'", normalizedStoredFileName, uploadDir);
 
         Path path = resolveStoredFilePath(normalizedStoredFileName);
         if (path == null) {
+            logger.warn("Could not resolve file path for: '{}' in uploadDir: '{}'", normalizedStoredFileName, uploadDir);
             return ResponseEntity.notFound().build();
         }
 
-        if (!path.startsWith(uploadDir) && !path.startsWith(getAlternateUploadDir())) {
+        Path alternateDir = getAlternateUploadDir();
+        boolean inUploadDir = path.startsWith(uploadDir);
+        boolean inAlternateDir = alternateDir != null && path.startsWith(alternateDir);
+        
+        if (!inUploadDir && !inAlternateDir) {
+            logger.warn("File path outside allowed directories: {} (uploadDir: {}, alternate: {})", 
+                path, inUploadDir, inAlternateDir);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        boolean fileExists = Files.exists(path);
+        long fileSize = fileExists ? Files.size(path) : 0;
+        
         Resource resource = new UrlResource(path.toUri());
-        if (!resource.exists() || !resource.isReadable()) {
+        if (!fileExists || !resource.isReadable()) {
+            logger.warn("File not found or not readable: '{}' (exists: {}, size: {} bytes)", 
+                path, fileExists, fileSize);
             return ResponseEntity.notFound().build();
         }
+        
+        logger.info("Successfully serving file: '{}' (size: {} bytes)", path, fileSize);
 
         String contentType = Files.probeContentType(path);
         if (contentType == null || contentType.isBlank()) {
@@ -702,6 +873,11 @@ public class CandidateRestController {
     }
 
     private Path getAlternateUploadDir() {
+        // If using absolute path, no alternate needed
+        if (uploadDir.isAbsolute()) {
+            return null;
+        }
+        
         Path current = uploadDir.toAbsolutePath().normalize();
         Path parent = current.getParent();
         if (parent == null) {
@@ -711,13 +887,17 @@ public class CandidateRestController {
         Path currentName = current.getFileName();
         Path parentName = parent.getFileName();
 
+        // Only use alternate if we're in Backend/uploads and parent has uploads sibling
         if (currentName != null && "uploads".equalsIgnoreCase(currentName.toString())
                 && parentName != null && "Backend".equalsIgnoreCase(parentName.toString())
                 && parent.getParent() != null) {
-            return parent.getParent().resolve("uploads").normalize();
+            Path siblingUploads = parent.getParent().resolve("uploads");
+            if (Files.exists(siblingUploads)) {
+                return siblingUploads.normalize();
+            }
         }
 
-        return current.resolveSibling("Backend").resolve("uploads").normalize();
+        return null;
     }
 
     private String extractFileName(String fileName) {
@@ -734,5 +914,13 @@ public class CandidateRestController {
             return safeFileName.substring(separatorIndex + 1);
         }
         return safeFileName;
+    }
+
+    // Exception handler to catch and log multipart/form-data errors
+    @ExceptionHandler({IllegalStateException.class, IOException.class})
+    public ResponseEntity<?> handleFileUploadErrors(Exception ex) {
+        logger.error("File upload error: {}", ex.getMessage(), ex);
+        return ResponseEntity.badRequest().body(Map.of(
+            "error", "File upload failed: " + ex.getMessage()));
     }
 }

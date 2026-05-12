@@ -41,7 +41,7 @@ import AdminManageTests from "./components/Admin/AdminManageTests";
 import AdminLiveMonitoring from "./components/Admin/AdminLiveMonitoring";
 import AdminViewJobs from "./components/Admin/AdminViewJobs";
 import AdminInterestedCandidates from "./components/Admin/AdminInterestedCandidates";
-// import FeedbackDashboard from "./components/Admin/FeedbackDashboard";
+import FeedbackDashboard from "./components/Admin/FeedbackDashboard";
 // import PaymentsList from "./components/Admin/PaymentsList";
 import PaymentDashboard from "./components/Admin/PaymentDashboard";
 import PaymentDetails from "./components/Admin/PaymentDetails";
@@ -217,7 +217,7 @@ function App() {
         <Route path="/admin/live-monitoring" element={<AdminLiveMonitoring />} />
         <Route path="/admin/view-jobs" element={<AdminViewJobs />} />
         <Route path="/admin/interested-candidates" element={<AdminInterestedCandidates />} />
-        {/* <Route path="/admin/feedback" element={<FeedbackDashboard />} /> */}
+        <Route path="/admin/feedback" element={<FeedbackDashboard />} />
         <Route path="/admin/questions/*" element={<Navigate to="/admin/manage-tests" replace />} />
         <Route path="/candidate/login" element={<Login />} />
         <Route path="/hrs/login" element={<Login />} />

@@ -4,6 +4,7 @@ import api from "../../services/api";
 import {
   Users,
   CheckCircle,
+  X,
   XCircle,
   FileText,
   Eye,
@@ -11,7 +12,6 @@ import {
   UserCheck,
   UserX,
   Loader2,
-  AlertCircle,
   Search,
   Filter,
   Briefcase,
@@ -85,19 +85,21 @@ const HiringDashboard = () => {
 
   const onTestAssigned = (candidateId) => {
     // Update candidate status locally
+    // FIX: Use loose equality (==) because candidateId from form is string, c.id from DB is number
     setCandidates(prev => prev.map(c => 
-      c.id === candidateId ? { ...c, applicationStatus: "TEST_ASSIGNED" } : c
+      c.id == candidateId ? { ...c, applicationStatus: "TEST_ASSIGNED" } : c
     ));
     fetchCandidates(); // Refresh to get latest data
   };
 
   const onStatusChanged = (candidateId, newStatus) => {
     // Remove candidate from list if approved/rejected, or update status
+    // FIX: Use loose equality (==) because candidateId can be string, c.id from DB is number
     if (newStatus === "APPROVED" || newStatus === "REJECTED") {
-      setCandidates(prev => prev.filter(c => c.id !== candidateId));
+      setCandidates(prev => prev.filter(c => c.id != candidateId));
     } else {
       setCandidates(prev => prev.map(c => 
-        c.id === candidateId ? { ...c, applicationStatus: newStatus } : c
+        c.id == candidateId ? { ...c, applicationStatus: newStatus } : c
       ));
     }
     fetchCandidates();
@@ -124,7 +126,7 @@ const HiringDashboard = () => {
   };
 
   const canApproveReject = (status) => {
-    return status === "UNDER_REVIEW" || status === "TEST_ASSIGNED";
+    return status === "INTERESTED" || status === "UNDER_REVIEW" || status === "TEST_ASSIGNED";
   };
 
   if (loading) {
@@ -150,7 +152,7 @@ const HiringDashboard = () => {
 
       {error && (
         <div className="hiring-dashboard-error">
-          <AlertCircle size={20} />
+          <X size={20} />
           <span>{error}</span>
           <button onClick={fetchCandidates}>Retry</button>
         </div>
@@ -284,6 +286,7 @@ const HiringDashboard = () => {
       {assignTestModal.open && (
         <AssignTestModal
           candidate={assignTestModal.candidate}
+          candidates={candidates}
           onClose={() => setAssignTestModal({ open: false, candidate: null })}
           onAssigned={onTestAssigned}
         />

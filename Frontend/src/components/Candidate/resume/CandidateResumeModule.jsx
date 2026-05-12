@@ -20,8 +20,7 @@ import {
   updateResume,
 } from "./resumeApi";
 import { ResumeTemplateRender, ResumeTemplateThumbnail } from "./ResumeTemplateRender";
-import { fetchOwnResumeBlob, updateCandidateProfile } from "../profile/profileApi";
-import { getApiUrl, getCandidateFileUrl, getResumeFileName, isPdfResume } from "../profile/profileUtils";
+import { updateCandidateProfile } from "../profile/profileApi";
 import "./CandidateResumeModule.css";
 
 const RESUME_TEMPLATES = [
@@ -54,11 +53,11 @@ const RESUME_TEMPLATES = [
     labels: ["Elegant", "Simple", "Refined"],
   },
   {
-    id: "two-column-executive",
-    name: "Two Column Executive",
+    id: "executive",
+    name: "Executive",
     accent: "linear-gradient(135deg, #4c1d95, #7c3aed)",
-    summary: "Executive-style two-column layout for candidates who want a stronger visual information split.",
-    labels: ["Executive", "Two Column", "Premium"],
+    summary: "Professional executive layout with strong hierarchy. Single-column format ensures full ATS compatibility while maintaining premium appearance.",
+    labels: ["Executive", "ATS Safe", "Professional"],
   },
 ];
 
@@ -218,7 +217,6 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
   const [atsResult, setAtsResult] = useState(null);
   const [profileResumeFile, setProfileResumeFile] = useState(null);
   const [uploadingProfileResume, setUploadingProfileResume] = useState(false);
-  const [profileResumePreviewUrl, setProfileResumePreviewUrl] = useState("");
 
   // FIX: Track per-resume loading states so buttons show feedback during blob fetch.
   const [pdfLoading, setPdfLoading] = useState({});
@@ -251,33 +249,6 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
         location: current.personalInfo.location || [candidate?.city, candidate?.state].filter(Boolean).join(", "),
       },
     }));
-  }, [candidate]);
-
-  useEffect(() => {
-    let objectUrl = "";
-
-    const loadProfileResumePreview = async () => {
-      if (!candidate?.resumePath || !isPdfResume(candidate.resumePath)) {
-        setProfileResumePreviewUrl("");
-        return;
-      }
-
-      try {
-        const blob = await fetchOwnResumeBlob("inline");
-        objectUrl = URL.createObjectURL(blob);
-        setProfileResumePreviewUrl(objectUrl);
-      } catch (err) {
-        setProfileResumePreviewUrl("");
-      }
-    };
-
-    loadProfileResumePreview();
-
-    return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
   }, [candidate]);
 
   const template = useMemo(
@@ -464,57 +435,22 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
     }
   };
 
-  const profileResumeUrl =
-    getApiUrl(candidate?.resumeUrl) || getCandidateFileUrl(candidate?.resumePath);
-  const profileResumeName = getResumeFileName(candidate?.resumePath);
-
-  const handleViewProfileResume = async () => {
-    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
-    setPdfLoading((prev) => ({ ...prev, profileView: true }));
-    try {
-      const blob = await fetchOwnResumeBlob("inline");
-      const objectUrl = URL.createObjectURL(blob);
-      if (previewWindow) {
-        previewWindow.location.href = objectUrl;
-      } else if (profileResumeUrl) {
-        window.open(profileResumeUrl, "_blank", "noopener,noreferrer");
-        URL.revokeObjectURL(objectUrl);
-        return;
-      } else {
-        window.open(objectUrl, "_blank", "noopener,noreferrer");
-      }
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
-    } catch (err) {
-      if (previewWindow) {
-        previewWindow.close();
-      }
-      setError("Unable to open your uploaded resume. Please re-upload it once and try again.");
-    } finally {
-      setPdfLoading((prev) => ({ ...prev, profileView: false }));
-    }
-  };
-
-  const handleDownloadProfileResume = async () => {
-    setPdfLoading((prev) => ({ ...prev, profileDownload: true }));
-    try {
-      const blob = await fetchOwnResumeBlob("attachment");
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download = profileResumeName || "resume";
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(objectUrl);
-    } catch (err) {
-      setError("Unable to download your uploaded resume. Please re-upload it once and try again.");
-    } finally {
-      setPdfLoading((prev) => ({ ...prev, profileDownload: false }));
-    }
-  };
-
   const handleProfileResumeUpload = async () => {
     if (!profileResumeFile || !candidate) {
+      return;
+    }
+
+    // Validate file size - reject files that are too small (likely corrupted)
+    const MIN_FILE_SIZE = 5 * 1024; // 5KB minimum
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB maximum
+    
+    if (profileResumeFile.size < MIN_FILE_SIZE) {
+      setError(`❌ File is too small (${(profileResumeFile.size / 1024).toFixed(2)} KB). This file appears to be corrupted or empty. Please select a valid PDF file (usually 50KB+).`);
+      return;
+    }
+    
+    if (profileResumeFile.size > MAX_FILE_SIZE) {
+      setError(`❌ File is too large (${(profileResumeFile.size / (1024 * 1024)).toFixed(2)} MB). Maximum allowed size is 10MB.`);
       return;
     }
 
@@ -526,7 +462,7 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
       onCandidateUpdate?.(updatedCandidate);
       await showAlert?.({
         title: "Resume Updated",
-        message: "Your uploaded profile resume is now available to view and download.",
+        message: `Your resume (${(profileResumeFile.size / 1024).toFixed(1)} KB) has been uploaded successfully and is now available to view and download.`,
         tone: "success",
       });
     } catch (err) {
@@ -552,83 +488,68 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
         </button>
       </section>
 
-      {error ? <div className="candidate-alert">{error}</div> : null}
+      {error ? (
+        <div className="candidate-alert resume-error-with-action">
+          <span>{error}</span>
+          <button type="button" className="resume-error-dismiss" onClick={() => setError("")}>
+            <X size={16} />
+          </button>
+        </div>
+      ) : null}
 
       <section className="candidate-panel resume-upload-panel">
         <div className="candidate-panel-header">
           <div>
-            <h3>Uploaded Profile Resume</h3>
-            <p>View, download, or replace the resume currently saved in your candidate profile.</p>
+            <h3>Upload Resume</h3>
+            <p>Upload your resume to make it available to recruiters from your profile.</p>
           </div>
-          <span className="resume-library-count">{profileResumeUrl ? "Available" : "Not Uploaded"}</span>
         </div>
 
         <div className="resume-upload-grid">
-          <div className="resume-upload-card">
-            <div>
-              <p className="resume-upload-label">Current file</p>
-              <h4>{profileResumeName || "No resume uploaded yet"}</h4>
-              <p className="resume-upload-help">
-                {profileResumeUrl
-                  ? "This is the resume recruiters will see from your profile."
-                  : "Upload a PDF or document resume to make it available from your profile and dashboard."}
-              </p>
-            </div>
-
-            {/* Use backend-provided self-service resume URLs first because they map
-                to /api/candidates/me/resume and respect the logged-in candidate session. */}
-            <div className="resume-card-actions">
-              {profileResumeUrl ? (
-                <>
-                  <button type="button" onClick={handleViewProfileResume} className="resume-action-btn">
-                    <Eye size={15} />
-                    {pdfLoading.profileView ? "Opening..." : "View Resume"}
-                  </button>
-                  <button type="button" onClick={handleDownloadProfileResume} className="resume-action-btn">
-                    <Download size={15} />
-                    {pdfLoading.profileDownload ? "Downloading..." : "Download Resume"}
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-
           <div className="resume-upload-card">
             <label className="resume-file-picker">
               <span>Choose Resume File</span>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx"
-                onChange={(event) => setProfileResumeFile(event.target.files?.[0] || null)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  setProfileResumeFile(file);
+                  // Clear error when selecting a new file
+                  if (file) {
+                    const MIN_FILE_SIZE = 5 * 1024;
+                    if (file.size < MIN_FILE_SIZE) {
+                      setError(`⚠️ Warning: This file is only ${(file.size / 1024).toFixed(2)} KB. It may be corrupted or empty. Please select a valid PDF file (usually 50KB+).`);
+                    } else {
+                      setError("");
+                    }
+                  }
+                }}
               />
             </label>
             <p className="resume-upload-help">
-              {profileResumeFile ? `Selected: ${profileResumeFile.name}` : "Supported formats: PDF, DOC, DOCX"}
+              {profileResumeFile 
+                ? `Selected: ${profileResumeFile.name} (${(profileResumeFile.size / 1024).toFixed(1)} KB)` 
+                : "Supported formats: PDF, DOC, DOCX (min 5KB, max 10MB)"}
             </p>
+            {profileResumeFile && profileResumeFile.size < 5 * 1024 && (
+              <p className="resume-upload-help" style={{ color: '#dc2626' }}>
+                ⚠️ This file appears corrupted (too small). Please select a different file.
+              </p>
+            )}
             <div className="resume-card-actions">
               <button
                 type="button"
                 className="resume-action-btn"
                 onClick={handleProfileResumeUpload}
-                disabled={!profileResumeFile || uploadingProfileResume}
+                disabled={!profileResumeFile || uploadingProfileResume || (profileResumeFile && profileResumeFile.size < 5 * 1024)}
               >
                 <FilePlus2 size={15} />
-                {uploadingProfileResume ? "Uploading..." : profileResumeUrl ? "Replace Resume" : "Upload Resume"}
+                {uploadingProfileResume ? "Uploading..." : candidate?.resumePath ? "Replace Resume" : "Upload Resume"}
               </button>
             </div>
           </div>
         </div>
-
-        {profileResumePreviewUrl && isPdfResume(candidate?.resumePath) ? (
-          <div className="resume-embedded-preview">
-            <iframe
-              src={profileResumePreviewUrl}
-              title="Uploaded profile resume preview"
-              className="resume-embedded-frame"
-            />
-          </div>
-        ) : null}
-
       </section>
 
       <section className="candidate-panel">
@@ -750,22 +671,24 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
       </section>
 
       {builderOpen ? (
-        <section className="candidate-panel resume-builder-shell">
-          <div className="candidate-panel-header resume-builder-header">
-            <div>
-              <h3>{editingResumeId ? "Update Resume" : "Resume Builder Form"}</h3>
-              <p>Fill ATS-friendly fields and review the live preview before saving.</p>
+        <div className="resume-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeBuilder(); }}>
+          <div className="resume-modal">
+            <div className="resume-modal-header">
+              <div>
+                <h3>{editingResumeId ? "Update Resume" : "Resume Builder"}</h3>
+                <p>Fill ATS-friendly fields and review the live preview before saving.</p>
+              </div>
+              <div className="resume-modal-actions">
+                <span className="resume-completeness-chip">{computedCompleteness}% complete</span>
+                <button type="button" className="resume-modal-close" onClick={closeBuilder} aria-label="Close">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-            <div className="resume-builder-actions-top">
-              <span className="resume-completeness-chip">{computedCompleteness}% complete</span>
-              <button type="button" className="resume-outline-btn" onClick={closeBuilder}>
-                Edit Later
-              </button>
-            </div>
-          </div>
 
-          <div className="resume-builder-grid">
-            <div className="resume-form-column">
+            <div className="resume-modal-body">
+              <div className="resume-modal-grid">
+                <div className="resume-modal-form-column">
               <section className="resume-form-panel">
                 <div className="resume-section-header">
                   <h4>Resume Basics</h4>
@@ -926,74 +849,29 @@ export default function CandidateResumeModule({ candidate, showAlert, onCandidat
                 ) : null}
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="resume-preview-column">
-              <section className="resume-live-preview-card">
-                <div className="resume-live-preview-head">
-                  <div>
-                    <p>Live Preview</p>
-                    <strong>{template.name}</strong>
-                  </div>
-                  <span className="resume-template-mini-chip">{selectedTemplateId || formState.templateId || template.id}</span>
-                </div>
-
-                <ResumeTemplateRender
-                  templateId={selectedTemplateId || formState.templateId || template.id}
-                  formState={formState}
-                />
-              </section>
-
-              <section className="resume-ats-card">
-                <div className="resume-ats-head">
-                  <div>
-                    <p>ATS Score Checker</p>
-                    <strong>{atsResult ? "Latest generated analysis" : "Available after save"}</strong>
-                  </div>
-                  <span className="resume-ats-ring">{atsResult?.score ?? "--"}</span>
-                </div>
-
-                <div className="resume-ats-body">
-                  <div className="resume-ats-metric">
-                    <span>Draft completeness</span>
-                    <strong>{computedCompleteness}%</strong>
-                  </div>
-                  <div className="resume-ats-metric">
-                    <span>Keywords added</span>
-                    <strong>{formState.keywords.length}</strong>
-                  </div>
-
-                  <div>
-                    <h4>Missing keywords</h4>
-                    {atsResult?.missingKeywords?.length ? (
-                      <div className="resume-preview-chip-row">
-                        {atsResult.missingKeywords.map((keyword) => (
-                          <span key={keyword}>{keyword}</span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="resume-ats-muted">
-                        {atsResult ? "No missing keywords detected from your provided list." : "Save the resume to run ATS keyword analysis."}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4>Suggestions to improve</h4>
-                    {atsResult?.suggestions?.length ? (
-                      <ul className="resume-ats-list">
-                        {atsResult.suggestions.map((suggestion) => (
-                          <li key={suggestion}>{suggestion}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="resume-ats-muted">Suggestions will appear after generation.</p>
-                    )}
-                  </div>
-                </div>
-              </section>
+            <div className="resume-modal-footer">
+              <button
+                type="button"
+                className="resume-outline-btn"
+                onClick={closeBuilder}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="candidate-primary-btn"
+                onClick={handleSave}
+                disabled={saving || computedCompleteness < 20}
+              >
+                {saving ? (editingResumeId ? "Updating..." : "Saving...") : (editingResumeId ? "Update Resume" : "Save Resume")}
+              </button>
             </div>
           </div>
-        </section>
+        </div>
       ) : null}
     </div>
   );

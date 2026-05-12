@@ -25,6 +25,9 @@ public class CodeExecutionService {
     @Value("${judge0.base-url}")
     private String baseUrl;
 
+    @Value("${judge0.api-key:}")
+    private String apiKey;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -132,7 +135,14 @@ public class CodeExecutionService {
     private HttpHeaders headers() {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
-        return h; // ✅ NO API KEY
+        
+        // Add RapidAPI key if configured (for cloud Judge0)
+        if (apiKey != null && !apiKey.isBlank()) {
+            h.set("X-RapidAPI-Key", apiKey);
+            h.set("X-RapidAPI-Host", "judge0-ce.p.rapidapi.com");
+        }
+        
+        return h;
     }
 
     private Map<String, Object> buildRunResponse(JsonNode r) {

@@ -7,7 +7,7 @@ import {
   Briefcase,
   Eye,
   User,
-  ShieldAlert,
+  X,
   Clock3,
   CheckCircle2,
 } from "lucide-react";
@@ -256,7 +256,7 @@ export default function HRCandidateList() {
                         ) : candidate.requestStatus === "PENDING" ? (
                           <Clock3 size={14} />
                         ) : (
-                          <ShieldAlert size={14} />
+                          <X size={14} />
                         )}
                         {candidate.requestStatus === "APPROVED"
                           ? "Full access granted"

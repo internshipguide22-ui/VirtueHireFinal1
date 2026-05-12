@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { AlertCircle, Clock, Activity } from "lucide-react";
+import { X, Clock, Activity } from "lucide-react";
 import { WS_BASE_URL } from "../../config";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -170,7 +170,7 @@ const LiveMonitoring = () => {
                         }}
                       >
                         {c.violationCount >= 3 && (
-                          <AlertCircle size={16} className="lm-alert-badge" />
+                          <X size={16} className="lm-alert-badge" />
                         )}
                         <span
                           style={{
