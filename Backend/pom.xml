@@ -19,7 +19,7 @@
     </parent>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <lombok.version>1.18.30</lombok.version>
         <commons-csv.version>1.10.0</commons-csv.version>
         <commons-io.version>2.15.1</commons-io.version>
